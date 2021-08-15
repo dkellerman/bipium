@@ -25,6 +25,7 @@ import {
   BeatsField,
   PlaySubDivsField,
   SwingField,
+  Divider,
 } from './App.styles';
 import { DefaultVisualizer } from './DefaultVisualizer';
 import { useTapBPM, useSetting, useClicker, useMetronome, SOUND_PACKS } from './hooks';
@@ -363,7 +364,7 @@ function App() {
             )}
           </div>
 
-          <div className="divider">
+          <Divider>
             <div>
               <Link to="/about">About</Link>
             </div>
@@ -379,7 +380,7 @@ function App() {
                 <small>Build: {process.env.REACT_APP_VERCEL_GIT_COMMIT_SHA}</small>
               </div>
             )}
-          </div>
+          </Divider>
         </SideBar>
       )}
 

@@ -160,15 +160,15 @@ export const SideBar = styled.aside`
   div {
     margin: 15px 0;
   }
+`;
 
-  .divider {
-    border-top: 1px solid #999;
-    padding-top: 10px;
-    width: 85%;
-    margin-top: 50px;
-    div {
-      margin: 20px 0;
-    }
+export const Divider = styled.div`
+  border-top: 1px solid #999;
+  padding-top: 10px;
+  width: 85%;
+  margin-top: 50px;
+  div {
+    margin: 20px 0;
   }
 `;
 
