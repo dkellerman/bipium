@@ -16,10 +16,11 @@ A metronome web app. https://bipium.com
 - Experimenting with voice commands, not going so well yet
 
 
-
 ## Tech
 - React, Javascript, CSS (styled-components)
 - PIXI.js for visualizer, to allow GPU rendering
 - Metronome implementation inspired by https://github.com/cwilso/metronome
 - create-react-app for UI, deployed to Vercel
 - microsecond time syncing via AudioContext
+
+The `src/metronome` directory contains an app-indepdent metronome implementation with no library dependencies.

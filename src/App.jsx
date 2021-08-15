@@ -150,7 +150,7 @@ function App() {
     window.addEventListener('click', handleWindowClick);
     return () => {
       window.removeEventListener('click', handleWindowClick);
-    }
+    };
   }, []);
 
   // start/stop
@@ -346,7 +346,6 @@ function App() {
             >
               {speechState === 'Recording' ? 'Stop' : 'Listen'}
             </ListenButton>
-
             {speechState === 'Recording' && (
               <div>
                 <small>
