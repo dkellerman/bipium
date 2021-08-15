@@ -15,11 +15,7 @@ export const SOUND_PACKS = {
   },
 };
 
-export function useClicker({
-  audioContext,
-  volume = 100,
-  sounds = SOUND_PACKS.defaults,
-} = {}) {
+export function useClicker({ audioContext, volume = 100, sounds = SOUND_PACKS.defaults } = {}) {
   const clicker = useRef(
     new Clicker({
       audioContext,

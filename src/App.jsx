@@ -36,7 +36,7 @@ const float = x => (x ?? x) && parseFloat(x);
 const bool = x => (x ?? x) && [true, 1, '1', 'true', 't'].includes(x);
 
 function App() {
-  const [bpm, setBpm] = useSetting('bpm', 80.0, float);
+  const bpm = useRef();
   const [beats, setBeats] = useSetting('beats', 4, int);
   const [subDivs, setSubDivs] = useSetting('subDivs', 4, int);
   const [swing, setSwing] = useSetting('swing', 0, int);
@@ -46,14 +46,9 @@ function App() {
   const [soundPack, setSoundPack] = useSetting('soundPack', 'defaults', String);
   const [visualizers] = useSetting('visualizers', 'default', val => val.split(','));
 
-  const { bpm: tappedBPM, handleTap } = useTapBPM(bpm);
-  const bpmRef = useRef();
-
   const [muted, setMuted] = useState(false);
-  const [editingBPM, setEditingBPM] = useState(false);
   const [showSideBar, setShowSideBar] = useState(false);
   const [copiedURL, setCopiedURL] = useState(null);
-
   const [, _update] = useState(false);
   const forceRender = () => _update(x => !x);
 
@@ -69,7 +64,7 @@ function App() {
   const m = useMetronome({
     timerFn: () => audioContext.current.currentTime,
     clicker,
-    bpm,
+    bpm: bpm.current,
     beats,
     subDivs: playSubDivs ? subDivs : 1,
     swing: playSubDivs && subDivs % 2 === 0 ? swing : 0,
@@ -106,14 +101,17 @@ function App() {
       subDivs: playSubDivs ? subDivs : 1,
       swing: playSubDivs && subDivs % 2 === 0 ? swing : 0,
       beats,
-      bpm,
+      bpm: bpm.current,
     });
     forceRender();
-  }, [playSubDivs, subDivs, swing, beats, bpm]);
+  }, [playSubDivs, subDivs, swing, beats, m.started]);
 
-  useEffect(() => {
-    setBpm(tappedBPM);
-  }, [tappedBPM]);
+  const updateBPM = React.useCallback(val => {
+    bpm.current = val;
+    if (m.started) {
+      m.update({ bpm: val });
+    }
+  }, []);
 
   useEffect(() => {
     clicker.setVolume(muted ? 0 : volume);
@@ -129,12 +127,6 @@ function App() {
     e.preventDefault();
     e.stopPropagation();
     toggle();
-  });
-
-  useKeypress('t', () => {
-    // t: tap
-    handleTap();
-    clicker.click();
   });
 
   useKeypress('Escape', () => {
@@ -168,13 +160,6 @@ function App() {
     };
   }, [started]);
 
-  useEffect(() => {
-    if (editingBPM && bpmRef.current) {
-      bpmRef.current.focus();
-      bpmRef.current.select();
-    }
-  }, [editingBPM]);
-
   // experimental speech handling
   useEffect(() => {
     if (segment?.isFinal) {
@@ -206,21 +191,21 @@ function App() {
         }
         case 'set_bpm': {
           if (val && val >= 30 && val <= 320) {
-            setBpm(val);
+            updateBPM(val);
           }
           break;
         }
         case 'increase_bpm': {
           const newBpm = bpm + (val || 5);
           if (newBpm >= 30 && newBpm <= 320) {
-            setBpm(newBpm);
+            updateBPM(newBpm);
           }
           break;
         }
         case 'decrease_bpm': {
           const newBpm = bpm - (val || 5);
           if (newBpm >= 30 && newBpm <= 320) {
-            setBpm(newBpm);
+            updateBPM(newBpm);
           }
           break;
         }
@@ -258,7 +243,7 @@ function App() {
   }, [showSideBar]);
 
   const copyConfigurationURL = useCallback(() => {
-    const q = { bpm, beats, playSubDivs };
+    const q = { bpm: bpm.current, beats, playSubDivs };
     if (playSubDivs) {
       q.swing = swing;
       q.subDivs = subDivs;
@@ -276,7 +261,7 @@ function App() {
         setCopiedURL(url);
       },
     });
-  }, [bpm, beats, playSubDivs, soundPack]);
+  }, [bpm.current, beats, playSubDivs, soundPack]);
 
   return (
     <Layout>
@@ -384,50 +369,12 @@ function App() {
         </SideBar>
       )}
 
-      <BPMField editing={editingBPM}>
-        <input
-          ref={bpmRef}
-          type="number"
-          min={20}
-          max={320}
-          defaultValue={bpm}
-          size={5}
-          onBlur={e => {
-            setBpm(Math.max(Math.min(320, float(e.target.value) || bpm), 20));
-            setEditingBPM(false);
-          }}
-          onKeyDown={e => {
-            if (e.key === 'Enter') {
-              setBpm(Math.max(Math.min(320, float(e.target.value) || bpm), 20));
-              setEditingBPM(false);
-            }
-          }}
-          onChange={() => {}}
-        />
-
-        <label onClick={() => setEditingBPM(true)}>{bpm} BPM</label>
-
-        <StepButtons val={bpm} setter={setBpm} min={20} max={300} conv={float} />
-        <br />
-
-        <input
-          type="range"
-          min={20}
-          max={300}
-          step={1}
-          value={bpm}
-          onChange={e => setBpm(float(e.target.value))}
-        />
-
-        <TapButton
-          onClick={e => {
-            handleTap(e);
-            clicker.click();
-          }}
-        >
-          Tap
-        </TapButton>
-      </BPMField>
+      <BPMArea
+        clicker={clicker}
+        onChange={val => {
+          updateBPM(val);
+        }}
+      />
 
       <BeatsField>
         <label>Beats:</label>{' '}
@@ -517,6 +464,84 @@ function App() {
     </Layout>
   );
 }
+
+const BPMArea = ({ clicker, onChange }) => {
+  const [bpm, setBpm] = useSetting('bpm', 80.0, float);
+  const [editingBPM, setEditingBPM] = useState(false);
+  const { bpm: tappedBPM, handleTap } = useTapBPM(bpm);
+  const bpmRef = useRef();
+
+  useEffect(() => {
+    setBpm(tappedBPM);
+  }, [tappedBPM]);
+
+  useEffect(() => {
+    onChange?.(bpm);
+  }, [bpm]);
+
+  useKeypress('t', () => {
+    // t: tap
+    handleTap();
+    clicker?.click();
+  });
+
+  useEffect(() => {
+    if (editingBPM && bpmRef.current) {
+      bpmRef.current.value = bpm;
+      bpmRef.current.focus();
+      bpmRef.current.select();
+    }
+  }, [editingBPM]);
+
+  return (
+    <BPMField editing={editingBPM}>
+      <StepButtons val={bpm} setter={setBpm} min={20} max={300} conv={float} />
+
+      <input
+        ref={bpmRef}
+        type="number"
+        min={20}
+        max={320}
+        defaultValue={bpm}
+        size={5}
+        onBlur={e => {
+          setBpm(Math.max(Math.min(320, float(e.target.value) || bpm), 20));
+          setEditingBPM(false);
+        }}
+        onKeyDown={e => {
+          if (e.key === 'Enter') {
+            setBpm(Math.max(Math.min(320, float(e.target.value) || bpm), 20));
+            setEditingBPM(false);
+          }
+        }}
+        onChange={() => {}}
+      />
+      <label onClick={() => setEditingBPM(true)}>{bpm} BPM</label>
+
+      <TapButton
+        onClick={e => {
+          handleTap(e);
+          clicker.click();
+        }}
+      >
+        Tap
+      </TapButton>
+
+      <br />
+
+      <div>
+        <input
+          type="range"
+          min={20}
+          max={300}
+          step={1}
+          value={bpm}
+          onChange={e => setBpm(float(e.target.value))}
+        />
+      </div>
+    </BPMField>
+  );
+};
 
 const StepButtons = ({ val, setter, min, max, step = 1, conv = int, disabled = false }) => {
   return (

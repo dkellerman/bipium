@@ -19,8 +19,8 @@ export const Layout = styled.main`
   display: flex;
   flex-direction: column;
   width: 100%;
-  height: 100%;
   align-items: center;
+  padding: 0 0 40px 0;
 
   fieldset {
     margin: 5px 0;
@@ -83,14 +83,12 @@ export const TapButton = styled.button`
   border-radius: 50%;
   padding: 12px 20px;
   margin-bottom: 5px;
-  float: right;
-  position: relative;
-  left: 50px;
 `;
 
 export const ListenButton = styled.button`
   border-radius: 50%;
   padding: 13px;
+  margin-top: 6px;
 `;
 
 export const StepButton = styled.button`
@@ -123,7 +121,7 @@ export const AboutPage = styled.main`
 export const CloseIcon = styled(RiCloseLine).attrs({
   size: 32,
 })`
-  position: fixed;
+  position: absolute;
   top: 13px;
   left: 25px;
   z-index: 10000;
@@ -135,7 +133,7 @@ export const CloseIcon = styled(RiCloseLine).attrs({
 export const SettingsIcon = styled(FiSettings).attrs({
   size: 32,
 })`
-  position: fixed;
+  position: absolute;
   top: 13px;
   left: 25px;
   z-index: 1000;
@@ -146,14 +144,14 @@ export const SettingsIcon = styled(FiSettings).attrs({
 
 export const SideBar = styled.aside`
   position: fixed;
-  top: 58px;
+  top: 0;
   left: 0;
   height: 100vh;
   width: 320px;
   background: aliceblue;
   z-index: 1000;
   padding-left: 32px;
-  padding-top: 0px;
+  padding-top: 58px;
   box-shadow: 2px 3px 4px rgba(0, 0, 0, 0.15);
   overflow: auto;
 
@@ -203,36 +201,47 @@ export const ButtonAsLink = styled.button`
     border: 0;
     box-shadow: none;
     padding: 0;
-    margin: 15px 0;
+    margin: 13px 0 0 0;
   }
 `;
 
 export const BPMField = styled.fieldset`
-  margin-top: 10px;
-
   && {
     border: 0;
+    margin-top: 10px;
+    padding: 0;
   }
 
   input[type='number'] {
     display: ${props => (props.editing ? 'inline-block' : 'none')};
   }
 
-  input[type='range'] {
-    display: inline-block;
-    position: relative;
-    left: 35px;
-  }
-
   label {
     display: ${props => (props.editing ? 'none' : 'inline-block')};
+  }
+
+  label,
+  input[type='number'] {
+    margin: 0 40px;
     font-size: 28px;
+  }
+
+  @media only screen and (max-width: 374px) {
+    label,
+    input[type='number'] {
+      margin: 0 20px;
+    }
+  }
+
+  input[type='range'] {
+    display: inline-block;
+    width: 100%;
+    max-width: 300px;
+    margin-top: 10px;
   }
 `;
 
 export const BeatsField = styled.fieldset`
-  padding: 0;
-  margin: 0;
   && {
     border: 0;
   }

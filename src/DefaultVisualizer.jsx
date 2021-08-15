@@ -48,11 +48,11 @@ export function DefaultVisualizer({
 
   useEffect(() => {
     const handleUserClick = e => {
-      if (e.type === 'touchstart' && (e.target.nodeName !== 'CANVAS' || !m.started)) return;
-      if (m.started) {
-        v.current.userClicks.push(m.now);
-        m.clicker?.click();
-      }
+      if (!m.started) return;
+      if (e.type === 'touchstart' && e.target.nodeName !== 'CANVAS') return;
+      if (e.type === 'keydown' && e.key !== 'Control') return;
+      v.current.userClicks.push(m.now);
+      m.clicker?.click();
     };
     window.addEventListener('keydown', handleUserClick);
     window.addEventListener('touchstart', handleUserClick);
