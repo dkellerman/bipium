@@ -29,11 +29,11 @@ export class Visualizer {
     const savedClickIdx = m.getClickIndex(click);
 
     // update now line
-    let curProgress = this.progress;
     if (lastClickIdx > savedClickIdx) {
       this.click = lastClick;
-      curProgress = (1.0 / m.totalSubDivs) * lastClickBarIdx;
+      this.progress = (1.0 / m.totalSubDivs) * lastClickBarIdx;
     } else {
+      const curProgress = this.progress;
       const remProgress = 1.0 - curProgress;
       const remTime = m.barTime * remProgress;
       const perSecond = remProgress / remTime;
@@ -41,8 +41,9 @@ export class Visualizer {
       const deltaP = deltaT * perSecond;
       const newProgress = (curProgress + deltaP) % 1.0;
       this.progress = newProgress;
-      this.lastTime = m.elapsed;
     }
+
+    this.lastTime = m.elapsed;
 
     // update count
     let beat = lastClick.beat || 1;
