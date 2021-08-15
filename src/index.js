@@ -11,7 +11,7 @@ ReactDOM.render(
     <Router>
       <Switch>
         <Route exact path="/">
-          <SpeechProvider appId="fac4c329-8f1a-4b76-a70b-13e0ecfd9213" language="en-US">
+          <SpeechProvider appId={process.env.REACT_APP_SPEECHLY_API_KEY} language="en-US">
             <App />
           </SpeechProvider>
         </Route>

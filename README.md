@@ -9,12 +9,12 @@ A metronome web app. https://bipium.com
 - Tap tempo
 - Tap along, shows feedback for early/late clicks
 - Visualization vaguely imitates a piano roll
+- Mobile-first layout
 - Configurable sounds
 - Set volume
 - Values are stored in the session for stickiness through refreshes
 - All parameters configurable via URL, you can copy a link to the clipboard
 - Experimenting with voice commands, not going so well yet
-
 
 ## Tech
 - React, Javascript, CSS (styled-components)
