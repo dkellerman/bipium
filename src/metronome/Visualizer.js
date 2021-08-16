@@ -26,7 +26,7 @@ export class Visualizer {
     const lastClick = m.lastClick || {};
     const lastClickIdx = m.getClickIndex(lastClick);
     const lastClickBarIdx = m.getClickBarIndex(lastClick);
-    const savedClickIdx = m.getClickIndex(click);
+    const savedClickIdx = m.getClickIndex(click) || 0;
 
     // update now line
     if (lastClickIdx > savedClickIdx) {
