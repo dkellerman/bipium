@@ -71,6 +71,7 @@ function App() {
     workerUrl: '/worker.js',
   });
 
+  const hasSpeech = Boolean(process.env.REACT_APP_SPEECHLY_API_KEY);
   const { speechState, segment, toggleRecording } = useSpeechContext();
 
   const initAudio = () => {
@@ -322,32 +323,34 @@ function App() {
             )}
           </div>
 
-          <div>
-            Experimental: &nbsp;&nbsp;
-            <ListenButton
-              onClick={() => {
-                initAudio();
-                toggleRecording();
-              }}
-            >
-              {speechState === 'Recording' ? 'Stop' : 'Listen'}
-            </ListenButton>
-            {speechState === 'Recording' && (
-              <div>
-                <small>
-                  Try:
-                  <ul>
-                    <li>&#8220;Set tempo to 85&#8221;</li>
-                    <li>&#8220;Start&#8221; / &#8220;Stop&#8221;</li>
-                    <li>&#8220;Increase tempo&#8221;</li>
-                    <li>&#8220;Mute&#8221; / &#8220;Unmute&#8221;</li>
-                    <li>&#8220;Raise volume&#8221;</li>
-                    <li>To end: &#8220;Stop listening&#8221;</li>
-                  </ul>
-                </small>
-              </div>
-            )}
-          </div>
+          {hasSpeech && (
+            <div>
+              Experimental: &nbsp;&nbsp;
+              <ListenButton
+                onClick={() => {
+                  initAudio();
+                  toggleRecording();
+                }}
+              >
+                {speechState === 'Recording' ? 'Stop' : 'Listen'}
+              </ListenButton>
+              {speechState === 'Recording' && (
+                <div>
+                  <small>
+                    Try:
+                    <ul>
+                      <li>&#8220;Set tempo to 85&#8221;</li>
+                      <li>&#8220;Start&#8221; / &#8220;Stop&#8221;</li>
+                      <li>&#8220;Increase tempo&#8221;</li>
+                      <li>&#8220;Mute&#8221; / &#8220;Unmute&#8221;</li>
+                      <li>&#8220;Raise volume&#8221;</li>
+                      <li>To end: &#8220;Stop listening&#8221;</li>
+                    </ul>
+                  </small>
+                </div>
+              )}
+            </div>
+          )}
 
           <Divider>
             <div>
