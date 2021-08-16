@@ -142,6 +142,12 @@ export const SettingsIcon = styled(FiSettings).attrs({
   }
 `;
 
+export const Divider = styled.div`
+  border-top: 1px solid #999;
+  padding-top: 10px;
+  width: 85%;
+`;
+
 export const SideBar = styled.aside`
   position: fixed;
   top: 0;
@@ -158,15 +164,9 @@ export const SideBar = styled.aside`
   div {
     margin: 15px 0;
   }
-`;
 
-export const Divider = styled.div`
-  border-top: 1px solid #999;
-  padding-top: 10px;
-  width: 85%;
-  margin-top: 50px;
-  div {
-    margin: 20px 0;
+  ${Divider} {
+    margin: 40px 0 0 0;
   }
 `;
 
