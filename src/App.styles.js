@@ -208,8 +208,15 @@ export const ButtonAsLink = styled.button`
 export const BPMField = styled.fieldset`
   && {
     border: 0;
-    margin-top: 10px;
+    margin-top: 25px;
     padding: 0;
+  }
+
+  @media only screen and (max-width: 668px) {
+    && {
+      margin-top: 5px;
+      margin-bottom: 5px;
+    }
   }
 
   input[type='number'] {
@@ -262,7 +269,6 @@ export const PlaySubDivsField = styled.fieldset`
 
 export const SwingField = styled.div`
   display: flex;
-  width: 100%;
   margin-top: 10px;
 
   label {
