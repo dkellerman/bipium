@@ -261,11 +261,24 @@ export const PlaySubDivsField = styled.fieldset`
 `;
 
 export const SwingField = styled.div`
-  margin-left: 0;
+  display: flex;
+  width: 100%;
+  margin-top: 10px;
+
   label {
-    display: block;
+    margin-top: auto;
+    margin-bottom: auto;
+    margin-left: 0;
+    margin-right: 8px;
   }
   input {
+    flex: 1;
     display: inline-block;
+    margin-top: auto;
+    margin-bottom: auto;
+  }
+  button {
+    margin-top: auto;
+    margin-bottom: auto;
   }
 `;
