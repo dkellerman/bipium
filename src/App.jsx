@@ -498,7 +498,14 @@ const BPMArea = ({ clicker, onChange }) => {
 
   return (
     <BPMField editing={editingBPM}>
-      <StepButtons val={bpm} setter={setBpm} min={20} max={300} conv={float} />
+      <TapButton
+        onClick={e => {
+          handleTap(e);
+          clicker.click();
+        }}
+      >
+        Tap
+      </TapButton>
 
       <input
         ref={bpmRef}
@@ -521,15 +528,7 @@ const BPMArea = ({ clicker, onChange }) => {
       />
       <label onClick={() => setEditingBPM(true)}>{bpm} BPM</label>
 
-      <TapButton
-        onClick={e => {
-          handleTap(e);
-          clicker.click();
-        }}
-      >
-        Tap
-      </TapButton>
-
+      <StepButtons val={bpm} setter={setBpm} min={20} max={300} conv={float} />
       <br />
 
       <div>

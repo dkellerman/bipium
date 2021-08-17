@@ -34,7 +34,7 @@ export const Layout = styled.main`
     margin: 0 10px;
   }
 
-  input[type='checkbox'] {
+  input[type=checkbox] {
     margin: 0;
     zoom: 2;
     vertical-align: middle;
@@ -42,6 +42,14 @@ export const Layout = styled.main`
 
   small {
     font-size: 14px;
+  }
+
+  input[type=range]::-webkit-slider-thumb {
+    zoom: 1.5;
+    cursor: pointer;
+    @media only screen and (max-width: 768px) {
+      zoom: 2;
+    }
   }
 `;
 
@@ -81,7 +89,7 @@ export const TapButton = styled.button`
   color: black;
   background: white;
   border-radius: 50%;
-  padding: 12px 20px;
+  padding: 15px 25px;
   margin-bottom: 5px;
 `;
 
@@ -94,7 +102,7 @@ export const ListenButton = styled.button`
 export const StepButton = styled.button`
   color: black;
   background: white;
-  padding: 10px;
+  padding: 12px;
   margin: 0 0 12px 5px;
   background: #eee;
 `;
@@ -171,9 +179,12 @@ export const SideBar = styled.aside`
 `;
 
 export const VolumeIcon = styled(TiVolume).attrs({ size: 28 })`
-  vertical-align: 6px;
+  vertical-align: 9px;
   position: relative;
-  left: -6px;
+  left: -9px;
+  @media only screen and (max-width: 768px) {
+    vertical-align: 14px;
+  }
 `;
 
 export const VolumeSlider = styled.div`
@@ -214,12 +225,12 @@ export const BPMField = styled.fieldset`
 
   @media only screen and (max-width: 668px) {
     && {
-      margin-top: 5px;
+      margin-top: 15px;
       margin-bottom: 5px;
     }
   }
 
-  input[type='number'] {
+  input[type=number] {
     display: ${props => (props.editing ? 'inline-block' : 'none')};
   }
 
@@ -228,19 +239,19 @@ export const BPMField = styled.fieldset`
   }
 
   label,
-  input[type='number'] {
+  input[type=number] {
     margin: 0 40px;
     font-size: 28px;
   }
 
   @media only screen and (max-width: 374px) {
     label,
-    input[type='number'] {
+    input[type=number] {
       margin: 0 20px;
     }
   }
 
-  input[type='range'] {
+  input[type=range] {
     display: inline-block;
     width: 100%;
     max-width: 300px;
@@ -262,7 +273,7 @@ export const PlaySubDivsField = styled.fieldset`
     text-align: left;
   }
   select,
-  input[type='checkbox'] {
+  input[type=checkbox] {
     display: inline-block;
   }
 `;
