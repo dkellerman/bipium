@@ -30,6 +30,7 @@ import {
 import { DefaultVisualizer } from './DefaultVisualizer';
 import { useTapBPM, useSetting, useClicker, useMetronome, SOUND_PACKS } from './hooks';
 import { NavBar } from './NavBar';
+import { Range } from './Range';
 
 const int = x => (x ?? x) && parseInt(x, 10);
 const float = x => (x ?? x) && parseFloat(x);
@@ -278,8 +279,7 @@ function App() {
         <SideBar>
           <VolumeSlider>
             <VolumeIcon />
-            <input
-              type="range"
+            <Range
               min={0}
               max={100}
               step={1}
@@ -414,8 +414,7 @@ function App() {
 
             <SwingField>
               <label>Swing: {swing}%</label>{' '}
-              <input
-                type="range"
+              <Range
                 min={0}
                 max={99}
                 step={1}
@@ -532,8 +531,7 @@ const BPMArea = ({ clicker, onChange }) => {
       <br />
 
       <div>
-        <input
-          type="range"
+        <Range
           min={20}
           max={300}
           step={1}

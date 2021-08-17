@@ -121,7 +121,6 @@ export class Metronome {
       ...this.next,
       beats: this.beats,
       subDivs: this.subDivs,
-      pct: (this.next.time % this.barTime) / this.barTime,
     };
 
     // notify clicker to schedule the actual sound - it returns a sound object

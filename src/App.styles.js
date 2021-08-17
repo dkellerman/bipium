@@ -43,14 +43,6 @@ export const Layout = styled.main`
   small {
     font-size: 14px;
   }
-
-  input[type=range]::-webkit-slider-thumb {
-    zoom: 1.5;
-    cursor: pointer;
-    @media only screen and (max-width: 768px) {
-      zoom: 2;
-    }
-  }
 `;
 
 export const Nav = styled.nav`
@@ -179,12 +171,8 @@ export const SideBar = styled.aside`
 `;
 
 export const VolumeIcon = styled(TiVolume).attrs({ size: 28 })`
-  vertical-align: 9px;
   position: relative;
   left: -9px;
-  @media only screen and (max-width: 768px) {
-    vertical-align: 14px;
-  }
 `;
 
 export const VolumeSlider = styled.div`
