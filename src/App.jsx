@@ -36,6 +36,11 @@ const int = x => (x ?? x) && parseInt(x, 10);
 const float = x => (x ?? x) && parseFloat(x);
 const bool = x => (x ?? x) && [true, 1, '1', 'true', 't'].includes(x);
 
+const bpmMin = 20.0;
+const bpmMax = 320.0;
+const bpmDefault = 80.0;
+const validBpm = val => Math.max(Math.min(bpmMax, val || bpmDefault), bpmMin);
+
 function App() {
   const bpm = useRef();
   const [beats, setBeats] = useSetting('beats', 4, int);
@@ -192,21 +197,21 @@ function App() {
           break;
         }
         case 'set_bpm': {
-          if (val && val >= 30 && val <= 320) {
+          if (val && val >= bpmMin && val <= bpmMax) {
             updateBPM(val);
           }
           break;
         }
         case 'increase_bpm': {
           const newBpm = bpm + (val || 5);
-          if (newBpm >= 30 && newBpm <= 320) {
+          if (newBpm >= bpmMin && newBpm <= bpmMax) {
             updateBPM(newBpm);
           }
           break;
         }
         case 'decrease_bpm': {
           const newBpm = bpm - (val || 5);
-          if (newBpm >= 30 && newBpm <= 320) {
+          if (newBpm >= bpmMin && newBpm <= bpmMax) {
             updateBPM(newBpm);
           }
           break;
@@ -468,13 +473,13 @@ function App() {
 }
 
 const BPMArea = ({ clicker, onChange }) => {
-  const [bpm, setBpm] = useSetting('bpm', 80.0, float);
+  const [bpm, setBpm] = useSetting('bpm', bpmDefault, float);
   const [editingBPM, setEditingBPM] = useState(false);
   const { bpm: tappedBPM, handleTap } = useTapBPM(bpm);
   const bpmRef = useRef();
 
   useEffect(() => {
-    setBpm(tappedBPM);
+    setBpm(validBpm(float(tappedBPM) || bpm));
   }, [tappedBPM]);
 
   useEffect(() => {
@@ -507,17 +512,17 @@ const BPMArea = ({ clicker, onChange }) => {
       <input
         ref={bpmRef}
         type="number"
-        min={20}
-        max={320}
+        min={bpmMin}
+        max={bpmMax}
         defaultValue={bpm}
         size={5}
         onBlur={e => {
-          setBpm(Math.max(Math.min(320, float(e.target.value) || bpm), 20));
+          setBpm(validBpm(float(e.target.value) || bpm));
           setEditingBPM(false);
         }}
         onKeyDown={e => {
           if (e.key === 'Enter') {
-            setBpm(Math.max(Math.min(320, float(e.target.value) || bpm), 20));
+            setBpm(validBpm(float(e.target.value) || bpm));
             setEditingBPM(false);
           }
         }}

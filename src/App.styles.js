@@ -3,6 +3,20 @@ import { FiSettings } from 'react-icons/fi';
 import { RiCloseLine } from 'react-icons/ri';
 import { TiVolume } from 'react-icons/ti';
 
+export const darkBlue = '#3071a9';
+export const green = 'forestgreen';
+export const lightBlue = 'aliceblue';
+export const gray = '#999';
+export const lightGray = '#eee';
+export const red = 'red';
+export const black = '#010101';
+export const white = '#fefefe';
+
+export const smallFontSize = '14px';
+export const bodyFontSize = '20px';
+export const largeFontSize = '28px';
+export const xlargeFontSize = '40px';
+
 export const divColor = 0xbbbbbb;
 export const subDivColor = 0x666666;
 export const nowLineColor = 0x00ff00;
@@ -16,6 +30,9 @@ export const countFont = {
 };
 
 export const Layout = styled.main`
+  background: ${white};
+  color: ${black};
+  font-size: ${bodyFontSize};
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -25,7 +42,7 @@ export const Layout = styled.main`
   fieldset {
     margin: 5px 0;
     padding: 10px;
-    border: 1px solid #ccc;
+    border: 1px solid ${lightGray};
     text-align: center;
   }
 
@@ -41,12 +58,12 @@ export const Layout = styled.main`
   }
 
   small {
-    font-size: 14px;
+    font-size: ${smallFontSize};
   }
 `;
 
 export const Nav = styled.nav`
-  background: aliceblue;
+  background: ${lightBlue};
   padding: 0;
   margin: 0;
 
@@ -57,29 +74,29 @@ export const Nav = styled.nav`
     margin: 5px;
     text-align: center !important;
     border: 0;
-    color: forestgreen;
+    color: ${green};
     font-weight: bold;
     font-variant: small-caps;
   }
 `;
 
 export const StartButton = styled.button`
-  color: white;
-  background: forestgreen;
+  color: ${white};
+  background: ${green};
   border-radius: 50%;
   padding: 20px;
   margin-top: 15px;
-  font-size: 40px;
+  font-size: ${xlargeFontSize};
 `;
 
 export const StopButton = styled(StartButton)`
-  color: white;
-  background: red;
+  color: ${white};
+  background: ${red};
 `;
 
 export const TapButton = styled.button`
-  color: black;
-  background: white;
+  color: ${black};
+  background: ${white};
   border-radius: 50%;
   padding: 15px 25px;
   margin-bottom: 5px;
@@ -92,11 +109,11 @@ export const ListenButton = styled.button`
 `;
 
 export const StepButton = styled.button`
-  color: black;
-  background: white;
+  color: ${black};
+  background: ${white};
   padding: 12px;
   margin: 0 0 12px 5px;
-  background: #eee;
+  background: ${lightGray};
 `;
 
 export const AboutPage = styled.main`
@@ -143,7 +160,7 @@ export const SettingsIcon = styled(FiSettings).attrs({
 `;
 
 export const Divider = styled.div`
-  border-top: 1px solid #999;
+  border-top: 1px solid ${gray};
   padding-top: 10px;
   width: 85%;
 `;
@@ -154,7 +171,7 @@ export const SideBar = styled.aside`
   left: 0;
   height: 100vh;
   width: 320px;
-  background: aliceblue;
+  background: ${lightBlue};
   z-index: 1000;
   padding-left: 32px;
   padding-top: 58px;
@@ -188,7 +205,7 @@ export const SoundPack = styled.div`
   }
   select {
     display: inline-block;
-    background: white;
+    background: ${white};
   }
 `;
 
@@ -229,7 +246,7 @@ export const BPMField = styled.fieldset`
   label,
   input[type=number] {
     margin: 0 40px;
-    font-size: 28px;
+    font-size: ${largeFontSize};
   }
 
   @media only screen and (max-width: 374px) {
