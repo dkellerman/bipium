@@ -498,10 +498,8 @@ const BPMArea = ({ clicker, onChange }) => {
   return (
     <BPMField editing={editingBPM}>
       <TapButton
-        onClick={e => {
-          handleTap(e);
-          clicker.click();
-        }}
+        onClick={e => handleTap(e)}
+        onMouseDown={() => clicker.click()}
       >
         Tap
       </TapButton>
