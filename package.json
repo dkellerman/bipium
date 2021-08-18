@@ -4,7 +4,6 @@
   "private": true,
   "dependencies": {
     "@inlet/react-pixi": "^6.6.3",
-    "@speechly/react-client": "^0.0.21",
     "copy-to-clipboard": "^3.3.1",
     "domexception": "^2.0.1",
     "local-storage-fallback": "^4.1.2",

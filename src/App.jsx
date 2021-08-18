@@ -6,7 +6,6 @@ import useKeypress from 'react-use-keypress';
 import { Link } from 'react-router-dom';
 import localStorage from 'local-storage-fallback';
 import { AudioContext } from 'standardized-audio-context';
-import { useSpeechContext } from '@speechly/react-client';
 import {
   Layout,
   StartButton,
@@ -77,9 +76,6 @@ function App() {
     swing: playSubDivs && subDivs % 2 === 0 ? swing : 0,
     workerUrl: '/worker.js',
   });
-
-  const hasSpeech = Boolean(process.env.REACT_APP_SPEECHLY_API_KEY);
-  const { speechState, segment, toggleRecording } = useSpeechContext();
 
   const initAudio = () => {
     if (audioContext.current.state === 'suspended') audioContext.current.resume();
@@ -168,82 +164,6 @@ function App() {
     };
   }, [started]);
 
-  // experimental speech handling
-  useEffect(() => {
-    if (segment?.isFinal) {
-      console.log('=>', segment.words.map(w => w.value).join(' '));
-      console.log('intent:', segment.intent.intent);
-      console.log('entities:', segment.entities);
-
-      const val = float(segment.entities?.length && segment.entities[0].value);
-      switch (segment.intent.intent) {
-        case 'start': {
-          start();
-          break;
-        }
-        case 'stop': {
-          stop();
-          break;
-        }
-        case 'stop_listening': {
-          toggleRecording();
-          break;
-        }
-        case 'mute': {
-          setMuted(true);
-          break;
-        }
-        case 'unumute': {
-          setMuted(false);
-          break;
-        }
-        case 'set_bpm': {
-          if (val && val >= bpmMin && val <= bpmMax) {
-            updateBPM(val);
-          }
-          break;
-        }
-        case 'increase_bpm': {
-          const newBpm = bpm + (val || 5);
-          if (newBpm >= bpmMin && newBpm <= bpmMax) {
-            updateBPM(newBpm);
-          }
-          break;
-        }
-        case 'decrease_bpm': {
-          const newBpm = bpm - (val || 5);
-          if (newBpm >= bpmMin && newBpm <= bpmMax) {
-            updateBPM(newBpm);
-          }
-          break;
-        }
-        case 'set_beats': {
-          if (val && val >= 1 && val <= 12) {
-            setBeats(val);
-          }
-          break;
-        }
-        case 'play_subdivs': {
-          setPlaySubDivs(true);
-          break;
-        }
-        case 'no_subdivs': {
-          setPlaySubDivs(false);
-          break;
-        }
-        case 'set_sub_divs': {
-          if (val && val >= 2 && val <= 8) {
-            setSubDivs(val);
-          }
-          break;
-        }
-        default: {
-          break;
-        }
-      }
-    }
-  }, [segment]);
-
   useEffect(() => {
     if (showSideBar) {
       setCopiedURL(null);
@@ -328,35 +248,6 @@ function App() {
               </div>
             )}
           </div>
-
-          {hasSpeech && (
-            <div>
-              Experimental: &nbsp;&nbsp;
-              <ListenButton
-                onClick={() => {
-                  initAudio();
-                  toggleRecording();
-                }}
-              >
-                {speechState === 'Recording' ? 'Stop' : 'Listen'}
-              </ListenButton>
-              {speechState === 'Recording' && (
-                <div>
-                  <small>
-                    Try:
-                    <ul>
-                      <li>&#8220;Set tempo to 85&#8221;</li>
-                      <li>&#8220;Start&#8221; / &#8220;Stop&#8221;</li>
-                      <li>&#8220;Increase tempo&#8221;</li>
-                      <li>&#8220;Mute&#8221; / &#8220;Unmute&#8221;</li>
-                      <li>&#8220;Raise volume&#8221;</li>
-                      <li>To end: &#8220;Stop listening&#8221;</li>
-                    </ul>
-                  </small>
-                </div>
-              )}
-            </div>
-          )}
 
           <Divider>
             <div>
