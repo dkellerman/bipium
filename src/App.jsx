@@ -19,7 +19,6 @@ import {
   SideBar,
   SoundPack,
   ButtonAsLink,
-  ListenButton,
   BPMField,
   BeatsField,
   PlaySubDivsField,
@@ -52,7 +51,6 @@ function App() {
   const [soundPack, setSoundPack] = useSetting('soundPack', 'defaults', String);
   const [visualizers] = useSetting('visualizers', 'default', val => val.split(','));
 
-  const [muted, setMuted] = useState(false);
   const [showSideBar, setShowSideBar] = useState(false);
   const [copiedURL, setCopiedURL] = useState(null);
   const [, _update] = useState(false);
@@ -116,10 +114,6 @@ function App() {
       m.update({ bpm: val });
     }
   }, []);
-
-  useEffect(() => {
-    clicker.setVolume(muted ? 0 : volume);
-  }, [volume, muted]);
 
   useEffect(() => {
     clicker.setSounds(SOUND_PACKS[soundPack || 'defaults']);
@@ -353,7 +347,7 @@ function App() {
           <StopButton
             onClick={e => {
               e.preventDefault();
-              setStarted(false);
+              stop();
             }}
           >
             Stop
@@ -394,10 +388,7 @@ const BPMArea = ({ clicker, onChange }) => {
 
   return (
     <BPMField editing={editingBPM}>
-      <TapButton
-        onClick={e => handleTap(e)}
-        onMouseDown={() => clicker.click()}
-      >
+      <TapButton onClick={e => handleTap(e)} onMouseDown={() => clicker.click()}>
         Tap
       </TapButton>
 

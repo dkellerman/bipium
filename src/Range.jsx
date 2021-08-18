@@ -90,7 +90,7 @@ export const Range = styled.input.attrs({ type: 'range' })`
 
     /* TODO: Use one of the selectors from https://stackoverflow.com/a/20541859/7077589 and figure out
     how to remove the vertical space around the range input in IE */
-    @supports (-ms-ime-align:auto) {
+    @supports (-ms-ime-align: auto) {
       /* Pre-Chromium Edge only styles, selector taken from hhttps://stackoverflow.com/a/32202953/7077589 */
       & {
         margin: 0;

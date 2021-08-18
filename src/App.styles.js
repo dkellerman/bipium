@@ -51,7 +51,7 @@ export const Layout = styled.main`
     margin: 0 10px;
   }
 
-  input[type=checkbox] {
+  input[type='checkbox'] {
     margin: 0;
     zoom: 2;
     vertical-align: middle;
@@ -100,12 +100,6 @@ export const TapButton = styled.button`
   border-radius: 50%;
   padding: 15px 25px;
   margin-bottom: 5px;
-`;
-
-export const ListenButton = styled.button`
-  border-radius: 50%;
-  padding: 13px;
-  margin-top: 6px;
 `;
 
 export const StepButton = styled.button`
@@ -235,7 +229,7 @@ export const BPMField = styled.fieldset`
     }
   }
 
-  input[type=number] {
+  input[type='number'] {
     display: ${props => (props.editing ? 'inline-block' : 'none')};
   }
 
@@ -244,19 +238,19 @@ export const BPMField = styled.fieldset`
   }
 
   label,
-  input[type=number] {
+  input[type='number'] {
     margin: 0 40px;
     font-size: ${largeFontSize};
   }
 
   @media only screen and (max-width: 374px) {
     label,
-    input[type=number] {
+    input[type='number'] {
       margin: 0 20px;
     }
   }
 
-  input[type=range] {
+  input[type='range'] {
     display: inline-block;
     width: 100%;
     max-width: 300px;
@@ -278,7 +272,7 @@ export const PlaySubDivsField = styled.fieldset`
     text-align: left;
   }
   select,
-  input[type=checkbox] {
+  input[type='checkbox'] {
     display: inline-block;
   }
 `;
