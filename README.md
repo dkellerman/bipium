@@ -25,4 +25,4 @@ A metronome web app. https://bipium.com
 The `src/metronome` directory contains an app-independent metronome implementation with no library dependencies.
 
 ## Example code
-- See example of reusing the Metronome code at `public/example.html` https://bipium.com/example.html
+- See example of reusing the Metronome code in `public/example.html`
