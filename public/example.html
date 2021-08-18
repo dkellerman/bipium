@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Bipium Metronome Example</title>
+    <script src="./bipium.js"></script>
+
+    <script>
+      window.onload = function() {
+        m = new Bipium.createMetronome({
+          workerUrl: './worker.js',
+          bpm: 80,
+          subDivs: 1
+        });
+      };
+    </script>
+  </head>
+
+  <body>
+    <div id="root">
+      <h2>Bipium Basic Metronome Example</h2>
+
+      <label>BPM:</label>
+      <input
+        type="number"
+        value="80"
+        min="20"
+        max="300"
+        step="1"
+        onchange="m.update({ bpm: parseFloat(event.target.value) || 80 })"
+      />
+
+      <input
+        type="checkbox"
+        onchange="m.update({ subDivs: event.target.checked ? 4 : 1 })"
+      />
+      <label>Play sub divisions</label>
+
+      <p>
+        <button onclick="m.start()">Start</button>
+        <button onclick="m.stop()">Stop</button>
+      </p>
+    </div>
+  </body>
+</html>

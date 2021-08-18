@@ -8,7 +8,7 @@ export class Metronome {
       // basic config - use update() to adjust on the fly:
       bpm = 80,
       beats = 4,
-      subDivs = 4,
+      subDivs = 1,
       swing = 0,
       workerUrl = null, // supply URL for worker thread, otherwise uses local timer
 

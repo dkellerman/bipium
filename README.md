@@ -23,3 +23,6 @@ A metronome web app. https://bipium.com
 - microsecond time syncing via AudioContext
 
 The `src/metronome` directory contains an app-indepdent metronome implementation with no library dependencies.
+
+## Example code
+- See example of reusing the Metronome code at `public/example.html` https://bipium.com/example.html
