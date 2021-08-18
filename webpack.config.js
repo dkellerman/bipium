@@ -6,7 +6,7 @@ module.exports = {
     path.resolve(__dirname, 'src/metronome/index.js')
   ],
   output: {
-    path: path.resolve(__dirname, 'public'),
+    path: path.resolve(__dirname, 'public/dist'),
     filename: 'bipium.js',
     libraryTarget: 'var',
     library: 'Bipium',
