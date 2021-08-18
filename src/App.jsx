@@ -72,7 +72,7 @@ function App() {
     beats,
     subDivs: playSubDivs ? subDivs : 1,
     swing: playSubDivs && subDivs % 2 === 0 ? swing : 0,
-    workerUrl: '/worker.js',
+    workerUrl: '/dist/worker.min.js',
   });
 
   const initAudio = () => {

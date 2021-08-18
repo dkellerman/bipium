@@ -4,12 +4,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Bipium Metronome Example</title>
-    <script src="./bipium.js"></script>
+    <script src="./dist/bipium.js"></script>
 
     <script>
       window.onload = function() {
-        m = new Bipium.createMetronome({
-          workerUrl: './worker.js',
+        m = Bipium.createMetronome({
+          workerUrl: './dist/worker.min.js',
           bpm: 80,
           subDivs: 1
         });
