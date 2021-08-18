@@ -304,3 +304,10 @@ export const SwingField = styled.div`
     margin-bottom: auto;
   }
 `;
+
+export const VisualizerField = styled.fieldset`
+  box-shadow: 3px 3px 3px ${lightGray};
+  && {
+    padding-bottom: 5px;
+  }
+`;

@@ -26,6 +26,7 @@ import {
   PlaySubDivsField,
   SwingField,
   Divider,
+  VisualizerField,
 } from './App.styles';
 import { DefaultVisualizer } from './DefaultVisualizer';
 import { useTapBPM, useSetting, useClicker, useMetronome, SOUND_PACKS } from './hooks';
@@ -442,9 +443,9 @@ function App() {
       </PlaySubDivsField>
 
       {visualizers.map((id, idx) => (
-        <fieldset key={`v-${idx}`}>
+        <VisualizerField key={`v-${idx}`}>
           <DefaultVisualizer id={id} metronome={m} />
-        </fieldset>
+        </VisualizerField>
       ))}
 
       <div>
