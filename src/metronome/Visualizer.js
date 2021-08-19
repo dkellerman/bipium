@@ -32,6 +32,9 @@ export class Visualizer {
     if (lastClickIdx > savedClickIdx) {
       this.click = lastClick;
       this.progress = (1.0 / m.totalSubDivs) * lastClickBarIdx;
+      if (lastClickBarIdx % 2 === 1) {
+        this.progress += ((1.0 / m.totalSubDivs) * (m.swing / 100));
+      }
     } else {
       const curProgress = this.progress;
       const remProgress = 1.0 - curProgress;
