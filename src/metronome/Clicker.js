@@ -2,16 +2,18 @@ export const DEFAULT_SOUNDS = {
   name: 'Defaults',
   bar: 880.0,
   beat: 440.0,
-  subDiv: 220.0,
+  subDiv: [220.0, .5],
   user: 660.0,
 };
 
 export class Clicker {
   constructor({ audioContext, volume = 100, sounds = DEFAULT_SOUNDS, defaultClickLength = 0.05 }) {
-    this.volume = volume;
     this.audioContext = audioContext;
+    this.volume = volume;
     this.clickLength = defaultClickLength;
     this.loading = false;
+    this.gainNode = this.audioContext.createGain();
+    this.gainNode.connect(this.audioContext.destination);
     this.setSounds(sounds);
   }
 
@@ -23,8 +25,11 @@ export class Clicker {
   async fetchSounds(sounds) {
     this.loading = true;
     for (const k in sounds) {
-      if (k !== 'name' && typeof sounds[k] === 'string') {
-        sounds[k] = await fetchAudioBuffer(this.audioContext, sounds[k]);
+      if (k === 'name') continue;
+      if (!Array.isArray(sounds[k])) sounds[k] = [sounds[k], 1.0];
+      const [sound] = sounds[k];
+      if (typeof sound === 'string') {
+        sounds[k][0] = await fetchAudioBuffer(this.audioContext, sound);
       }
     }
     this.loading = false;
@@ -51,7 +56,12 @@ export class Clicker {
       sound = sounds.subDiv || sounds.beat;
     }
 
-    const audioObj = this.playSoundAt(sound, time, this.clickLength);
+    let relativeVolume = 1.0;
+    if (Array.isArray(sound)) {
+      [sound, relativeVolume] = sound;
+    }
+
+    const audioObj = this.playSoundAt(sound, time, this.clickLength, relativeVolume);
     return audioObj;
   }
 
@@ -59,31 +69,29 @@ export class Clicker {
     click?.obj?.stop(0);
   }
 
-  playSoundAt(sound, time, clickLength) {
-    const gainNode = this.audioContext.createGain();
-    gainNode.connect(this.audioContext.destination);
-    gainNode.gain.setValueAtTime(this.volume / 100, time);
-
-    let audio;
+  playSoundAt(sound, time, clickLength, relativeVolume = 1.0) {
+    let audioNode;
     if (typeof sound === 'number') {
       // freq
-      audio = this.audioContext.createOscillator();
-      audio.connect(gainNode);
-      audio.frequency.value = sound;
-      audio.start(time);
-      audio.stop(time + clickLength);
+      audioNode = this.audioContext.createOscillator();
+      audioNode.connect(this.gainNode);
+      audioNode.frequency.value = sound;
+      audioNode.start(time);
+      audioNode.stop(time + clickLength);
     } else {
       // buffer
-      audio = this.audioContext.createBufferSource();
+      audioNode = this.audioContext.createBufferSource();
       try {
-        audio.buffer = sound;
+        audioNode.buffer = sound;
       } catch (e) {
         console.error(e);
       }
-      audio.connect(gainNode);
-      audio.start(time, 0, clickLength);
+      audioNode.connect(this.gainNode);
+      audioNode.start(time, 0, clickLength);
     }
-    return audio;
+
+    this.gainNode.gain.setValueAtTime((this.volume * relativeVolume) / 100, time);
+    return audioNode;
   }
 
   click(t = 0) {

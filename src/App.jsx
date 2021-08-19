@@ -100,7 +100,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (clicker) clicker.volume = muted ? 0 : volume;
+    if (clicker) clicker.setVolume(muted ? 0 : volume);
   }, [volume, muted]);
 
   useEffect(() => {
