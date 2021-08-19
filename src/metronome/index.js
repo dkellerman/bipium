@@ -1,6 +1,7 @@
 import { Metronome } from './Metronome';
 import { Clicker } from './Clicker';
 
+// utility method for creating a default metronome/clicker setup
 export function createMetronome(
   mSettings = {},
   clickerSettings = {},

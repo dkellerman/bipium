@@ -36,7 +36,7 @@ export class Clicker {
   }
 
   scheduleClickSound({ time, subDiv, beat, beats }) {
-    // console.log('sch click', beat, subDiv);
+    // console.log('sch click', beat, subDiv, this.volume);
     if (this.loading) return;
 
     let sound;

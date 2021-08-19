@@ -48,6 +48,7 @@ function App() {
   const [swing, setSwing] = useSetting('swing', 0, int);
   const [playSubDivs, setPlaySubDivs] = useSetting('playSubDivs', false, bool);
   const [volume, setVolume] = useSetting('volume', 100, int, localStorage);
+  const [muted, setMuted] = useState(false);
   const [started, setStarted] = useState(false);
   const [soundPack, setSoundPack] = useSetting('soundPack', 'defaults', String);
   const [visualizers] = useSetting('visualizers', 'default', val => val.split(','));
@@ -78,25 +79,29 @@ function App() {
 
   const noSleep = useRef(new NoSleep([]));
 
-  const initAudio = () => {
+  const initAudio = useCallback(() => {
     if (audioContext.current.state === 'suspended') audioContext.current.resume();
-  };
+  }, [audioContext]);
 
-  const start = () => {
+  const start = useCallback(() => {
     initAudio();
     noSleep.current?.enable();
     setStarted(true);
-  };
+  }, []);
 
-  const stop = () => {
+  const stop = useCallback(() => {
     noSleep.current?.disable();
     setStarted(false);
-  };
+  }, []);
 
-  const toggle = () => {
+  const toggle = useCallback(() => {
     initAudio();
     setStarted(s => !s);
-  };
+  }, []);
+
+  useEffect(() => {
+    if (clicker) clicker.volume = muted ? 0 : volume;
+  }, [volume, muted]);
 
   useEffect(() => {
     if (window.location.search.indexOf('?reset') === 0) window.location.replace(`/`);
@@ -203,7 +208,10 @@ function App() {
       {showSideBar && (
         <SideBar>
           <VolumeSlider>
-            <VolumeIcon />
+            <VolumeIcon
+              muted={muted}
+              onClick={() => setMuted(val => !val)}
+            />
             <Range
               min={0}
               max={100}

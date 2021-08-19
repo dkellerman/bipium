@@ -1,7 +1,7 @@
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 import { FiSettings } from 'react-icons/fi';
 import { RiCloseLine } from 'react-icons/ri';
-import { TiVolume } from 'react-icons/ti';
+import { TiVolume, TiVolumeMute } from 'react-icons/ti';
 
 export const darkBlue = '#3071a9';
 export const green = 'forestgreen';
@@ -181,10 +181,26 @@ export const SideBar = styled.aside`
   }
 `;
 
-export const VolumeIcon = styled(TiVolume).attrs({ size: 28 })`
+const volumeIconSize = 28;
+const volumeIconStyle = css`
   position: relative;
   left: -9px;
+  &:hover {
+    cursor: pointer;
+  }
 `;
+
+const VolumeIconUnmuted = styled(TiVolume).attrs({ size: volumeIconSize })`
+  ${volumeIconStyle}
+`;
+
+const VolumeIconMuted = styled(TiVolumeMute).attrs({ size: volumeIconSize })`
+  ${volumeIconStyle}
+`;
+
+export const VolumeIcon = ({ muted = false, ...props }) => {
+  return muted ? <VolumeIconMuted {...props} /> : <VolumeIconUnmuted {...props} />;
+};
 
 export const VolumeSlider = styled.div`
   input {
