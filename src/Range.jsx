@@ -4,18 +4,36 @@ import { darkBlue, black, white, lightBlue } from './App.styles';
 
 // css generated from http://danielstern.ca/range.css
 
-export const Range = ({ debounceTimeout = 0, ...props }) => {
-  return <StyledRange debounceTimeout={debounceTimeout} {...props} />;
+export const Range = ({ ticks = [], debounceTimeout = 0, ...props }) => {
+  return (
+    <>
+      <StyledRange debounceTimeout={debounceTimeout} {...props} />
+      {Boolean(ticks?.length) && (
+        <Ticks>
+          {ticks.map(val => (
+            <Tick
+              key={`tick-${val}`}
+              pct={(val - props.min)/(props.max - props.min)}
+              onClick={e => {
+                props.onChange?.({ ...e, target: { value: val }});
+              }}
+            >{val}</Tick>
+          ))}
+        </Ticks>
+      )}
+    </>
+  );
 };
 
 const StyledRange = styled(DebounceInput).attrs({ type: 'range' })`
   ${({ thumbWidth = '36px', thumbHeight = '36px' }) => css`
-    width: 100%;
-    margin: 13.8px 0;
-    background-color: transparent;
-    -webkit-appearance: none;
     && {
       border: 0;
+      margin: 13.8px 0;
+      background-color: transparent;
+      -webkit-appearance: none;
+      padding-left: 0;
+      padding-right: 0;
     }
 
     &:focus {
@@ -104,3 +122,33 @@ const StyledRange = styled(DebounceInput).attrs({ type: 'range' })`
     }
   `}
 `;
+
+const Ticks = styled.div`
+  display: flex;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 38px;
+  padding-right: 9px;
+  position: relative;
+  top: -18px;
+`;
+
+const Tick = styled.span`
+  position: relative;
+  left: ${({ pct }) => `calc((100% - 36px) * ${pct})`};
+  display: flex;
+  justify-content: center;
+  width: 1px;
+  background: gray;
+  font-size: 18px;
+
+  &:hover {
+    cursor: pointer;
+  }
+
+  // cap the height of the tick & push text down, so the tick renders as a little line and the text doesn't overlap the line. Also add margin, so the container expands enough that the next element you'll add won't overlap the ticks.
+  height: 10px;
+  line-height: 50px;
+  margin-bottom: 20px;
+`;
+

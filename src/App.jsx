@@ -211,7 +211,7 @@ function App() {
               onChange={e => {
                 setVolume(int(e.target.value));
               }}
-              debounceTimeout={100}
+              debounceTimeout={10}
             />
           </VolumeSlider>
 
@@ -319,7 +319,7 @@ function App() {
                   setSwing(int(e.target.value));
                 }}
                 disabled={subDivs % 2 > 0}
-                debounceTimeout={100}
+                debounceTimeout={50}
               />
               <StepButtons
                 val={swing}
@@ -424,12 +424,13 @@ const BPMArea = ({ clicker, onChange }) => {
 
       <div>
         <Range
-          min={20}
-          max={300}
+          min={bpmMin}
+          max={bpmMax}
           step={1}
           value={bpm}
           onChange={e => setBpm(float(e.target.value))}
-          debounceTimeout={100}
+          debounceTimeout={0}
+          ticks={[bpmMin, 80, 120, 200, bpmMax]}
         />
       </div>
     </BPMField>

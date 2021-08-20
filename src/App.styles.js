@@ -44,6 +44,7 @@ export const Layout = styled.main`
     padding: 10px;
     border: 1px solid ${lightGray};
     text-align: center;
+    white-space: nowrap;
   }
 
   input,
@@ -257,6 +258,7 @@ export const BPMField = styled.fieldset`
   input[type='number'] {
     margin: 0 40px;
     font-size: ${largeFontSize};
+    width: 100px;
   }
 
   @media only screen and (max-width: 374px) {
