@@ -293,7 +293,7 @@ function App() {
           checked={playSubDivs}
           onChange={e => setPlaySubDivs(e.target.checked)}
         />
-        <label>Play sub divs</label>
+        <label>Play {!playSubDivs && 'sub divs'}</label>
 
         {playSubDivs && (
           <>
@@ -309,7 +309,7 @@ function App() {
             <StepButtons val={subDivs} setter={setSubDivs} min={2} max={8} />
 
             <SwingField>
-              <label>Swing: {swing}%</label>{' '}
+              <label onClick={() => setSwing(0)}>Swing: {swing}%</label>{' '}
               <Range
                 min={0}
                 max={99}

@@ -82,7 +82,7 @@ export function DefaultVisualizer({
     }
 
     // show timing info for user clicks
-    if (showClicks) {
+    if (showClicks && v.current.qType) {
       const t = v.current.qType;
       if (t === 'early') {
         descRef.current.text = 'Early';
@@ -138,7 +138,6 @@ export function DefaultVisualizer({
           />
 
           <Text
-            text={''}
             ref={descRef}
             x={width / 2}
             y={height - 20}

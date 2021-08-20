@@ -130,7 +130,7 @@ const Ticks = styled.div`
   padding-left: 38px;
   padding-right: 9px;
   position: relative;
-  top: -18px;
+  top: -16px;
 `;
 
 const Tick = styled.span`
@@ -147,7 +147,7 @@ const Tick = styled.span`
   }
 
   // cap the height of the tick & push text down, so the tick renders as a little line and the text doesn't overlap the line. Also add margin, so the container expands enough that the next element you'll add won't overlap the ticks.
-  height: 10px;
+  height: 15px;
   line-height: 50px;
   margin-bottom: 20px;
 `;

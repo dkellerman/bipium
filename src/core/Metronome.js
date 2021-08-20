@@ -22,7 +22,7 @@ export class Metronome {
       // detailed configuration:
       lookaheadInterval = 0.025,
       scheduleAheadTime = 0.1,
-      startDelayTime = 0.1,
+      startDelayTime = 0.2,
     } = settings;
 
     this.onStart = onStart;
