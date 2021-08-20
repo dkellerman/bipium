@@ -283,7 +283,10 @@ export const BeatsField = styled.fieldset`
   select {
     display: inline-block;
   }
-`;
+  button {
+    margin-bottom: 0;
+  }
+ `;
 
 export const PlaySubDivsField = styled.fieldset`
   && {

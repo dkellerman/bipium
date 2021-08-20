@@ -211,7 +211,7 @@ function App() {
               onChange={e => {
                 setVolume(int(e.target.value));
               }}
-              debounceTimeout={10}
+              debounceTimeout={0}
             />
           </VolumeSlider>
 
@@ -319,7 +319,7 @@ function App() {
                   setSwing(int(e.target.value));
                 }}
                 disabled={subDivs % 2 > 0}
-                debounceTimeout={50}
+                debounceTimeout={0}
               />
               <StepButtons
                 val={swing}
