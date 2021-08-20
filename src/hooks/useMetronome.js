@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { Metronome } from '../metronome';
+import { Metronome } from '../core';
 
 export function useMetronome(settings) {
   const m = useRef(new Metronome(settings));
