@@ -1,9 +1,14 @@
 import styled, { css } from 'styled-components';
+import { DebounceInput } from 'react-debounce-input';
 import { darkBlue, black, white, lightBlue } from './App.styles';
 
 // css generated from http://danielstern.ca/range.css
 
-export const Range = styled.input.attrs({ type: 'range' })`
+export const Range = ({ debounceTimeout = 0, ...props }) => {
+  return <StyledRange debounceTimeout={debounceTimeout} {...props} />;
+};
+
+const StyledRange = styled(DebounceInput).attrs({ type: 'range' })`
   ${({ thumbWidth = '36px', thumbHeight = '36px' }) => css`
     width: 100%;
     margin: 13.8px 0;
