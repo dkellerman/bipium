@@ -13,6 +13,18 @@
           bpm: 80,
           subDivs: 1
         });
+
+        v = new Bipium.Visualizer({ metronome: m });
+
+        const count = document.getElementById("count");
+        const progress = document.getElementById("progress");
+
+        requestAnimationFrame(function redraw() {
+          v.update();
+          count.innerText = v.count ? v.count.join('-') : '';
+          progress.style.width = `${(v.progress || 0) * 100}%`;
+          requestAnimationFrame(redraw);
+        });
       };
     </script>
   </head>
@@ -38,9 +50,15 @@
       <label>Play sub divisions</label>
 
       <p>
-        <button onclick="m.start()">Start</button>
-        <button onclick="m.stop()">Stop</button>
+        <button onclick="m.start(); v.start();">Start</button>
+        <button onclick="m.stop(); v.stop()">Stop</button>
       </p>
+
+      <!-- visualizer -->
+      <div style="width: 300px; background: #eee">
+        <div id="progress" style="background: green; width: 0; height: 10px;"></div>
+        <div id="count" style="text-align: center; font-size: 40px; background: white;"></div>
+      </div>
     </div>
   </body>
 </html>

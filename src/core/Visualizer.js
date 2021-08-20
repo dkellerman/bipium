@@ -7,7 +7,7 @@ export class Visualizer {
   start() {
     this.progress = 0;
     this.lastTime = 0;
-    this.click = this.m.lastClick || {};
+    this.savedClick = this.m.lastClick || {};
     this.count = [];
     this.qType = null;
     this.userClicks = [];
@@ -17,21 +17,23 @@ export class Visualizer {
     this.progress = 0;
     this.count = [];
     this.userClicks = [];
+    this.savedClick = null;
     this.qType = null;
   }
 
   update() {
-    const { m, click, lastTime, userClicks, qThreshold } = this;
-    if (m.elapsed < 0) return;
+    const { m, savedClick, lastTime, userClicks, qThreshold } = this;
+    if (!m.started || m.elapsed < 0) return;
 
+    const savedClickIdx = m.getClickIndex(savedClick || {}) || 0;
     const lastClick = m.lastClick || {};
-    const lastClickIdx = m.getClickIndex(lastClick);
-    const lastClickBarIdx = m.getClickBarIndex(lastClick);
-    const savedClickIdx = m.getClickIndex(click || {}) || 0;
+    // get last click index based on the saved click's number of sub divs
+    const lastClickIdx = m.getClickIndex(lastClick, savedClick.subDivs);
 
     // update now line
     if (lastClickIdx > savedClickIdx) {
-      this.click = lastClick;
+      this.savedClick = lastClick;
+      const lastClickBarIdx = m.getClickBarIndex(lastClick);
       this.progress = (1.0 / m.totalSubDivs) * lastClickBarIdx;
       if (lastClickBarIdx % 2 === 1) {
         this.progress += (1.0 / m.totalSubDivs) * (m.swing / 100);
@@ -55,7 +57,7 @@ export class Visualizer {
     this.count = m.subDivs > 1 ? [beat, sub] : [beat];
 
     // show timing info for user clicks
-    if (userClicks.length) {
+    if (userClicks?.length) {
       const t = userClicks.pop();
       while (userClicks.length) userClicks.pop(); // ignore old clicks
 

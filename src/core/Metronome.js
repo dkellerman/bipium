@@ -215,12 +215,12 @@ export class Metronome {
     return clicks?.[clicks.length - 1];
   }
 
-  getClickIndex(click) {
-    return (click.bar - 1) * this.beats + (click.beat - 1) * this.subDivs + (click.subDiv - 1);
+  getClickIndex(click, subDivs = null) {
+    return (click.bar - 1) * this.beats + (click.beat - 1) * (subDivs ?? this.subDivs) + (click.subDiv - 1);
   }
 
-  getClickBarIndex(click) {
-    return (click.beat - 1) * this.subDivs + (click.subDiv - 1);
+  getClickBarIndex(click, subDivs = null) {
+    return (click.beat - 1) * (subDivs ?? this.subDivs) + (click.subDiv - 1);
   }
 
   // returns adjustment required in seconds to make t fall on the nearest grid line
