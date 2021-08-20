@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { Clicker, DEFAULT_SOUNDS } from '../metronome';
+import { Clicker, DEFAULT_SOUNDS } from '../core';
 
 export const SOUND_PACKS = {
   defaults: {

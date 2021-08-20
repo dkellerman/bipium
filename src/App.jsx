@@ -79,12 +79,7 @@ function App() {
 
   const noSleep = useRef(new NoSleep([]));
 
-  const initAudio = useCallback(() => {
-    if (audioContext.current.state === 'suspended') audioContext.current.resume();
-  }, [audioContext]);
-
   const start = useCallback(() => {
-    initAudio();
     noSleep.current?.enable();
     setStarted(true);
   }, []);
@@ -95,7 +90,6 @@ function App() {
   }, []);
 
   const toggle = useCallback(() => {
-    initAudio();
     setStarted(s => !s);
   }, []);
 

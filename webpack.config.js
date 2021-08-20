@@ -3,11 +3,11 @@ const path = require('path');
 module.exports = {
   entry: [
     'regenerator-runtime/runtime.js',
-    path.resolve(__dirname, 'src/metronome/index.js')
+    path.resolve(__dirname, 'src/core/index.js')
   ],
   output: {
     path: path.resolve(__dirname, 'public/dist'),
-    filename: 'bipium.js',
+    filename: 'bipium-core.js',
     libraryTarget: 'var',
     library: 'Bipium',
   },

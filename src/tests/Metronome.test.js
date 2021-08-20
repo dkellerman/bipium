@@ -1,5 +1,5 @@
 import { act } from 'react-dom/test-utils';
-import { Metronome, Visualizer, Clicker, DEFAULT_SOUNDS } from '../metronome';
+import { Metronome, Visualizer, Clicker, DEFAULT_SOUNDS } from '../core';
 import { AudioContext } from 'standardized-audio-context-mock';
 
 let now = 0.0;

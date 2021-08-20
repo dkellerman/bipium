@@ -76,6 +76,10 @@ export class Metronome {
 
     this.worker.postMessage('start');
     this.onStart();
+
+    if (this.clicker?.audioContext?.state === 'suspended') {
+      this.clicker.audioContext.resume();
+    }
   }
 
   stop() {

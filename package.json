@@ -40,7 +40,7 @@
     "build": "CI='' react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "build:lib": "webpack"
+    "build:core": "webpack"
   },
   "eslintConfig": {
     "extends": "react-app"

@@ -22,7 +22,7 @@ A metronome web app. https://bipium.com
 - create-react-app for UI, deployed to Vercel
 - microsecond time syncing via AudioContext
 
-The `src/metronome` directory contains an app-independent metronome implementation with no library dependencies.
+The `src/core` directory contains an app-independent metronome implementation with no library dependencies.
 
 ## Example code
 - See example of reusing the Metronome code in `public/example.html`

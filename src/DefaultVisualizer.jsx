@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useRef, useEffect, useCallback } from 'react';
 import { Stage, Graphics, Text } from '@inlet/react-pixi';
-import { Visualizer } from './metronome';
+import { Visualizer } from './core';
 import {
   divColor,
   nowLineColor,
