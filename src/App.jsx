@@ -430,7 +430,7 @@ const BPMArea = ({ clicker, onChange }) => {
           value={bpm}
           onChange={e => setBpm(float(e.target.value))}
           debounceTimeout={0}
-          ticks={[bpmMin, 80, 120, 200, bpmMax]}
+          ticks={[40, 80, 120, 160, 200, 240, bpmMax]}
         />
       </div>
     </BPMField>

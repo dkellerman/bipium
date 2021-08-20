@@ -1,6 +1,6 @@
 import styled, { css } from 'styled-components';
 import { DebounceInput } from 'react-debounce-input';
-import { darkBlue, black, white, lightBlue } from './App.styles';
+import { darkBlue, black, white, lightBlue, gray } from './App.styles';
 
 // css generated from http://danielstern.ca/range.css
 
@@ -13,11 +13,12 @@ export const Range = ({ ticks = [], debounceTimeout = 0, ...props }) => {
           {ticks.map(val => (
             <Tick
               key={`tick-${val}`}
+              label={val}
               pct={(val - props.min)/(props.max - props.min)}
               onClick={e => {
                 props.onChange?.({ ...e, target: { value: val }});
               }}
-            >{val}</Tick>
+            ></Tick>
           ))}
         </Ticks>
       )}
@@ -25,8 +26,11 @@ export const Range = ({ ticks = [], debounceTimeout = 0, ...props }) => {
   );
 };
 
+const THUMB_WIDTH = 36;
+const THUMB_HEIGHT = 36;
+
 const StyledRange = styled(DebounceInput).attrs({ type: 'range' })`
-  ${({ thumbWidth = '36px', thumbHeight = '36px' }) => css`
+  ${({ thumbWidth = THUMB_WIDTH, thumbHeight = THUMB_HEIGHT }) => css`
     && {
       border: 0;
       margin: 13.8px 0;
@@ -51,8 +55,8 @@ const StyledRange = styled(DebounceInput).attrs({ type: 'range' })`
 
     &::-webkit-slider-thumb {
       margin-top: -14px;
-      width: ${thumbWidth};
-      height: ${thumbHeight};
+      width: ${thumbWidth}px;
+      height: ${thumbHeight}px;
       background: ${white};
       border: 1px solid #000000;
       border-radius: 50%;
@@ -70,8 +74,8 @@ const StyledRange = styled(DebounceInput).attrs({ type: 'range' })`
     }
 
     &::-moz-range-thumb {
-      width: ${thumbWidth};
-      height: ${thumbHeight};
+      width: ${thumbWidth}px;
+      height: ${thumbHeight}px;
       background: #ffffff;
       border: 1px solid ${black};
       border-radius: 50%;
@@ -101,8 +105,8 @@ const StyledRange = styled(DebounceInput).attrs({ type: 'range' })`
     }
 
     &::-ms-thumb {
-      width: ${thumbWidth};
-      height: ${thumbHeight};
+      width: ${thumbWidth}px;
+      height: ${thumbHeight}px;
       background: ${white};
       border: 1px solid ${black};
       border-radius: 3px;
@@ -130,25 +134,27 @@ const Ticks = styled.div`
   padding-left: 38px;
   padding-right: 9px;
   position: relative;
-  top: -16px;
+  top: ${-1 * (THUMB_HEIGHT / 2)}px;
 `;
 
 const Tick = styled.span`
   position: relative;
-  left: ${({ pct }) => `calc((100% - 36px) * ${pct})`};
-  display: flex;
-  justify-content: center;
+  left: ${({ pct }) => `calc((100% - ${THUMB_WIDTH}px) * ${pct})`};
   width: 1px;
-  background: gray;
-  font-size: 18px;
+  background: ${gray};
+  height: 15px;
+  margin-bottom: 15px;
+
+  ::after {
+    content: '${({ label }) => `${label}`}';
+    font-size: 18px;
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+  }
 
   &:hover {
     cursor: pointer;
   }
-
-  // cap the height of the tick & push text down, so the tick renders as a little line and the text doesn't overlap the line. Also add margin, so the container expands enough that the next element you'll add won't overlap the ticks.
-  height: 15px;
-  line-height: 50px;
-  margin-bottom: 20px;
 `;
 
