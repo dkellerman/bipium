@@ -202,10 +202,7 @@ function App() {
       {showSideBar && (
         <SideBar>
           <VolumeSlider>
-            <VolumeIcon
-              muted={muted}
-              onClick={() => setMuted(val => !val)}
-            />
+            <VolumeIcon muted={muted} onClick={() => setMuted(val => !val)} />
             <Range
               min={0}
               max={100}

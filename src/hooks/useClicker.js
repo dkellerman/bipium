@@ -10,7 +10,7 @@ export const SOUND_PACKS = {
     name: 'Percussion',
     bar: '/audio/kick.mp3',
     beat: '/audio/snare.mp3',
-    subDiv: ['/audio/click2.mp3', .7],
+    subDiv: ['/audio/click2.mp3', 0.7],
     user: '/audio/click3.mp3',
   },
 };

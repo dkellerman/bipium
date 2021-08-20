@@ -34,7 +34,7 @@ export class Visualizer {
       this.click = lastClick;
       this.progress = (1.0 / m.totalSubDivs) * lastClickBarIdx;
       if (lastClickBarIdx % 2 === 1) {
-        this.progress += ((1.0 / m.totalSubDivs) * (m.swing / 100));
+        this.progress += (1.0 / m.totalSubDivs) * (m.swing / 100);
       }
     } else {
       const curProgress = this.progress;

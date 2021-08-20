@@ -2,7 +2,7 @@ export const DEFAULT_SOUNDS = {
   name: 'Defaults',
   bar: 880.0,
   beat: 440.0,
-  subDiv: [220.0, .5],
+  subDiv: [220.0, 0.5],
   user: 660.0,
 };
 
