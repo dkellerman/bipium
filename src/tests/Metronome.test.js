@@ -1,7 +1,5 @@
 import { act } from 'react-dom/test-utils';
-import { Metronome } from './Metronome';
-import { Visualizer } from './Visualizer';
-import { Clicker, DEFAULT_SOUNDS } from './Clicker';
+import { Metronome, Visualizer, Clicker, DEFAULT_SOUNDS } from '../metronome';
 import { AudioContext } from 'standardized-audio-context-mock';
 
 let now = 0.0;
@@ -35,6 +33,7 @@ describe('metronome', () => {
       timerFn: () => now,
       clicker: mockClicker,
       bpm: 60,
+      subDivs: 4,
       onNextClick: mockOnNextClick,
       onUnscheduleClick: mockOnUnscheduleClick,
       startDelayTime: 0,
@@ -162,6 +161,7 @@ describe('metronome', () => {
       timerFn: () => now,
       clicker: mockClicker,
       bpm: 60, // .25s per subdiv
+      subDivs: 4,
       onNextClick: mockOnNextClick,
       onUnscheduleClick: mockOnUnscheduleClick,
       startDelayTime: 0,

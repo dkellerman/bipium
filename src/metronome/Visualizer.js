@@ -6,7 +6,7 @@ export class Visualizer {
 
   start() {
     this.progress = 0;
-    this.lastTime = this.m.elapsed;
+    this.lastTime = 0;
     this.click = this.m.lastClick || {};
     this.count = [];
     this.qType = null;
@@ -22,6 +22,7 @@ export class Visualizer {
 
   update() {
     const { m, click, lastTime, userClicks, qThreshold } = this;
+    if (m.elapsed < 0) return;
 
     const lastClick = m.lastClick || {};
     const lastClickIdx = m.getClickIndex(lastClick);
