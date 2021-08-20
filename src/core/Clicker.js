@@ -33,6 +33,7 @@ export class Clicker {
       }
     }
     this.loading = false;
+
     return sounds;
   }
 
@@ -95,7 +96,11 @@ export class Clicker {
   }
 
   click(t = 0) {
-    return this.playSoundAt(this.sounds.user, t, this.clickLength);
+    let sound = this.sounds.user;
+    let vol = 1.0;
+    if (Array.isArray(sound)) [sound, vol] = sound;
+
+    return this.playSoundAt(sound, t, this.clickLength, vol);
   }
 }
 
