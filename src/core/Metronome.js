@@ -216,7 +216,11 @@ export class Metronome {
   }
 
   getClickIndex(click, subDivs = null) {
-    return (click.bar - 1) * this.beats + (click.beat - 1) * (subDivs ?? this.subDivs) + (click.subDiv - 1);
+    return (
+      (click.bar - 1) * this.beats +
+      (click.beat - 1) * (subDivs ?? this.subDivs) +
+      (click.subDiv - 1)
+    );
   }
 
   getClickBarIndex(click, subDivs = null) {

@@ -14,9 +14,9 @@ export const Range = ({ ticks = [], debounceTimeout = 0, ...props }) => {
             <Tick
               key={`tick-${val}`}
               label={val}
-              pct={(val - props.min)/(props.max - props.min)}
+              pct={(val - props.min) / (props.max - props.min)}
               onClick={e => {
-                props.onChange?.({ ...e, target: { value: val }});
+                props.onChange?.({ ...e, target: { value: val } });
               }}
             ></Tick>
           ))}
@@ -157,4 +157,3 @@ const Tick = styled.span`
     cursor: pointer;
   }
 `;
-

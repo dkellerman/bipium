@@ -286,7 +286,7 @@ export const BeatsField = styled.fieldset`
   button {
     margin-bottom: 0;
   }
- `;
+`;
 
 export const PlaySubDivsField = styled.fieldset`
   && {
