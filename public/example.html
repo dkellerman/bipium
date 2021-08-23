@@ -7,17 +7,17 @@
     <script src="./dist/bipium-core.js"></script>
 
     <script>
-      window.onload = function() {
+      window.onload = function () {
         m = Bipium.createMetronome({
           workerUrl: './dist/worker.min.js',
           bpm: 80,
-          subDivs: 1
+          subDivs: 1,
         });
 
         v = new Bipium.Visualizer({ metronome: m });
 
-        const count = document.getElementById("count");
-        const progress = document.getElementById("progress");
+        const count = document.getElementById('count');
+        const progress = document.getElementById('progress');
 
         requestAnimationFrame(function redraw() {
           v.update();
@@ -43,10 +43,7 @@
         onchange="m.update({ bpm: parseFloat(event.target.value) || 80 })"
       />
 
-      <input
-        type="checkbox"
-        onchange="m.update({ subDivs: event.target.checked ? 4 : 1 })"
-      />
+      <input type="checkbox" onchange="m.update({ subDivs: event.target.checked ? 4 : 1 })" />
       <label>Play sub divisions</label>
 
       <p>
@@ -56,8 +53,8 @@
 
       <!-- visualizer -->
       <div style="width: 300px; background: #eee">
-        <div id="progress" style="background: green; width: 0; height: 10px;"></div>
-        <div id="count" style="text-align: center; font-size: 40px; background: white;"></div>
+        <div id="progress" style="background: green; width: 0; height: 10px"></div>
+        <div id="count" style="text-align: center; font-size: 40px; background: white"></div>
       </div>
     </div>
   </body>

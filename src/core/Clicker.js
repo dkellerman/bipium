@@ -25,7 +25,7 @@ export class Clicker {
     this.loading = true;
     for (const k in sounds) {
       if (k === 'name') continue;
-      if (!Array.isArray(sounds[k])) sounds[k] = [sounds[k], 1.0, .05];
+      if (!Array.isArray(sounds[k])) sounds[k] = [sounds[k], 1.0, 0.05];
       const [sound] = sounds[k];
       if (typeof sound === 'string') {
         sounds[k][0] = await fetchAudioBuffer(this.audioContext, sound);
@@ -48,7 +48,7 @@ export class Clicker {
     const sounds = this.sounds;
     if (beat === 1 && subDiv === 1) {
       sound = sounds.bar || sounds.beat;
-    } else if ((beat === Math.ceil(beats / 2) + 1) && subDiv === 1) {
+    } else if (beat === Math.ceil(beats / 2) + 1 && subDiv === 1) {
       sound = sounds.half || sounds.beat;
     } else if (beat > 1 && subDiv === 1) {
       sound = sounds.beat;
@@ -57,7 +57,7 @@ export class Clicker {
     }
 
     let relativeVolume = 1.0;
-    let clickLength = .05;
+    let clickLength = 0.05;
     if (Array.isArray(sound)) {
       [sound, relativeVolume, clickLength] = sound;
     }

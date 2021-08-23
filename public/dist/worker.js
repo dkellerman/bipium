@@ -1,5 +1,5 @@
 let timerID = null;
-let interval = .25;
+let interval = 0.25;
 
 /* eslint-disable-next-line */
 self.onmessage = function (e) {
