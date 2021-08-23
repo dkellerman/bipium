@@ -48,7 +48,7 @@ export class Clicker {
     const sounds = this.sounds;
     if (beat === 1 && subDiv === 1) {
       sound = sounds.bar || sounds.beat;
-    } else if (beat === beats / 2 + 1 && subDiv === 1) {
+    } else if ((beat === Math.ceil(beats / 2) + 1) && subDiv === 1) {
       sound = sounds.half || sounds.beat;
     } else if (beat > 1 && subDiv === 1) {
       sound = sounds.beat;
