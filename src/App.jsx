@@ -310,17 +310,19 @@ function App() {
 
             <SwingField>
               <label onClick={() => setSwing(0)}>Swing: {swing}%</label>{' '}
-              <Range
-                min={0}
-                max={99}
-                step={1}
-                value={swing}
-                onChange={e => {
-                  setSwing(int(e.target.value));
-                }}
-                disabled={subDivs % 2 > 0}
-                debounceTimeout={0}
-              />
+              <div>
+                <Range
+                  min={0}
+                  max={99}
+                  step={1}
+                  value={swing}
+                  onChange={e => {
+                    setSwing(int(e.target.value));
+                  }}
+                  disabled={subDivs % 2 > 0}
+                  debounceTimeout={0}
+                />
+              </div>
               <StepButtons
                 val={swing}
                 setter={setSwing}

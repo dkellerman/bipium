@@ -1,0 +1,12 @@
+{
+  "name": "@dkellerman/bipium-core",
+  "version": "1.0.0",
+  "description": "Metronome",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "David Kellerman <david@silvermoon.org>",
+  "license": "ISC",
+  "homepage": "https://bipium.com"
+}

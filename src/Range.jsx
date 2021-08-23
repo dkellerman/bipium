@@ -131,8 +131,8 @@ const Ticks = styled.div`
   display: flex;
   padding-top: 0;
   padding-bottom: 0;
-  padding-left: 38px;
-  padding-right: 9px;
+  padding-left: 38px;  // 12.66% ??
+  padding-right: 9px;  // 3% ??
   position: relative;
   top: ${-1 * (THUMB_HEIGHT / 2)}px;
 `;
