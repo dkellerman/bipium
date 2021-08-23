@@ -56,13 +56,8 @@ export class Clicker {
       sound = sounds.subDiv || sounds.beat;
     }
 
-    let relativeVolume = 1.0;
-    let clickLength = 0.05;
-    if (Array.isArray(sound)) {
-      [sound, relativeVolume, clickLength] = sound;
-    }
-
-    const audioObj = this.playSoundAt(sound, time, clickLength, relativeVolume);
+    const [soundObj, relativeVolume, clickLength] = sound;
+    const audioObj = this.playSoundAt(soundObj, time, clickLength, relativeVolume);
     return audioObj;
   }
 
@@ -71,6 +66,8 @@ export class Clicker {
   }
 
   playSoundAt(sound, time, clickLength, relativeVolume = 1.0) {
+    if (this.audioContext?.state === 'suspended') this.audioContext.resume();
+
     let audioNode;
     if (typeof sound === 'number') {
       // freq
@@ -96,11 +93,8 @@ export class Clicker {
   }
 
   click(t = 0) {
-    let sound = this.sounds.user;
-    let vol = 1.0;
-    if (Array.isArray(sound)) [sound, vol] = sound;
-
-    return this.playSoundAt(sound, t, this.clickLength, vol);
+    const [soundObj, vol, length] = this.sounds.user;
+    return this.playSoundAt(soundObj, t, length, vol);
   }
 }
 

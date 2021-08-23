@@ -4,7 +4,7 @@ import { Clicker, DEFAULT_SOUNDS } from '../core';
 export const SOUND_PACKS = {
   defaults: {
     ...DEFAULT_SOUNDS,
-    user: ['/audio/stick.mp3', 1.0, 0.05],
+    user: ['/audio/stick.mp3', 1.0, 0.25],
   },
   drumkit: {
     name: 'Drum Kit',
