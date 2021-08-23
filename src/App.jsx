@@ -299,9 +299,9 @@ function App() {
           <>
             <select value={subDivs} onChange={e => setSubDivs(int(e.target.value))}>
               <option value="8">32nd notes</option>
-              <option value="7">7 divs</option>
-              <option value="6">6 divs</option>
-              <option value="5">5 divs</option>
+              <option value="7">Septuplets</option>
+              <option value="6">Sextuplets</option>
+              <option value="5">Quintuplets</option>
               <option value="4">16th notes</option>
               <option value="3">Triplets</option>
               <option value="2">8th notes</option>

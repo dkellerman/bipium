@@ -2,15 +2,14 @@ export const DEFAULT_SOUNDS = {
   name: 'Defaults',
   bar: 880.0,
   beat: 440.0,
-  subDiv: [220.0, 0.5],
+  subDiv: 220.0,
   user: 660.0,
 };
 
 export class Clicker {
-  constructor({ audioContext, volume = 100, sounds = DEFAULT_SOUNDS, defaultClickLength = 0.05 }) {
+  constructor({ audioContext, volume = 100, sounds = DEFAULT_SOUNDS }) {
     this.audioContext = audioContext;
     this.volume = volume;
-    this.clickLength = defaultClickLength;
     this.loading = false;
     this.gainNode = this.audioContext.createGain();
     this.gainNode.connect(this.audioContext.destination);
@@ -26,7 +25,7 @@ export class Clicker {
     this.loading = true;
     for (const k in sounds) {
       if (k === 'name') continue;
-      if (!Array.isArray(sounds[k])) sounds[k] = [sounds[k], 1.0];
+      if (!Array.isArray(sounds[k])) sounds[k] = [sounds[k], 1.0, .05];
       const [sound] = sounds[k];
       if (typeof sound === 'string') {
         sounds[k][0] = await fetchAudioBuffer(this.audioContext, sound);
@@ -58,11 +57,12 @@ export class Clicker {
     }
 
     let relativeVolume = 1.0;
+    let clickLength = .05;
     if (Array.isArray(sound)) {
-      [sound, relativeVolume] = sound;
+      [sound, relativeVolume, clickLength] = sound;
     }
 
-    const audioObj = this.playSoundAt(sound, time, this.clickLength, relativeVolume);
+    const audioObj = this.playSoundAt(sound, time, clickLength, relativeVolume);
     return audioObj;
   }
 

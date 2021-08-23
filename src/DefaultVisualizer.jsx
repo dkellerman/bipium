@@ -142,7 +142,7 @@ export function DefaultVisualizer({
             x={width / 2}
             y={height - 20}
             anchor={0.5}
-            style={{ fontSize: 20, fill: 'white', fontWeight: 'bold' }}
+            style={{ fontSize: 18, fill: 'white', fontWeight: 'bold' }}
           />
         </Stage>
       )}

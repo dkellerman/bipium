@@ -4,15 +4,17 @@ import { Clicker, DEFAULT_SOUNDS } from '../core';
 export const SOUND_PACKS = {
   defaults: {
     ...DEFAULT_SOUNDS,
-    user: '/audio/click.mp3',
+    user: ['/audio/stick.mp3', 1.0, .05],
   },
-  percussion: {
-    name: 'Percussion',
-    bar: '/audio/kick.mp3',
-    beat: '/audio/snare.mp3',
-    subDiv: ['/audio/click2.mp3', 0.7],
-    user: '/audio/click3.mp3',
+  drumkit: {
+    name: 'Drum Kit',
+    bar: ['/audio/kick1.mp3', 1.0, .25],
+    beat: ['/audio/hihat1.mp3', 1.0, .25],
+    half: ['/audio/snare1.mp3', 1.0, .25],
+    subDiv: ['/audio/hihat2.mp3', 0.7, .25],
+    user: ['/audio/stick.mp3', 1.0, .25],
   },
+
 };
 
 export function useClicker({ audioContext, volume = 100, sounds = SOUND_PACKS.defaults } = {}) {
