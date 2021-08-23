@@ -44,7 +44,7 @@ const validBpm = val => Math.max(Math.min(bpmMax, val || bpmDefault), bpmMin);
 function App() {
   const bpm = useRef();
   const [beats, setBeats] = useSetting('beats', 4, int);
-  const [subDivs, setSubDivs] = useSetting('subDivs', 4, int);
+  const [subDivs, setSubDivs] = useSetting('subDivs', 2, int);
   const [swing, setSwing] = useSetting('swing', 0, int);
   const [playSubDivs, setPlaySubDivs] = useSetting('playSubDivs', false, bool);
   const [volume, setVolume] = useSetting('volume', 100, int, localStorage);
