@@ -32,9 +32,9 @@ import { useTapBPM, useSetting, useClicker, useMetronome, SOUND_PACKS } from './
 import { NavBar } from './NavBar';
 import { Range } from './Range';
 
-const int = x => (x ?? x) && parseInt(x, 10);
-const float = x => (x ?? x) && parseFloat(x);
-const bool = x => (x ?? x) && [true, 1, '1', 'true', 't'].includes(x);
+const int = x => x && parseInt(x, 10);
+const float = x => x && parseFloat(x);
+const bool = x => x && [true, 1, '1', 'true', 't'].includes(x) || false;
 
 const bpmMin = 20.0;
 const bpmMax = 320.0;
