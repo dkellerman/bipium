@@ -863,70 +863,11 @@ __webpack_require__.r(__webpack_exports__);
 
 // EXPORTS
 __webpack_require__.d(__webpack_exports__, "createMetronome", function() { return /* binding */ createMetronome; });
-__webpack_require__.d(__webpack_exports__, "Metronome", function() { return /* reexport */ Metronome_Metronome; });
-__webpack_require__.d(__webpack_exports__, "MetronomeWorker", function() { return /* reexport */ MetronomeWorker; });
+__webpack_require__.d(__webpack_exports__, "Metronome", function() { return /* reexport */ Metronome; });
 __webpack_require__.d(__webpack_exports__, "Clicker", function() { return /* reexport */ Clicker; });
 __webpack_require__.d(__webpack_exports__, "DEFAULT_SOUNDS", function() { return /* reexport */ DEFAULT_SOUNDS; });
 __webpack_require__.d(__webpack_exports__, "Visualizer", function() { return /* reexport */ Visualizer; });
 
-// CONCATENATED MODULE: ./src/core/MetronomeWorker.js
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
-
-function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
-
-function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
-var MetronomeWorker = /*#__PURE__*/function () {
-  function MetronomeWorker() {
-    _classCallCheck(this, MetronomeWorker);
-
-    _defineProperty(this, "interval", void 0);
-
-    _defineProperty(this, "timer", void 0);
-  }
-
-  _createClass(MetronomeWorker, [{
-    key: "onmessage",
-    value: function onmessage() {}
-  }, {
-    key: "postMessage",
-    value: function postMessage(data) {
-      if (data.interval) {
-        this.interval = data.interval;
-        this.clearTimer();
-      } else if (data === 'start') {
-        this.startTimer();
-        this.tick();
-      } else if (data === 'stop') {
-        this.clearTimer();
-      }
-    }
-  }, {
-    key: "startTimer",
-    value: function startTimer() {
-      this.timer = setInterval(this.tick.bind(this), this.interval * 1000);
-    }
-  }, {
-    key: "clearTimer",
-    value: function clearTimer() {
-      if (this.timer) {
-        clearInterval(this.timer);
-        this.timer = null;
-      }
-    }
-  }, {
-    key: "tick",
-    value: function tick() {
-      this.onmessage({
-        data: 'tick'
-      });
-    }
-  }]);
-
-  return MetronomeWorker;
-}();
 // CONCATENATED MODULE: ./src/core/Metronome.js
 function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread(); }
 
@@ -942,24 +883,23 @@ function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len 
 
 function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) { symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); } keys.push.apply(keys, symbols); } return keys; }
 
-function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { Metronome_defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
+function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
 
-function Metronome_defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
-function Metronome_classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-function Metronome_defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
 
-function Metronome_createClass(Constructor, protoProps, staticProps) { if (protoProps) Metronome_defineProperties(Constructor.prototype, protoProps); if (staticProps) Metronome_defineProperties(Constructor, staticProps); return Constructor; }
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
 
-
-var Metronome_Metronome = /*#__PURE__*/function () {
+var Metronome = /*#__PURE__*/function () {
   function Metronome() {
     var _this = this;
 
     var settings = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
-    Metronome_classCallCheck(this, Metronome);
+    _classCallCheck(this, Metronome);
 
     var timerFn = settings.timerFn,
         clicker = settings.clicker,
@@ -1024,7 +964,7 @@ var Metronome_Metronome = /*#__PURE__*/function () {
     });
   }
 
-  Metronome_createClass(Metronome, [{
+  _createClass(Metronome, [{
     key: "start",
     value: function start() {
       var _this$clicker, _this$clicker$audioCo;
@@ -1032,6 +972,8 @@ var Metronome_Metronome = /*#__PURE__*/function () {
       if (this.started) return;
       this.startTime = this.now + this.startDelayTime;
       this.stopTime = null;
+      this.barStart = this.startTime;
+      this.lastBar = 0;
       this.started = true;
       this.scheduledClicks = [];
       if (this.subDivs % 2 > 0) this.swing = 0;
@@ -1085,7 +1027,14 @@ var Metronome_Metronome = /*#__PURE__*/function () {
   }, {
     key: "scheduler",
     value: function scheduler() {
-      if (!this.started) return;
+      if (!this.started) return; // update the bar start time for quantization purposes
+
+      var lc = this.lastClick;
+
+      if (((lc === null || lc === void 0 ? void 0 : lc.bar) || 0) > this.lastBar) {
+        this.lastBar = lc.bar;
+        this.barStart = lc.time;
+      }
 
       while (this.next.time < this.now + this.scheduleAheadTime) {
         this.scheduleClick();
@@ -1236,14 +1185,14 @@ var Metronome_Metronome = /*#__PURE__*/function () {
 
       var toSubDivs = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
       var to = toSubDivs || this.subDivs;
-      var elapsed = (t - (this.startTime || 0)) % this.barTime;
+      var timeInBar = t - this.barStart;
       var gridTimes = this.gridTimes.concat([this.barTime]).filter(function (_, idx) {
         return idx % (_this5.subDivs / to) === 0;
       });
       var closestSubDivTime = gridTimes.reduce(function (prev, curr) {
-        return Math.abs(curr - elapsed) < Math.abs(prev - elapsed) ? curr : prev;
+        return Math.abs(curr - timeInBar) < Math.abs(prev - timeInBar) ? curr : prev;
       });
-      var amount = closestSubDivTime - elapsed;
+      var amount = closestSubDivTime - timeInBar;
       var closestSubDiv = gridTimes.indexOf(closestSubDivTime);
       if (closestSubDiv === this.beats * to) closestSubDiv = 0;
       closestSubDiv++; // console.log(amount, amount > 0 ? 'early' : 'late', 'to', closestSubDiv);
@@ -1253,6 +1202,56 @@ var Metronome_Metronome = /*#__PURE__*/function () {
   }]);
 
   return Metronome;
+}(); // fallback worker, but should use worker.js instead in thread
+
+var MetronomeWorker = /*#__PURE__*/function () {
+  function MetronomeWorker() {
+    _classCallCheck(this, MetronomeWorker);
+
+    _defineProperty(this, "interval", void 0);
+
+    _defineProperty(this, "timer", void 0);
+  }
+
+  _createClass(MetronomeWorker, [{
+    key: "onmessage",
+    value: function onmessage() {}
+  }, {
+    key: "postMessage",
+    value: function postMessage(data) {
+      if (data.interval) {
+        this.interval = data.interval;
+        this.clearTimer();
+      } else if (data === 'start') {
+        this.startTimer();
+        this.tick();
+      } else if (data === 'stop') {
+        this.clearTimer();
+      }
+    }
+  }, {
+    key: "startTimer",
+    value: function startTimer() {
+      this.timer = setInterval(this.tick.bind(this), this.interval * 1000);
+    }
+  }, {
+    key: "clearTimer",
+    value: function clearTimer() {
+      if (this.timer) {
+        clearInterval(this.timer);
+        this.timer = null;
+      }
+    }
+  }, {
+    key: "tick",
+    value: function tick() {
+      this.onmessage({
+        data: 'tick'
+      });
+    }
+  }]);
+
+  return MetronomeWorker;
 }();
 // CONCATENATED MODULE: ./src/core/Clicker.js
 function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || Clicker_unsupportedIterableToArray(arr, i) || _nonIterableRest(); }
@@ -1281,7 +1280,7 @@ var DEFAULT_SOUNDS = {
   name: 'Defaults',
   bar: 880.0,
   beat: 440.0,
-  subDiv: [220.0, 0.5],
+  subDiv: 220.0,
   user: 660.0
 };
 var Clicker = /*#__PURE__*/function () {
@@ -1290,15 +1289,12 @@ var Clicker = /*#__PURE__*/function () {
         _ref$volume = _ref.volume,
         volume = _ref$volume === void 0 ? 100 : _ref$volume,
         _ref$sounds = _ref.sounds,
-        sounds = _ref$sounds === void 0 ? DEFAULT_SOUNDS : _ref$sounds,
-        _ref$defaultClickLeng = _ref.defaultClickLength,
-        defaultClickLength = _ref$defaultClickLeng === void 0 ? 0.05 : _ref$defaultClickLeng;
+        sounds = _ref$sounds === void 0 ? DEFAULT_SOUNDS : _ref$sounds;
 
     Clicker_classCallCheck(this, Clicker);
 
     this.audioContext = audioContext;
     this.volume = volume;
-    this.clickLength = defaultClickLength;
     this.loading = false;
     this.gainNode = this.audioContext.createGain();
     this.gainNode.connect(this.audioContext.destination);
@@ -1364,7 +1360,7 @@ var Clicker = /*#__PURE__*/function () {
                 return _context2.abrupt("continue", 2);
 
               case 6:
-                if (!Array.isArray(sounds[k])) sounds[k] = [sounds[k], 1.0];
+                if (!Array.isArray(sounds[k])) sounds[k] = [sounds[k], 1.0, 0.05];
                 _sounds$k = _slicedToArray(sounds[k], 1), sound = _sounds$k[0];
 
                 if (!(typeof sound === 'string')) {
@@ -1419,7 +1415,7 @@ var Clicker = /*#__PURE__*/function () {
 
       if (beat === 1 && subDiv === 1) {
         sound = sounds.bar || sounds.beat;
-      } else if (beat === beats / 2 + 1 && subDiv === 1) {
+      } else if (beat === Math.ceil(beats / 2) + 1 && subDiv === 1) {
         sound = sounds.half || sounds.beat;
       } else if (beat > 1 && subDiv === 1) {
         sound = sounds.beat;
@@ -1427,18 +1423,13 @@ var Clicker = /*#__PURE__*/function () {
         sound = sounds.subDiv || sounds.beat;
       }
 
-      var relativeVolume = 1.0;
+      var _sound = sound,
+          _sound2 = _slicedToArray(_sound, 3),
+          soundObj = _sound2[0],
+          relativeVolume = _sound2[1],
+          clickLength = _sound2[2];
 
-      if (Array.isArray(sound)) {
-        var _sound = sound;
-
-        var _sound2 = _slicedToArray(_sound, 2);
-
-        sound = _sound2[0];
-        relativeVolume = _sound2[1];
-      }
-
-      var audioObj = this.playSoundAt(sound, time, this.clickLength, relativeVolume);
+      var audioObj = this.playSoundAt(soundObj, time, clickLength, relativeVolume);
       return audioObj;
     }
   }, {
@@ -1451,7 +1442,10 @@ var Clicker = /*#__PURE__*/function () {
   }, {
     key: "playSoundAt",
     value: function playSoundAt(sound, time, clickLength) {
+      var _this$audioContext;
+
       var relativeVolume = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 1.0;
+      if (((_this$audioContext = this.audioContext) === null || _this$audioContext === void 0 ? void 0 : _this$audioContext.state) === 'suspended') this.audioContext.resume();
       var audioNode;
 
       if (typeof sound === 'number') {
@@ -1482,19 +1476,13 @@ var Clicker = /*#__PURE__*/function () {
     key: "click",
     value: function click() {
       var t = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;
-      var sound = this.sounds.user;
-      var vol = 1.0;
 
-      if (Array.isArray(sound)) {
-        var _sound3 = sound;
+      var _this$sounds$user = _slicedToArray(this.sounds.user, 3),
+          soundObj = _this$sounds$user[0],
+          vol = _this$sounds$user[1],
+          length = _this$sounds$user[2];
 
-        var _sound4 = _slicedToArray(_sound3, 2);
-
-        sound = _sound4[0];
-        vol = _sound4[1];
-      }
-
-      return this.playSoundAt(sound, t, this.clickLength, vol);
+      return this.playSoundAt(soundObj, t, length, vol);
     }
   }]);
 
@@ -1673,14 +1661,13 @@ function createMetronome() {
   var clicker = new Clicker(core_objectSpread({
     audioContext: audioContext
   }, clickerSettings));
-  return new Metronome_Metronome(core_objectSpread({
+  return new Metronome(core_objectSpread({
     timerFn: function timerFn() {
       return audioContext.currentTime;
     },
     clicker: clicker
   }, mSettings));
 }
-
 
 
 

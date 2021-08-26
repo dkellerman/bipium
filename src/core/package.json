@@ -7,6 +7,6 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "David Kellerman <david@silvermoon.org>",
-  "license": "ISC",
+  "license": "MIT",
   "homepage": "https://bipium.com"
 }

@@ -1,6 +1,6 @@
 {
-  "name": "bipium",
-  "version": "0.1.0",
+  "name": "@dkellerman/bipium",
+  "version": "1.0.0",
   "private": true,
   "dependencies": {
     "@inlet/react-pixi": "^6.6.3",
@@ -58,5 +58,6 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  }
+  },
+  "license": "MIT"
 }

@@ -63,6 +63,8 @@ export class Metronome {
 
     this.startTime = this.now + this.startDelayTime;
     this.stopTime = null;
+    this.barStart = this.startTime;
+    this.lastBar = 0;
     this.started = true;
     this.scheduledClicks = [];
     if (this.subDivs % 2 > 0) this.swing = 0;
@@ -113,6 +115,13 @@ export class Metronome {
   // main method called by the thread timer when started
   scheduler() {
     if (!this.started) return;
+
+    // update the bar start time for quantization purposes
+    const lc = this.lastClick;
+    if ((lc?.bar || 0) > this.lastBar) {
+      this.lastBar = lc.bar;
+      this.barStart = lc.time;
+    }
 
     while (this.next.time < this.now + this.scheduleAheadTime) {
       this.scheduleClick();
@@ -231,22 +240,23 @@ export class Metronome {
   // toSubDivs - which sub division to quantize to (e.g. 4 = 16th notes)
   quantize(t, toSubDivs = null) {
     const to = toSubDivs || this.subDivs;
-    const elapsed = (t - (this.startTime || 0)) % this.barTime;
+    const timeInBar = t - this.barStart;
 
     const gridTimes = this.gridTimes
       .concat([this.barTime])
       .filter((_, idx) => idx % (this.subDivs / to) === 0);
 
     const closestSubDivTime = gridTimes.reduce((prev, curr) =>
-      Math.abs(curr - elapsed) < Math.abs(prev - elapsed) ? curr : prev,
+      Math.abs(curr - timeInBar) < Math.abs(prev - timeInBar) ? curr : prev,
     );
-    const amount = closestSubDivTime - elapsed;
+    const amount = closestSubDivTime - timeInBar;
 
     let closestSubDiv = gridTimes.indexOf(closestSubDivTime);
     if (closestSubDiv === this.beats * to) closestSubDiv = 0;
     closestSubDiv++;
 
     // console.log(amount, amount > 0 ? 'early' : 'late', 'to', closestSubDiv);
+
     return [amount, closestSubDiv];
   }
 }
