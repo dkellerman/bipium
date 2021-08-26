@@ -2,13 +2,15 @@
   "name": "@dkellerman/bipium",
   "version": "1.0.0",
   "private": true,
+  "author": "David Kellerman <david@silvermoon.org>",
+  "license": "MIT",
+  "homepage": "https://bipium.com",
   "dependencies": {
     "@inlet/react-pixi": "^6.6.3",
     "copy-to-clipboard": "^3.3.1",
     "domexception": "^2.0.1",
     "local-storage-fallback": "^4.1.2",
     "lodash": "^4.17.21",
-    "nosleep.js": "^0.12.0",
     "pixi.js": "^5.3.7",
     "query-string": "^6.14.1",
     "react": "^17.0.1",
@@ -58,6 +60,5 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  },
-  "license": "MIT"
+  }
 }

@@ -3,7 +3,6 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import qs from 'query-string';
 import copyToClipboard from 'copy-to-clipboard';
 import useKeypress from 'react-use-keypress';
-import NoSleep from 'nosleep.js';
 import { Link } from 'react-router-dom';
 import localStorage from 'local-storage-fallback';
 import { AudioContext } from 'standardized-audio-context';
@@ -77,15 +76,11 @@ function App() {
     workerUrl: '/dist/worker.min.js',
   });
 
-  const noSleep = useRef(new NoSleep([]));
-
   const start = useCallback(() => {
-    noSleep.current?.enable();
     setStarted(true);
   }, []);
 
   const stop = useCallback(() => {
-    noSleep.current?.disable();
     setStarted(false);
   }, []);
 
