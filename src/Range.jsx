@@ -1,6 +1,8 @@
 import styled, { css } from 'styled-components';
 import { DebounceInput } from 'react-debounce-input';
-import { darkBlue, black, white, lightBlue, gray } from './App.styles';
+import { black, white, lightBlue, gray, lightGray } from './App.styles';
+
+const trackColor = lightGray;
 
 // css generated from http://danielstern.ca/range.css
 
@@ -45,7 +47,7 @@ const StyledRange = styled(DebounceInput).attrs({ type: 'range' })`
     }
 
     &::-webkit-slider-runnable-track {
-      background: ${darkBlue};
+      background: ${trackColor};
       border: 0.2px solid ${black};
       border-radius: 1.3px;
       width: 100%;
@@ -65,7 +67,7 @@ const StyledRange = styled(DebounceInput).attrs({ type: 'range' })`
     }
 
     &::-moz-range-track {
-      background: ${darkBlue};
+      background: ${trackColor};
       border: 0.2px solid ${black};
       border-radius: 1.3px;
       width: 100%;
@@ -99,7 +101,7 @@ const StyledRange = styled(DebounceInput).attrs({ type: 'range' })`
     }
 
     &::-ms-fill-upper {
-      background: ${darkBlue};
+      background: ${trackColor};
       border: 0.2px solid ${black};
       border-radius: 2.6px;
     }

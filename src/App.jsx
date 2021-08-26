@@ -15,7 +15,8 @@ import {
   CloseIcon,
   SettingsIcon,
   VolumeIcon,
-  VolumeSlider,
+  VolumeSliderSide,
+  VolumeSliderMain,
   SideBar,
   SoundPack,
   ButtonAsLink,
@@ -33,7 +34,7 @@ import { Range } from './Range';
 
 const int = x => x && parseInt(x, 10);
 const float = x => x && parseFloat(x);
-const bool = x => x && [true, 1, '1', 'true', 't'].includes(x) || false;
+const bool = x => (x && [true, 1, '1', 'true', 't'].includes(x)) || false;
 
 const bpmMin = 20.0;
 const bpmMax = 320.0;
@@ -196,7 +197,7 @@ function App() {
 
       {showSideBar && (
         <SideBar>
-          <VolumeSlider>
+          <VolumeSliderSide>
             <VolumeIcon muted={muted} onClick={() => setMuted(val => !val)} />
             <Range
               min={0}
@@ -208,7 +209,7 @@ function App() {
               }}
               debounceTimeout={0}
             />
-          </VolumeSlider>
+          </VolumeSliderSide>
 
           <SoundPack>
             <label>Sound Pack:</label>{' '}
@@ -357,6 +358,20 @@ function App() {
           </StopButton>
         )}
       </div>
+
+      <VolumeSliderMain>
+        <VolumeIcon muted={muted} onClick={() => setMuted(val => !val)} />
+        <Range
+          min={0}
+          max={100}
+          step={1}
+          value={volume}
+          onChange={e => {
+            setVolume(int(e.target.value));
+          }}
+          debounceTimeout={0}
+        />
+      </VolumeSliderMain>
     </Layout>
   );
 }

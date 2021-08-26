@@ -203,12 +203,18 @@ export const VolumeIcon = ({ muted = false, ...props }) => {
   return muted ? <VolumeIconMuted {...props} /> : <VolumeIconUnmuted {...props} />;
 };
 
-export const VolumeSlider = styled.div`
+export const VolumeSliderSide = styled.div`
+  margin-top: 5px;
+  @media only screen and (min-width: 668px) {
+    margin-top: 20px;
+  }
   input {
     display: inline-block;
     width: 180px;
   }
 `;
+
+export const VolumeSliderMain = styled(VolumeSliderSide)``;
 
 export const SoundPack = styled.div`
   label {
@@ -270,8 +276,7 @@ export const BPMField = styled.fieldset`
 
   input[type='range'] {
     display: inline-block;
-    width: 100%;
-    max-width: 300px;
+    width: 300px;
     margin-top: 10px;
   }
 `;
