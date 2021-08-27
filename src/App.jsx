@@ -305,7 +305,9 @@ function App() {
             <StepButtons val={subDivs} setter={setSubDivs} min={2} max={8} />
 
             <SwingField>
-              <label onClick={() => setSwing(0)}>Swing: {swing}%</label>{' '}
+              <label onClick={() => setSwing(0)}>
+                <span>Swing:</span> <span>{swing}%</span>
+              </label>{' '}
               <div>
                 <Range
                   min={0}
@@ -427,9 +429,14 @@ const BPMArea = ({ clicker, onChange }) => {
             setEditingBPM(false);
           }
         }}
-        onChange={() => {}}
       />
-      <label onClick={() => setEditingBPM(true)}>{bpm} BPM</label>
+      <label
+        onClick={e => {
+          setEditingBPM(true);
+        }}
+      >
+        {bpm} BPM
+      </label>
 
       <StepButtons val={bpm} setter={setBpm} min={20} max={300} conv={float} />
       <br />

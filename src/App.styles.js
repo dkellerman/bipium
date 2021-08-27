@@ -185,7 +185,10 @@ export const SideBar = styled.aside`
 const volumeIconSize = 28;
 const volumeIconStyle = css`
   position: relative;
-  left: -9px;
+  left: -12px;
+  @-moz-document url-prefix() {
+    vertical-align: 22px;
+  }
   &:hover {
     cursor: pointer;
   }
@@ -258,6 +261,10 @@ export const BPMField = styled.fieldset`
 
   label {
     display: ${props => (props.editing ? 'none' : 'inline-block')};
+    border-bottom: 1px dotted ${gray};
+    &:hover {
+      cursor: pointer;
+    }
   }
 
   label,
@@ -312,6 +319,12 @@ export const SwingField = styled.div`
     margin-bottom: auto;
     margin-left: 0;
     margin-right: 8px;
+    span:first-child {
+      border-bottom: 1px dotted ${gray};
+      &:hover {
+        cursor: pointer;
+      }
+    }
   }
   input {
     flex: 1;
