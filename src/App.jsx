@@ -132,17 +132,17 @@ function App() {
   });
 
   // click anywhere to close sidebar
-  // useEffect(() => {
-  //   function handleWindowClick(e) {
-  //     if (!e.target.closest('aside') && !e.target.closest('svg')) {
-  //       setShowSideBar(false);
-  //     }
-  //   }
-  //   window.addEventListener('click', handleWindowClick);
-  //   return () => {
-  //     window.removeEventListener('click', handleWindowClick);
-  //   };
-  // }, []);
+  useEffect(() => {
+    function handleWindowClick(e) {
+      if (!e.target.closest('aside') && !e.target.closest('svg')) {
+        setShowSideBar(false);
+      }
+    }
+    window.addEventListener('click', handleWindowClick);
+    return () => {
+      window.removeEventListener('click', handleWindowClick);
+    };
+  }, []);
 
   // start/stop
   useEffect(() => {
