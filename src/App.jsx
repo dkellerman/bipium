@@ -287,7 +287,10 @@ function App() {
         <input
           type="checkbox"
           checked={playSubDivs}
-          onChange={e => setPlaySubDivs(e.target.checked)}
+          onChange={e => {
+            e.preventDefault();
+            setPlaySubDivs(e.target.checked);
+          }}
         />
         <label>Play {!playSubDivs && 'sub divs'}</label>
 
