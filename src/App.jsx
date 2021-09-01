@@ -31,6 +31,7 @@ import { DefaultVisualizer } from './DefaultVisualizer';
 import { useTapBPM, useSetting, useClicker, useMetronome, SOUND_PACKS } from './hooks';
 import { NavBar } from './NavBar';
 import { Range } from './Range';
+import { Visualizer } from './core';
 
 const int = x => x && parseInt(x, 10);
 const float = x => x && parseFloat(x);
@@ -148,8 +149,10 @@ function App() {
   useEffect(() => {
     if (!started) {
       m?.stop();
+      unmonitorFrameRate();
     } else {
       m?.start();
+      monitorFrameRate();
     }
     forceRender();
 
@@ -474,5 +477,33 @@ const StepButtons = ({ val, setter, min, max, step = 1, conv = int, disabled = f
     </>
   );
 };
+
+function monitorFrameRate() {
+  const debugFR = window.location.search.indexOf('_fr') > -1;
+  if (window._sentFR && !debugFR) return;
+
+  window._frInterval = setInterval(() => {
+    const info = Visualizer.frameRateInfo;
+    if (debugFR) {
+      console.log('Frame Rate', 'mean', info.mean, 'std', info.std);
+    } else if (!window._sentFR) {
+      console.log('sending frame rate', info);
+      window.gtag?.('event', 'frame_rate', {
+        event_category: 'Performance',
+        event_label: `Mean: ${info.mean} / Std Dev: ${info.std}`,
+        value: info.mean,
+      });
+      window._sentFR = true;
+      if (!debugFR) unmonitorFrameRate();
+    }
+  }, 5000);
+}
+
+function unmonitorFrameRate() {
+  if (window._frInterval) {
+    clearInterval(window._frInterval);
+    window._frInterval = null;
+  }
+}
 
 export default App;

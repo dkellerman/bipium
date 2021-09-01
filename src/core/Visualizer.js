@@ -1,4 +1,6 @@
 export class Visualizer {
+  static frameRate = [];
+
   constructor({ metronome, qThreshold = 0.04 }) {
     this.m = metronome;
     this.qThreshold = qThreshold;
@@ -23,6 +25,10 @@ export class Visualizer {
 
   update() {
     const { m, savedClick, lastTime, userClicks, qThreshold } = this;
+    const deltaT = m.elapsed - lastTime;
+    Visualizer.frameRate.push(deltaT);
+    if (Visualizer.frameRate.length > 100) Visualizer.frameRate.shift();
+
     if (!m.started || m.elapsed < 0) return;
 
     const savedClickIdx = m.getClickIndex(savedClick || {}) || 0;
@@ -43,7 +49,6 @@ export class Visualizer {
       const remProgress = 1.0 - curProgress;
       const remTime = m.barTime * remProgress;
       const perSecond = remProgress / remTime;
-      const deltaT = m.elapsed - lastTime;
       const deltaP = deltaT * perSecond;
       const newProgress = (curProgress + deltaP) % 1.0;
       this.progress = newProgress;
@@ -64,6 +69,18 @@ export class Visualizer {
       const [qAmount] = m.quantize(t, 1);
       this.qType = getQuantizeType(qAmount, qThreshold);
     }
+  }
+
+  static get frameRateInfo() {
+    const arr = Visualizer.frameRate;
+    if (!arr?.length) return 0;
+
+    const mean = arr.reduce((a, b) => a + b) / arr.length;
+    const std = Math.sqrt(arr.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b) / arr.length);
+    return {
+      mean,
+      std,
+    };
   }
 }
 
