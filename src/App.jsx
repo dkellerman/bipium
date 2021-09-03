@@ -62,6 +62,8 @@ function App() {
   // single shared audio context
   const audioContext = useRef(new AudioContext());
 
+  const canSwing = subDivs % 2 === 0;
+
   const clicker = useClicker({
     audioContext: audioContext.current,
     volume,
@@ -74,7 +76,7 @@ function App() {
     bpm: bpm.current,
     beats,
     subDivs: playSubDivs ? subDivs : 1,
-    swing: playSubDivs && subDivs % 2 === 0 ? swing : 0,
+    swing: playSubDivs && canSwing ? swing : 0,
     workerUrl: '/dist/worker.min.js',
   });
 
@@ -102,7 +104,7 @@ function App() {
   useEffect(() => {
     m.update({
       subDivs: playSubDivs ? subDivs : 1,
-      swing: playSubDivs && subDivs % 2 === 0 ? swing : 0,
+      swing: playSubDivs && canSwing ? swing : 0,
       beats,
       bpm: bpm.current,
     });
@@ -139,7 +141,9 @@ function App() {
         setShowSideBar(false);
       }
     }
+
     window.addEventListener('click', handleWindowClick);
+
     return () => {
       window.removeEventListener('click', handleWindowClick);
     };
@@ -200,70 +204,77 @@ function App() {
 
       {showSideBar && (
         <SideBar>
-          <VolumeSliderSide>
-            <VolumeIcon muted={muted} onClick={() => setMuted(val => !val)} />
-            <Range
-              min={0}
-              max={100}
-              step={1}
-              value={volume}
-              onChange={e => {
-                setVolume(int(e.target.value));
-              }}
-              debounceTimeout={0}
-            />
-          </VolumeSliderSide>
+          <ul>
+            <li>
+              <VolumeSliderSide>
+                <VolumeIcon muted={muted} onClick={() => setMuted(val => !val)} />
+                <Range
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={volume}
+                  onDrag={val => {
+                    setVolume(int(val));
+                  }}
+                />
+              </VolumeSliderSide>
+            </li>
 
-          <SoundPack>
-            <label>Sound Pack:</label>{' '}
-            <select value={soundPack} onChange={e => setSoundPack(e.target.value)}>
-              {Object.keys(SOUND_PACKS).map((key, idx) => (
-                <option key={`sp-${idx + 1}`} value={key}>
-                  {SOUND_PACKS[key]?.name}
-                </option>
-              ))}
-            </select>
-          </SoundPack>
+            <li>
+              <SoundPack>
+                <label>Sound Pack:</label>{' '}
+                <select value={soundPack} onChange={e => setSoundPack(e.target.value)}>
+                  {Object.keys(SOUND_PACKS).map((key, idx) => (
+                    <option key={`sp-${idx + 1}`} value={key}>
+                      {SOUND_PACKS[key]?.name}
+                    </option>
+                  ))}
+                </select>
+              </SoundPack>
+            </li>
 
-          <div>
-            <ButtonAsLink onClick={() => window.location.replace(`/?reset`)}>
-              Reset all settings
-            </ButtonAsLink>
-          </div>
+            <li>
+              <ButtonAsLink onClick={() => window.location.replace(`/?reset`)}>
+                Reset all settings
+              </ButtonAsLink>
+            </li>
 
-          <div>
-            <ButtonAsLink onClick={copyConfigurationURL}>Copy configuration URL</ButtonAsLink>
+            <li>
+              <ButtonAsLink onClick={copyConfigurationURL}>Copy configuration URL</ButtonAsLink>
 
-            {copiedURL && (
-              <div>
-                <small>
-                  Copied{' '}
-                  <a href={copiedURL} target="_blank" rel="noreferrer">
-                    configuration URL
-                  </a>{' '}
-                  to clipboard.
-                </small>
-              </div>
-            )}
-          </div>
+              {copiedURL && (
+                <div>
+                  <small>
+                    Copied{' '}
+                    <a href={copiedURL} target="_blank" rel="noreferrer">
+                      configuration URL
+                    </a>{' '}
+                    to clipboard.
+                  </small>
+                </div>
+              )}
+            </li>
 
-          <Divider>
-            <div>
+            <li>
+              <Divider />
+            </li>
+
+            <li>
               <Link to="/about">About</Link>
-            </div>
+            </li>
 
-            <div>
+            <li>
               <a href="https://github.com/dkellerman/bipium" target="_blank" rel="noreferrer">
                 Code
               </a>
-            </div>
+            </li>
 
             {process.env.REACT_APP_VERCEL_GIT_COMMIT_SHA && (
-              <div>
+              <li>
                 <small>Build: {process.env.REACT_APP_VERCEL_GIT_COMMIT_SHA}</small>
-              </div>
+              </li>
             )}
-          </Divider>
+          </ul>
         </SideBar>
       )}
 
@@ -307,29 +318,27 @@ function App() {
             </select>
             <StepButtons val={subDivs} setter={setSubDivs} min={2} max={8} />
 
-            <SwingField>
-              <label onClick={() => setSwing(0)}>
-                <span>Swing:</span> <span>{swing}%</span>
+            <SwingField disabled={!canSwing}>
+              <label>
+                <span>Swing:</span> <span>{canSwing ? swing : 0}%</span>
               </label>{' '}
-              <div>
-                <Range
-                  min={0}
-                  max={99}
-                  step={1}
-                  value={swing}
-                  onChange={e => {
-                    setSwing(int(e.target.value));
-                  }}
-                  disabled={subDivs % 2 > 0}
-                  debounceTimeout={0}
-                />
-              </div>
+              <Range
+                min={0}
+                max={99}
+                step={1}
+                value={canSwing ? swing : 0}
+                onDrag={val => {
+                  setSwing(int(val));
+                }}
+                disabled={!canSwing}
+                ticks={[0, 33]}
+              />
               <StepButtons
                 val={swing}
                 setter={setSwing}
                 min={0}
                 max={99}
-                disabled={subDivs % 2 > 0}
+                disabled={!canSwing}
               />
             </SwingField>
           </>
@@ -371,10 +380,9 @@ function App() {
           max={100}
           step={1}
           value={volume}
-          onChange={e => {
-            setVolume(int(e.target.value));
+          onDrag={val => {
+            setVolume(int(val));
           }}
-          debounceTimeout={0}
         />
       </VolumeSliderMain>
     </Layout>
@@ -442,7 +450,6 @@ const BPMArea = ({ clicker, onChange }) => {
       </label>
 
       <StepButtons val={bpm} setter={setBpm} min={20} max={300} conv={float} />
-      <br />
 
       <div>
         <Range
@@ -450,9 +457,10 @@ const BPMArea = ({ clicker, onChange }) => {
           max={bpmMax}
           step={1}
           value={bpm}
-          onChange={e => setBpm(float(e.target.value))}
-          debounceTimeout={0}
-          ticks={[40, 80, 120, 160, 200, 240, bpmMax]}
+          onDrag={val => {
+            setBpm(validBpm(val));
+          }}
+          ticks={[50, 80, 120, 160, 200, 240, bpmMax]}
         />
       </div>
     </BPMField>

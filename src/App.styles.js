@@ -14,6 +14,7 @@ export const white = '#fefefe';
 
 export const smallFontSize = '14px';
 export const bodyFontSize = '20px';
+export const bodyCondensedFontSize = '18px';
 export const largeFontSize = '28px';
 export const xlargeFontSize = '40px';
 
@@ -22,6 +23,15 @@ export const subDivColor = 0x666666;
 export const nowLineColor = 0x00ff00;
 export const incorrectNoteColor = 0xff0000;
 export const correctNoteColor = 0x00ff00;
+
+export const rangeHandleWidth = 36;
+export const rangeHandleHeight = 36;
+export const rangeHandleColor = white;
+export const rangeTrackHeight = 7;
+export const rangeTrackColor = lightGray;
+export const rangeTickWidth = 2;
+export const rangeTickHeight = 10;
+export const rangeTickColor = gray;
 
 export const countFont = {
   fill: 0xffffff,
@@ -172,13 +182,22 @@ export const SideBar = styled.aside`
   padding-top: 58px;
   box-shadow: 2px 3px 4px rgba(0, 0, 0, 0.15);
   overflow: auto;
+  touch-action: pan-y;
 
-  div {
-    margin: 15px 0;
-  }
+  ul {
+    list-style: none;
+    padding-left: 12px;
+    li {
+      margin: 12px 0;
 
-  ${Divider} {
-    margin: 40px 0 0 0;
+      ::before {
+        content: '';
+      }
+
+      ${Divider} {
+        margin: 40px 0 20px 0;
+      }
+    }
   }
 `;
 
@@ -186,9 +205,7 @@ const volumeIconSize = 28;
 const volumeIconStyle = css`
   position: relative;
   left: -12px;
-  @-moz-document url-prefix() {
-    vertical-align: 22px;
-  }
+  vertical-align: -9px;
   &:hover {
     cursor: pointer;
   }
@@ -206,18 +223,21 @@ export const VolumeIcon = ({ muted = false, ...props }) => {
   return muted ? <VolumeIconMuted {...props} /> : <VolumeIconUnmuted {...props} />;
 };
 
-export const VolumeSliderSide = styled.div`
-  margin-top: 5px;
+const VolumeSlider = styled.div`
   @media only screen and (min-width: 668px) {
     margin-top: 20px;
   }
-  input {
+  .range {
     display: inline-block;
     width: 180px;
   }
 `;
 
-export const VolumeSliderMain = styled(VolumeSliderSide)``;
+export const VolumeSliderMain = styled(VolumeSlider)``;
+
+export const VolumeSliderSide = styled(VolumeSlider)`
+  margin-bottom: 40px;
+`;
 
 export const SoundPack = styled.div`
   label {
@@ -281,10 +301,11 @@ export const BPMField = styled.fieldset`
     }
   }
 
-  input[type='range'] {
+  .range {
     display: inline-block;
-    width: 300px;
-    margin-top: 10px;
+    margin-top: 15px;
+    margin-bottom: 5px;
+    width: calc(100% - 20px);
   }
 `;
 
@@ -313,28 +334,20 @@ export const PlaySubDivsField = styled.fieldset`
 export const SwingField = styled.div`
   display: flex;
   margin-top: 10px;
+  width: 100%;
 
   label {
-    margin-top: auto;
-    margin-bottom: auto;
+    padding-top: 15px;
     margin-left: 0;
-    margin-right: 8px;
-    span:first-child {
-      border-bottom: 1px dotted ${gray};
-      &:hover {
-        cursor: pointer;
-      }
-    }
+    margin-right: 10px;
+    font-size: ${bodyCondensedFontSize};
+    width: 83px;
+    color: ${({ disabled }) => disabled && gray};
   }
-  input {
+  .range {
     flex: 1;
-    display: inline-block;
-    margin-top: auto;
-    margin-bottom: auto;
-  }
-  button {
-    margin-top: auto;
-    margin-bottom: auto;
+    padding-top: 18px;
+    margin-bottom: 10px;
   }
 `;
 
@@ -342,5 +355,58 @@ export const VisualizerField = styled.fieldset`
   box-shadow: 3px 3px 3px ${lightGray};
   && {
     padding-bottom: 5px;
+  }
+`;
+
+export const StyledRange = styled.div.attrs({ className: 'range' })`
+  padding: 0 0 ${({ hasTicks }) => (hasTicks ? '30px' : '0')} 0;
+  ${({ disabled }) => disabled && css`
+    div {
+      color: ${gray};
+    }
+  `}
+`;
+
+export const RangeTrack = styled.div`
+  height: ${rangeTrackHeight}px;
+  background: ${rangeTrackColor};
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6);
+  border-radius: 2px;
+`;
+
+export const RangeTick = styled.div`
+  :before {
+    content: '';
+    position: absolute;
+    left: 0;
+    background: ${rangeTickColor};
+    height: ${rangeTickHeight}px;
+    width: ${rangeTickWidth}px;
+    transform: translate(-50%, 0.7rem);
+  }
+`;
+
+export const RangeTickLabel = styled.div`
+  position: absolute;
+  font-size: 18px;
+  color: ${black};
+  top: 100%;
+  transform: translate(-50%, 1.2rem);
+  white-space: nowrap;
+  padding-top: 5px;
+  border-bottom: 1px dotted ${gray};
+  &:hover {
+    cursor: pointer;
+  }
+`;
+
+export const RangeHandle = styled.div`
+  width: ${rangeHandleWidth}px;
+  height: ${rangeHandleHeight}px;
+  border-radius: 100%;
+  background: ${rangeHandleColor};
+  border: solid 1px ${gray};
+  &:hover {
+    cursor: pointer;
   }
 `;
