@@ -333,13 +333,7 @@ function App() {
                 disabled={!canSwing}
                 ticks={[0, 33]}
               />
-              <StepButtons
-                val={swing}
-                setter={setSwing}
-                min={0}
-                max={99}
-                disabled={!canSwing}
-              />
+              <StepButtons val={swing} setter={setSwing} min={0} max={99} disabled={!canSwing} />
             </SwingField>
           </>
         )}

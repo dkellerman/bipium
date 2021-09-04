@@ -360,11 +360,13 @@ export const VisualizerField = styled.fieldset`
 
 export const StyledRange = styled.div.attrs({ className: 'range' })`
   padding: 0 0 ${({ hasTicks }) => (hasTicks ? '30px' : '0')} 0;
-  ${({ disabled }) => disabled && css`
-    div {
-      color: ${gray};
-    }
-  `}
+  ${({ disabled }) =>
+    disabled &&
+    css`
+      div {
+        color: ${gray};
+      }
+    `}
 `;
 
 export const RangeTrack = styled.div`

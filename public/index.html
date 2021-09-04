@@ -27,7 +27,12 @@
       #root {
         touch-action: pan-y pinch-zoom;
       }
+      .grecaptcha-badge {
+        visibility: hidden !important;
+      }
     </style>
+
+    <script src="https://www.google.com/recaptcha/api.js?render=6LcypUMcAAAAAC462TjFWFc25ESq3ncO118M8VdJ&onload=__recaptchaCallback" async defer></script>
 
     <!-- Global site tag (gtag.js) - Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-RX56ZKRETB"></script>
@@ -39,7 +44,32 @@
       gtag('js', new Date());
       gtag('config', 'G-RX56ZKRETB');
     </script>
-  </head>
+
+    <script>
+      window.__recaptchaCallback = function() {
+        if (window.grecaptcha) {
+          window.grecaptcha.execute('6LcypUMcAAAAAC462TjFWFc25ESq3ncO118M8VdJ', { action: 'homepage' }).then(function(token) {
+            const url = `/api/recaptcha?g-recaptcha-response=${token}`;
+            fetch(url).then(resp => {
+              resp.json().then(data => {
+                if (data.error) {
+                  console.error(data.error);
+                } else if (window.gtag && data.score) {
+                  console.log("Recaptcha V3 score", data.score);
+                  window.gtag('event', 'bot_score', {
+                    event_category: 'Security',
+                    event_label: `${data.score}`,
+                    value: data.score,
+                  });
+                }
+              });
+            });
+          });
+        }
+      };
+    </script>
+
+    </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
