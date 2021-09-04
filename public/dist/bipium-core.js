@@ -1545,6 +1545,8 @@ function Visualizer_defineProperties(target, props) { for (var i = 0; i < props.
 
 function Visualizer_createClass(Constructor, protoProps, staticProps) { if (protoProps) Visualizer_defineProperties(Constructor.prototype, protoProps); if (staticProps) Visualizer_defineProperties(Constructor, staticProps); return Constructor; }
 
+function Visualizer_defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
 var Visualizer = /*#__PURE__*/function () {
   function Visualizer(_ref) {
     var metronome = _ref.metronome,
@@ -1584,6 +1586,9 @@ var Visualizer = /*#__PURE__*/function () {
           lastTime = this.lastTime,
           userClicks = this.userClicks,
           qThreshold = this.qThreshold;
+      var deltaT = m.elapsed - lastTime;
+      Visualizer.frameRate.push(deltaT);
+      if (Visualizer.frameRate.length > 100) Visualizer.frameRate.shift();
       if (!m.started || m.elapsed < 0) return;
       var savedClickIdx = m.getClickIndex(savedClick || {}) || 0;
       var lastClick = m.lastClick || {}; // get last click index based on the saved click's number of sub divs
@@ -1603,7 +1608,6 @@ var Visualizer = /*#__PURE__*/function () {
         var remProgress = 1.0 - curProgress;
         var remTime = m.barTime * remProgress;
         var perSecond = remProgress / remTime;
-        var deltaT = m.elapsed - lastTime;
         var deltaP = deltaT * perSecond;
         var newProgress = (curProgress + deltaP) % 1.0;
         this.progress = newProgress;
@@ -1630,10 +1634,30 @@ var Visualizer = /*#__PURE__*/function () {
         this.qType = getQuantizeType(qAmount, qThreshold);
       }
     }
+  }], [{
+    key: "frameRateInfo",
+    get: function get() {
+      var arr = Visualizer.frameRate;
+      if (!(arr !== null && arr !== void 0 && arr.length)) return 0;
+      var mean = arr.reduce(function (a, b) {
+        return a + b;
+      }) / arr.length;
+      var std = Math.sqrt(arr.map(function (x) {
+        return Math.pow(x - mean, 2);
+      }).reduce(function (a, b) {
+        return a + b;
+      }) / arr.length);
+      return {
+        mean: mean,
+        std: std
+      };
+    }
   }]);
 
   return Visualizer;
 }();
+
+Visualizer_defineProperty(Visualizer, "frameRate", []);
 
 function getQuantizeType(q, threshold) {
   if (q <= -1 * threshold) {
