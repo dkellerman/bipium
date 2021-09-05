@@ -15,6 +15,7 @@ export const white = '#fefefe';
 export const smallFontSize = '14px';
 export const bodyFontSize = '20px';
 export const bodyCondensedFontSize = '18px';
+export const largeCondensedFontSize = '24px';
 export const largeFontSize = '28px';
 export const xlargeFontSize = '40px';
 
@@ -39,6 +40,8 @@ export const countFont = {
   strokeThickness: 10,
 };
 
+export const condensedHeight = '639px';
+
 export const Layout = styled.main`
   background: ${white};
   color: ${black};
@@ -48,6 +51,16 @@ export const Layout = styled.main`
   width: 100%;
   align-items: center;
   padding: 0 0 40px 0;
+
+  @media only screen and (max-height: ${condensedHeight}) {
+    &,
+    select {
+      font-size: ${bodyCondensedFontSize};
+    }
+    select {
+      height: 45px;
+    }
+  }
 
   fieldset {
     margin: 5px 0;
@@ -66,6 +79,9 @@ export const Layout = styled.main`
     margin: 0;
     zoom: 2;
     vertical-align: middle;
+    @media only screen and (max-height: ${condensedHeight}) {
+      zoom: 1.5;
+    }
   }
 
   small {
@@ -82,12 +98,18 @@ export const Nav = styled.nav`
   h3 a {
     width: 100%;
     padding: 0;
-    margin: 5px;
+    margin: 3px;
     text-align: center !important;
     border: 0;
     color: ${green};
     font-weight: bold;
     font-variant: small-caps;
+  }
+
+  @media only screen and (max-height: ${condensedHeight}) {
+    h3 {
+      font-size: 32px;
+    }
   }
 `;
 
@@ -98,6 +120,10 @@ export const StartButton = styled.button`
   padding: 20px;
   margin-top: 15px;
   font-size: ${xlargeFontSize};
+  @media only screen and (max-height: ${condensedHeight}) {
+    font-size: ${largeFontSize};
+    margin-top: 5px;
+  }
 `;
 
 export const StopButton = styled(StartButton)`
@@ -111,6 +137,9 @@ export const TapButton = styled.button`
   border-radius: 50%;
   padding: 15px 25px;
   margin-bottom: 5px;
+  @media only screen and (max-height: ${condensedHeight}) {
+    padding: 10px 25px;
+  }
 `;
 
 export const StepButton = styled.button`
@@ -119,6 +148,9 @@ export const StepButton = styled.button`
   padding: 12px;
   margin: 0 0 12px 5px;
   background: ${lightGray};
+  @media only screen and (max-height: ${condensedHeight}) {
+    padding: 6px 12px 6px 12px;
+  }
 `;
 
 export const AboutPage = styled.main`
@@ -150,6 +182,10 @@ export const CloseIcon = styled(RiCloseLine).attrs({
   &:hover {
     cursor: pointer;
   }
+  @media only screen and (max-height: ${condensedHeight}) {
+    width: 24px;
+    height: 24px;
+  }
 `;
 
 export const SettingsIcon = styled(FiSettings).attrs({
@@ -161,6 +197,10 @@ export const SettingsIcon = styled(FiSettings).attrs({
   z-index: 1000;
   &:hover {
     cursor: pointer;
+  }
+  @media only screen and (max-height: ${condensedHeight}) {
+    width: 24px;
+    height: 24px;
   }
 `;
 
@@ -275,6 +315,12 @@ export const BPMField = styled.fieldset`
     }
   }
 
+  @media only screen and (max-height: ${condensedHeight}) {
+    && {
+      margin-top: 8px;
+    }
+  }
+
   input[type='number'] {
     display: ${props => (props.editing ? 'inline-block' : 'none')};
   }
@@ -294,6 +340,13 @@ export const BPMField = styled.fieldset`
     width: 100px;
   }
 
+  @media only screen and (max-height: ${condensedHeight}) {
+    label,
+    input[type='number'] {
+      font-size: ${largeCondensedFontSize};
+    }
+  }
+
   @media only screen and (max-width: 374px) {
     label,
     input[type='number'] {
@@ -306,6 +359,10 @@ export const BPMField = styled.fieldset`
     margin-top: 15px;
     margin-bottom: 5px;
     width: calc(100% - 20px);
+    @media only screen and (max-height: ${condensedHeight}) {
+      margin-top: 10px;
+      margin-bottom: 5px;
+    }
   }
 `;
 
@@ -318,6 +375,12 @@ export const BeatsField = styled.fieldset`
   }
   button {
     margin-bottom: 0;
+  }
+  @media only screen and (max-height: ${condensedHeight}) {
+    && {
+      margin-bottom: 0;
+      margin-top: 3px;
+    }
   }
 `;
 
@@ -349,12 +412,20 @@ export const SwingField = styled.div`
     padding-top: 18px;
     margin-bottom: 10px;
   }
+  @media only screen and (max-height: ${condensedHeight}) {
+    margin-top: 5px;
+  }
 `;
 
 export const VisualizerField = styled.fieldset`
   box-shadow: 3px 3px 3px ${lightGray};
   && {
     padding-bottom: 5px;
+  }
+  @media only screen and (max-height: ${condensedHeight}) {
+    && {
+      padding: 0;
+    }
   }
 `;
 
@@ -399,6 +470,9 @@ export const RangeTickLabel = styled.div`
   border-bottom: 1px dotted ${gray};
   &:hover {
     cursor: pointer;
+  }
+  @media only screen and (max-height: ${condensedHeight}) {
+    font-size: 16px;
   }
 `;
 

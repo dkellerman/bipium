@@ -42,6 +42,8 @@ const bpmMax = 320.0;
 const bpmDefault = 80.0;
 const validBpm = val => Math.max(Math.min(bpmMax, val || bpmDefault), bpmMin);
 
+window._sentFR = true; // temp disable framerate event
+
 function App() {
   const bpm = useRef();
   const [beats, setBeats] = useSetting('beats', 4, int);
