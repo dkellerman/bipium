@@ -42,8 +42,6 @@ const bpmMax = 320.0;
 const bpmDefault = 80.0;
 const validBpm = val => Math.max(Math.min(bpmMax, val || bpmDefault), bpmMin);
 
-window._sentFR = true; // temp disable framerate event
-
 function App() {
   const bpm = useRef();
   const [beats, setBeats] = useSetting('beats', 4, int);
@@ -155,10 +153,9 @@ function App() {
   useEffect(() => {
     if (!started) {
       m?.stop();
-      unmonitorFrameRate();
+      sendFrameRate();
     } else {
       m?.start();
-      monitorFrameRate();
     }
     forceRender();
 
@@ -482,32 +479,17 @@ const StepButtons = ({ val, setter, min, max, step = 1, conv = int, disabled = f
   );
 };
 
-function monitorFrameRate() {
-  const debugFR = window.location.search.indexOf('_fr') > -1;
-  if (window._sentFR && !debugFR) return;
+function sendFrameRate() {
+  if (window._sentFR || !Visualizer.frameRate?.length) return;
 
-  window._frInterval = setInterval(() => {
-    const info = Visualizer.frameRateInfo;
-    if (debugFR) {
-      console.log('Frame Rate', 'mean', info.mean, 'std', info.std);
-    } else if (!window._sentFR) {
-      console.log('sending frame rate', info);
-      window.gtag?.('event', 'frame_rate', {
-        event_category: 'Performance',
-        event_label: `Mean: ${info.mean} / Std Dev: ${info.std}`,
-        value: info.mean,
-      });
-      window._sentFR = true;
-      if (!debugFR) unmonitorFrameRate();
-    }
-  }, 5000);
-}
-
-function unmonitorFrameRate() {
-  if (window._frInterval) {
-    clearInterval(window._frInterval);
-    window._frInterval = null;
-  }
+  const info = Visualizer.frameRateInfo;
+  console.log('sending frame rate', info);
+  window.gtag?.('event', 'frame_rate', {
+    event_category: 'Performance',
+    event_label: `Mean: ${info.mean} / Std Dev: ${info.std}`,
+    value: info.mean,
+  });
+  window._sentFR = true;
 }
 
 export default App;
