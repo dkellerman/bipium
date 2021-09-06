@@ -271,7 +271,7 @@ function App() {
             {process.env.REACT_APP_VERCEL_GIT_COMMIT_SHA && (
               <li>
                 <small>
-                  Build: {(process.env.REACT_APP_VERCEL_GIT_COMMIT_SHA || '').substring(5)}
+                  Build: {(process.env.REACT_APP_VERCEL_GIT_COMMIT_SHA || '').substring(1, 5)}
                 </small>
               </li>
             )}
