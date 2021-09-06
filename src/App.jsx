@@ -221,7 +221,7 @@ function App() {
 
             <li>
               <SoundPack>
-                <label>Sound Pack:</label>{' '}
+                <label>Sounds:</label>{' '}
                 <select value={soundPack} onChange={e => setSoundPack(e.target.value)}>
                   {Object.keys(SOUND_PACKS).map((key, idx) => (
                     <option key={`sp-${idx + 1}`} value={key}>
@@ -270,7 +270,9 @@ function App() {
 
             {process.env.REACT_APP_VERCEL_GIT_COMMIT_SHA && (
               <li>
-                <small>Build: {process.env.REACT_APP_VERCEL_GIT_COMMIT_SHA}</small>
+                <small>
+                  Build: {(process.env.REACT_APP_VERCEL_GIT_COMMIT_SHA || '').substring(5)}
+                </small>
               </li>
             )}
           </ul>
@@ -330,7 +332,7 @@ function App() {
                   setSwing(int(val));
                 }}
                 disabled={!canSwing}
-                ticks={[0, 33]}
+                ticks={[0, 33, 50]}
               />
               <StepButtons val={swing} setter={setSwing} min={0} max={99} disabled={!canSwing} />
             </SwingField>

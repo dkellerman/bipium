@@ -4,12 +4,15 @@ import { AboutPage } from './App.styles';
 
 const ABOUT = `
 ## About Bipium
-Bipium is a metronome.
+Bipium is a free metronome on the web. It includes classic metronome features
+such as tap tempo, sub divisions, visualization, and now swing!
 
-Click start.
+__To use__: click start.
 
 ## Features
+- Counts to 4, repeats
 - BPM slider, or type it in (allows fractional beats)
+- Set number of beats per measure
 - Tap tempo
 - Play sub-divisions if desired
 - Swing!

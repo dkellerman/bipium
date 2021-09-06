@@ -104,6 +104,9 @@ export const Nav = styled.nav`
     color: ${green};
     font-weight: bold;
     font-variant: small-caps;
+    span:not(.bipium) {
+      filter: brightness(1.3);
+    }
   }
 
   @media only screen and (max-height: ${condensedHeight}) {
@@ -237,6 +240,11 @@ export const SideBar = styled.aside`
       ${Divider} {
         margin: 40px 0 20px 0;
       }
+
+      a {
+        margin-bottom: 8px;
+        display: inline-block;
+      }
     }
   }
 `;
@@ -298,6 +306,7 @@ export const ButtonAsLink = styled.button`
     box-shadow: none;
     padding: 0;
     margin: 13px 0 0 0;
+    border-bottom: 1px dotted ${gray};
   }
 `;
 
