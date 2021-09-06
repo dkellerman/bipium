@@ -231,7 +231,7 @@ export const SideBar = styled.aside`
     list-style: none;
     padding-left: 12px;
     li {
-      margin: 12px 0;
+      margin: 10px 0 20px 0;
 
       ::before {
         content: '';
@@ -239,11 +239,6 @@ export const SideBar = styled.aside`
 
       ${Divider} {
         margin: 40px 0 20px 0;
-      }
-
-      a {
-        margin-bottom: 8px;
-        display: inline-block;
       }
     }
   }
