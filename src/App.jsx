@@ -31,7 +31,7 @@ import { DefaultVisualizer } from './DefaultVisualizer';
 import { useTapBPM, useSetting, useClicker, useMetronome, SOUND_PACKS } from './hooks';
 import { NavBar } from './NavBar';
 import { Range } from './Range';
-import { Visualizer } from './core';
+import { sendEvent, sendOneEvent, sendFrameRate } from './tracking';
 
 const int = x => x && parseInt(x, 10);
 const float = x => x && parseFloat(x);
@@ -206,7 +206,13 @@ function App() {
           <ul>
             <li>
               <VolumeSliderSide>
-                <VolumeIcon muted={muted} onClick={() => setMuted(val => !val)} />
+                <VolumeIcon
+                  muted={muted}
+                  onClick={() => {
+                    setMuted(val => !val);
+                    sendOneEvent(`set_mute_${muted ? 'off' : 'on'}`);
+                  }}
+                />
                 <Range
                   min={0}
                   max={100}
@@ -214,6 +220,7 @@ function App() {
                   value={volume}
                   onDrag={val => {
                     setVolume(int(val));
+                    sendOneEvent('set_volume', '', val, int(val));
                   }}
                 />
               </VolumeSliderSide>
@@ -222,7 +229,13 @@ function App() {
             <li>
               <SoundPack>
                 <label>Sounds:</label>{' '}
-                <select value={soundPack} onChange={e => setSoundPack(e.target.value)}>
+                <select
+                  value={soundPack}
+                  onChange={e => {
+                    setSoundPack(e.target.value);
+                    sendEvent('set_sound_pack', 'App', e.target.value);
+                  }}
+                >
                   {Object.keys(SOUND_PACKS).map((key, idx) => (
                     <option key={`sp-${idx + 1}`} value={key}>
                       {SOUND_PACKS[key]?.name}
@@ -233,13 +246,27 @@ function App() {
             </li>
 
             <li>
-              <ButtonAsLink onClick={() => window.location.replace(`/?reset`)}>
+              <ButtonAsLink
+                onClick={e => {
+                  e.preventDefault();
+                  sendEvent('reset');
+                  window.location.replace(`/?reset`);
+                }}
+              >
                 Reset all settings
               </ButtonAsLink>
             </li>
 
             <li>
-              <ButtonAsLink onClick={copyConfigurationURL}>Copy configuration URL</ButtonAsLink>
+              <ButtonAsLink
+                onClick={e => {
+                  e.preventDefault();
+                  copyConfigurationURL();
+                  sendEvent('copy_configuration_url');
+                }}
+              >
+                Copy configuration URL
+              </ButtonAsLink>
 
               {copiedURL && (
                 <div>
@@ -263,7 +290,12 @@ function App() {
             </li>
 
             <li>
-              <a href="https://github.com/dkellerman/bipium" target="_blank" rel="noreferrer">
+              <a
+                href="https://github.com/dkellerman/bipium"
+                target="_blank"
+                rel="noreferrer"
+                onClick={() => sendEvent('code')}
+              >
                 Code
               </a>
             </li>
@@ -283,32 +315,51 @@ function App() {
         clicker={clicker}
         onChange={val => {
           updateBPM(val);
+          sendEvent('set_bpm', 'App', val, float(val));
         }}
       />
 
       <BeatsField>
         <label>Beats:</label>{' '}
-        <select value={beats} onChange={e => setBeats(int(e.target.value))}>
+        <select
+          value={beats}
+          onChange={e => {
+            const val = int(e.target.value);
+            setBeats(val);
+            sendEvent('set_beats', 'App', val, val);
+          }}
+        >
           {new Array(12).fill(0).map((_, idx) => (
             <option key={`beats-${idx + 1}`} value={idx + 1}>
               {idx + 1}
             </option>
           ))}
         </select>
-        <StepButtons val={beats} setter={setBeats} min={1} max={12} />
+        <StepButtons val={beats} setter={setBeats} min={1} max={12} event="set_beats" />
       </BeatsField>
 
       <PlaySubDivsField>
         <input
           type="checkbox"
           checked={playSubDivs}
-          onChange={e => setPlaySubDivs(e.target.checked)}
+          onChange={e => {
+            const val = e.target.checked;
+            setPlaySubDivs(val);
+            sendEvent('set_play_subdivs', 'App', val, val ? 1 : 0);
+          }}
         />
         <label>Play {!playSubDivs && 'sub divs'}</label>
 
         {playSubDivs && (
           <>
-            <select value={subDivs} onChange={e => setSubDivs(int(e.target.value))}>
+            <select
+              value={subDivs}
+              onChange={e => {
+                const val = int(e.target.value);
+                setSubDivs(val);
+                sendEvent('set_subdivs', 'App', val, val);
+              }}
+            >
               <option value="8">32nd notes</option>
               <option value="7">Septuplets</option>
               <option value="6">Sextuplets</option>
@@ -317,7 +368,7 @@ function App() {
               <option value="3">Triplets</option>
               <option value="2">8th notes</option>
             </select>
-            <StepButtons val={subDivs} setter={setSubDivs} min={2} max={8} />
+            <StepButtons val={subDivs} setter={setSubDivs} min={2} max={8} event="set_subdivs" />
 
             <SwingField disabled={!canSwing}>
               <label>
@@ -330,11 +381,19 @@ function App() {
                 value={canSwing ? swing : 0}
                 onDrag={val => {
                   setSwing(int(val));
+                  sendOneEvent('update_swing', '', val, int(val));
                 }}
                 disabled={!canSwing}
                 ticks={[0, 33, 50]}
               />
-              <StepButtons val={swing} setter={setSwing} min={0} max={99} disabled={!canSwing} />
+              <StepButtons
+                val={swing}
+                setter={setSwing}
+                min={0}
+                max={99}
+                disabled={!canSwing}
+                event="set_swing"
+              />
             </SwingField>
           </>
         )}
@@ -352,6 +411,7 @@ function App() {
             onClick={e => {
               e.preventDefault();
               start();
+              sendEvent('start');
             }}
           >
             Start
@@ -361,6 +421,7 @@ function App() {
             onClick={e => {
               e.preventDefault();
               stop();
+              sendEvent('stop');
             }}
           >
             Stop
@@ -369,7 +430,14 @@ function App() {
       </div>
 
       <VolumeSliderMain>
-        <VolumeIcon muted={muted} onClick={() => setMuted(val => !val)} />
+        <VolumeIcon
+          muted={muted}
+          onClick={() => {
+            setMuted(val => !val);
+            sendOneEvent(`mute_${muted ? 'off' : 'on'}`);
+          }}
+        />
+
         <Range
           min={0}
           max={100}
@@ -377,6 +445,7 @@ function App() {
           value={volume}
           onDrag={val => {
             setVolume(int(val));
+            sendOneEvent('set_volume', '', val, int(val));
           }}
         />
       </VolumeSliderMain>
@@ -402,6 +471,7 @@ const BPMArea = ({ clicker, onChange }) => {
     // t: tap
     handleTap();
     clicker?.click();
+    sendOneEvent('tap');
   });
 
   useEffect(() => {
@@ -414,7 +484,13 @@ const BPMArea = ({ clicker, onChange }) => {
 
   return (
     <BPMField editing={editingBPM}>
-      <TapButton onClick={e => handleTap(e)} onMouseDown={() => clicker.click()}>
+      <TapButton
+        onClick={e => handleTap(e)}
+        onMouseDown={() => {
+          clicker.click();
+          sendOneEvent('tap');
+        }}
+      >
         Tap
       </TapButton>
 
@@ -437,8 +513,9 @@ const BPMArea = ({ clicker, onChange }) => {
         }}
       />
       <label
-        onClick={e => {
+        onClick={() => {
           setEditingBPM(true);
+          sendEvent('edit_bpm');
         }}
       >
         {bpm} BPM
@@ -462,36 +539,38 @@ const BPMArea = ({ clicker, onChange }) => {
   );
 };
 
-const StepButtons = ({ val, setter, min, max, step = 1, conv = int, disabled = false }) => {
+const StepButtons = ({
+  val,
+  setter,
+  min,
+  max,
+  step = 1,
+  conv = int,
+  disabled = false,
+  event = null,
+}) => {
   return (
     <>
       <StepButton
         disabled={disabled || val === max}
-        onClick={() => setter(x => (x < max ? conv(x) + step : x))}
+        onClick={() => {
+          setter(x => (x < max ? conv(x) + step : x));
+          if (event) sendEvent(event, 'App', 'step_up');
+        }}
       >
         +
       </StepButton>
       <StepButton
         disabled={disabled || val === min}
-        onClick={() => setter(x => (x > min ? conv(x) - step : x))}
+        onClick={() => {
+          setter(x => (x > min ? conv(x) - step : x));
+          if (event) sendEvent(event, 'App', 'step_down');
+        }}
       >
         -
       </StepButton>
     </>
   );
 };
-
-function sendFrameRate() {
-  if (window._sentFR || !Visualizer.frameRate?.length) return;
-
-  const info = Visualizer.frameRateInfo;
-  console.log('sending frame rate', info);
-  window.gtag?.('event', 'frame_rate', {
-    event_category: 'Performance',
-    event_label: `Mean: ${info.mean} / Std Dev: ${info.std}`,
-    value: info.mean,
-  });
-  window._sentFR = true;
-}
 
 export default App;
