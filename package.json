@@ -39,9 +39,11 @@
     "regenerator-runtime": "^0.13.9",
     "standardized-audio-context-mock": "^8.5.13",
     "terser-webpack-plugin": "^4.2.3",
+    "vercel": "^23.1.2",
     "webpack-cli": "^4.8.0"
   },
   "scripts": {
+    "vercel": "node_modules/.bin/vercel",
     "start": "react-scripts start",
     "build": "CI='' react-scripts build",
     "test": "react-scripts test",
@@ -62,5 +64,6 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  }
+  },
+  "packageManager": "yarn@1.22.1"
 }
