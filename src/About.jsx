@@ -30,7 +30,7 @@ export default function About() {
   return (
     <AboutPage>
       <Link to="/">Back to app</Link>
-      <ReactMarkdown source={ABOUT}></ReactMarkdown>
+      <ReactMarkdown children={ABOUT}></ReactMarkdown>
     </AboutPage>
   );
 }
