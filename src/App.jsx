@@ -369,7 +369,7 @@ function App() {
               <option value="2">8th notes</option>
               <option value="1">Quarter notes</option>
             </select>
-            <StepButtons val={subDivs} setter={setSubDivs} min={2} max={8} event="set_subdivs" />
+            <StepButtons val={subDivs} setter={setSubDivs} min={1} max={8} event="set_subdivs" />
 
             <SwingField disabled={!canSwing}>
               <label>
