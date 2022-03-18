@@ -1,101 +1,855 @@
-var Bipium =
-/******/ (function(modules) { // webpackBootstrap
-/******/ 	// The module cache
-/******/ 	var installedModules = {};
-/******/
-/******/ 	// The require function
-/******/ 	function __webpack_require__(moduleId) {
-/******/
-/******/ 		// Check if module is in cache
-/******/ 		if(installedModules[moduleId]) {
-/******/ 			return installedModules[moduleId].exports;
-/******/ 		}
-/******/ 		// Create a new module (and put it into the cache)
-/******/ 		var module = installedModules[moduleId] = {
-/******/ 			i: moduleId,
-/******/ 			l: false,
-/******/ 			exports: {}
-/******/ 		};
-/******/
-/******/ 		// Execute the module function
-/******/ 		modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
-/******/
-/******/ 		// Flag the module as loaded
-/******/ 		module.l = true;
-/******/
-/******/ 		// Return the exports of the module
-/******/ 		return module.exports;
-/******/ 	}
-/******/
-/******/
-/******/ 	// expose the modules object (__webpack_modules__)
-/******/ 	__webpack_require__.m = modules;
-/******/
-/******/ 	// expose the module cache
-/******/ 	__webpack_require__.c = installedModules;
-/******/
-/******/ 	// define getter function for harmony exports
-/******/ 	__webpack_require__.d = function(exports, name, getter) {
-/******/ 		if(!__webpack_require__.o(exports, name)) {
-/******/ 			Object.defineProperty(exports, name, { enumerable: true, get: getter });
-/******/ 		}
-/******/ 	};
-/******/
-/******/ 	// define __esModule on exports
-/******/ 	__webpack_require__.r = function(exports) {
-/******/ 		if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
-/******/ 			Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
-/******/ 		}
-/******/ 		Object.defineProperty(exports, '__esModule', { value: true });
-/******/ 	};
-/******/
-/******/ 	// create a fake namespace object
-/******/ 	// mode & 1: value is a module id, require it
-/******/ 	// mode & 2: merge all properties of value into the ns
-/******/ 	// mode & 4: return value when already ns object
-/******/ 	// mode & 8|1: behave like require
-/******/ 	__webpack_require__.t = function(value, mode) {
-/******/ 		if(mode & 1) value = __webpack_require__(value);
-/******/ 		if(mode & 8) return value;
-/******/ 		if((mode & 4) && typeof value === 'object' && value && value.__esModule) return value;
-/******/ 		var ns = Object.create(null);
-/******/ 		__webpack_require__.r(ns);
-/******/ 		Object.defineProperty(ns, 'default', { enumerable: true, value: value });
-/******/ 		if(mode & 2 && typeof value != 'string') for(var key in value) __webpack_require__.d(ns, key, function(key) { return value[key]; }.bind(null, key));
-/******/ 		return ns;
-/******/ 	};
-/******/
-/******/ 	// getDefaultExport function for compatibility with non-harmony modules
-/******/ 	__webpack_require__.n = function(module) {
-/******/ 		var getter = module && module.__esModule ?
-/******/ 			function getDefault() { return module['default']; } :
-/******/ 			function getModuleExports() { return module; };
-/******/ 		__webpack_require__.d(getter, 'a', getter);
-/******/ 		return getter;
-/******/ 	};
-/******/
-/******/ 	// Object.prototype.hasOwnProperty.call
-/******/ 	__webpack_require__.o = function(object, property) { return Object.prototype.hasOwnProperty.call(object, property); };
-/******/
-/******/ 	// __webpack_public_path__
-/******/ 	__webpack_require__.p = "";
-/******/
-/******/
-/******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 0);
-/******/ })
-/************************************************************************/
-/******/ ([
-/* 0 */
-/***/ (function(module, exports, __webpack_require__) {
+var Bipium;
+/******/ (function() { // webpackBootstrap
+/******/ 	var __webpack_modules__ = ({
 
-__webpack_require__(1);
-module.exports = __webpack_require__(2);
+/***/ 291:
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+// ESM COMPAT FLAG
+__webpack_require__.r(__webpack_exports__);
+
+// EXPORTS
+__webpack_require__.d(__webpack_exports__, {
+  "Clicker": function() { return /* reexport */ Clicker; },
+  "DEFAULT_SOUNDS": function() { return /* reexport */ DEFAULT_SOUNDS; },
+  "Metronome": function() { return /* reexport */ Metronome; },
+  "Visualizer": function() { return /* reexport */ Visualizer; },
+  "createMetronome": function() { return /* binding */ createMetronome; }
+});
+
+;// CONCATENATED MODULE: ./src/core/Metronome.js
+function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread(); }
+
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+
+function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
+
+function _iterableToArray(iter) { if (typeof Symbol !== "undefined" && iter[Symbol.iterator] != null || iter["@@iterator"] != null) return Array.from(iter); }
+
+function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) return _arrayLikeToArray(arr); }
+
+function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
+
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); enumerableOnly && (symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; })), keys.push.apply(keys, symbols); } return keys; }
+
+function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = null != arguments[i] ? arguments[i] : {}; i % 2 ? ownKeys(Object(source), !0).forEach(function (key) { _defineProperty(target, key, source[key]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } return target; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); Object.defineProperty(Constructor, "prototype", { writable: false }); return Constructor; }
+
+var Metronome = /*#__PURE__*/function () {
+  function Metronome() {
+    var _this = this;
+
+    var settings = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+    _classCallCheck(this, Metronome);
+
+    var timerFn = settings.timerFn,
+        clicker = settings.clicker,
+        _settings$bpm = settings.bpm,
+        bpm = _settings$bpm === void 0 ? 80 : _settings$bpm,
+        _settings$beats = settings.beats,
+        beats = _settings$beats === void 0 ? 4 : _settings$beats,
+        _settings$subDivs = settings.subDivs,
+        subDivs = _settings$subDivs === void 0 ? 1 : _settings$subDivs,
+        _settings$swing = settings.swing,
+        swing = _settings$swing === void 0 ? 0 : _settings$swing,
+        _settings$workerUrl = settings.workerUrl,
+        workerUrl = _settings$workerUrl === void 0 ? null : _settings$workerUrl,
+        _settings$onNextClick = settings.onNextClick,
+        onNextClick = _settings$onNextClick === void 0 ? function () {} : _settings$onNextClick,
+        _settings$onUnschedul = settings.onUnscheduleClick,
+        onUnscheduleClick = _settings$onUnschedul === void 0 ? function () {} : _settings$onUnschedul,
+        _settings$onStart = settings.onStart,
+        onStart = _settings$onStart === void 0 ? function () {} : _settings$onStart,
+        _settings$onStop = settings.onStop,
+        onStop = _settings$onStop === void 0 ? function () {} : _settings$onStop,
+        _settings$onScheduler = settings.onSchedulerTick,
+        onSchedulerTick = _settings$onScheduler === void 0 ? function () {} : _settings$onScheduler,
+        _settings$lookaheadIn = settings.lookaheadInterval,
+        lookaheadInterval = _settings$lookaheadIn === void 0 ? 0.025 : _settings$lookaheadIn,
+        _settings$scheduleAhe = settings.scheduleAheadTime,
+        scheduleAheadTime = _settings$scheduleAhe === void 0 ? 0.1 : _settings$scheduleAhe,
+        _settings$startDelayT = settings.startDelayTime,
+        startDelayTime = _settings$startDelayT === void 0 ? 0.2 : _settings$startDelayT;
+    this.onStart = onStart;
+    this.onStop = onStop;
+    this.onNextClick = onNextClick;
+    this.onUnscheduleClick = onUnscheduleClick;
+    this.onSchedulerTick = onSchedulerTick;
+    this.timerFn = timerFn;
+    this.clicker = clicker;
+    this.lookaheadInterval = lookaheadInterval;
+    this.scheduleAheadTime = scheduleAheadTime;
+    this.startDelayTime = startDelayTime;
+    this.bpm = bpm;
+    this.beats = beats;
+    this.subDivs = subDivs;
+    this.swing = swing;
+    this.started = false; // prep the thread timer
+
+    if (workerUrl) {
+      this.worker = new Worker(workerUrl);
+    } else {
+      this.worker = new MetronomeWorker();
+    }
+
+    this.worker.onmessage = function (e) {
+      if (e.data === 'tick') {
+        _this.scheduler();
+
+        _this.onSchedulerTick();
+      }
+    };
+
+    this.worker.postMessage({
+      interval: this.lookaheadInterval
+    });
+  }
+
+  _createClass(Metronome, [{
+    key: "start",
+    value: function start() {
+      var _this$clicker, _this$clicker$audioCo;
+
+      if (this.started) return;
+      this.startTime = this.now + this.startDelayTime;
+      this.stopTime = null;
+      this.barStart = this.startTime;
+      this.lastBar = 0;
+      this.started = true;
+      this.scheduledClicks = [];
+      if (this.subDivs % 2 > 0) this.swing = 0;
+      this.next = {
+        bar: 1,
+        beat: 1,
+        subDiv: 1,
+        time: this.startTime
+      };
+      this.worker.postMessage('start');
+      this.onStart();
+
+      if (((_this$clicker = this.clicker) === null || _this$clicker === void 0 ? void 0 : (_this$clicker$audioCo = _this$clicker.audioContext) === null || _this$clicker$audioCo === void 0 ? void 0 : _this$clicker$audioCo.state) === 'suspended') {
+        this.clicker.audioContext.resume();
+      }
+    }
+  }, {
+    key: "stop",
+    value: function stop() {
+      if (!this.started) return;
+      this.stopTime = this.now;
+      this.started = false;
+      this.worker.postMessage('stop');
+      this.unscheduleClicks();
+      this.onStop();
+    }
+  }, {
+    key: "update",
+    value: function update(_ref) {
+      var bpm = _ref.bpm,
+          beats = _ref.beats,
+          subDivs = _ref.subDivs,
+          swing = _ref.swing;
+      this.unscheduleClicks();
+      if (bpm !== undefined) this.bpm = bpm;
+      if (beats !== undefined) this.beats = beats;
+      if (subDivs !== undefined) this.subDivs = subDivs;
+      if (swing !== undefined) this.swing = swing; // recalculate next scheduled beat if bar structure has changed
+
+      if ((bpm !== undefined || beats !== undefined) && this.started && this.scheduledClicks.length) {
+        this.next = _objectSpread({}, this.lastClick);
+
+        while (this.next.time <= this.now - this.subDivTime) {
+          this.next.time += this.subDivTime;
+        }
+
+        this.advance();
+      }
+    } // main method called by the thread timer when started
+
+  }, {
+    key: "scheduler",
+    value: function scheduler() {
+      if (!this.started) return; // update the bar start time for quantization purposes
+
+      var lc = this.lastClick;
+
+      if (((lc === null || lc === void 0 ? void 0 : lc.bar) || 0) > this.lastBar) {
+        this.lastBar = lc.bar;
+        this.barStart = lc.time;
+      }
+
+      while (this.next.time < this.now + this.scheduleAheadTime) {
+        this.scheduleClick();
+        this.advance(); // updates this.next.time
+      }
+    }
+  }, {
+    key: "scheduleClick",
+    value: function scheduleClick() {
+      var _this$clicker2;
+
+      var click = _objectSpread(_objectSpread({}, this.next), {}, {
+        beats: this.beats,
+        subDivs: this.subDivs
+      }); // notify clicker to schedule the actual sound - it returns a sound object
+      // that we keep around so that if it needs to be cancelled it can be passed
+      // to the onUnscheduleClick method
+
+
+      var obj = (_this$clicker2 = this.clicker) === null || _this$clicker2 === void 0 ? void 0 : _this$clicker2.scheduleClickSound(click);
+      this.onNextClick(click);
+      this.scheduledClicks.push(_objectSpread(_objectSpread({}, click), {}, {
+        obj: obj
+      })); // remove old clicks from memory
+
+      var now = this.now;
+      this.scheduledClicks = this.scheduledClicks.filter(function (c) {
+        return (c === null || c === void 0 ? void 0 : c.time) >= now - 10.0;
+      });
+    }
+  }, {
+    key: "advance",
+    value: function advance() {
+      // calculate next click time
+      var delta = this.beatTime / this.subDivs;
+
+      if (this.next.subDiv % 2 === 1) {
+        delta += delta * (this.swing / 100.0);
+      } else {
+        delta *= (100.0 - this.swing) / 100.0;
+      } // advance time
+
+
+      this.next.time += delta; // advance beat counter
+
+      if (this.next.subDiv % this.subDivs === 0) {
+        this.next.subDiv = 1;
+        this.next.beat++;
+
+        if (this.next.beat > this.beats) {
+          this.next.beat = 1;
+          this.next.bar++;
+        }
+      } else {
+        this.next.subDiv++;
+      }
+    }
+  }, {
+    key: "unscheduleClicks",
+    value: function unscheduleClicks() {
+      var _this2 = this;
+
+      this.scheduledClicks = (this.scheduledClicks || []).map(function (click) {
+        if (click.time > _this2.now) {
+          var _this2$clicker;
+
+          (_this2$clicker = _this2.clicker) === null || _this2$clicker === void 0 ? void 0 : _this2$clicker.removeClickSound(click);
+
+          _this2.onUnscheduleClick(click);
+
+          return null;
+        }
+
+        return click;
+      }).filter(Boolean);
+    }
+  }, {
+    key: "now",
+    get: function get() {
+      return this.timerFn();
+    }
+  }, {
+    key: "beatTime",
+    get: function get() {
+      return 60.0 / this.bpm;
+    }
+  }, {
+    key: "subDivTime",
+    get: function get() {
+      return this.beatTime / this.subDivs;
+    }
+  }, {
+    key: "barTime",
+    get: function get() {
+      return this.beats * this.beatTime;
+    }
+  }, {
+    key: "totalSubDivs",
+    get: function get() {
+      return this.beats * this.subDivs;
+    } // relative timestamps for all sub-divisions in a bar
+
+  }, {
+    key: "gridTimes",
+    get: function get() {
+      var _this3 = this;
+
+      var swingTime = this.barTime / this.totalSubDivs * (this.swing / 100) || 0;
+      return _toConsumableArray(Array(this.totalSubDivs).keys()).map(function (i) {
+        var t = i * (_this3.barTime / _this3.totalSubDivs);
+        return i % 2 === 1 ? t + swingTime : t;
+      });
+    }
+  }, {
+    key: "elapsed",
+    get: function get() {
+      return this.now - this.startTime;
+    }
+  }, {
+    key: "lastClick",
+    get: function get() {
+      var _this$scheduledClicks,
+          _this4 = this;
+
+      var clicks = (_this$scheduledClicks = this.scheduledClicks) === null || _this$scheduledClicks === void 0 ? void 0 : _this$scheduledClicks.filter(function (c) {
+        return c.time <= _this4.now;
+      });
+      return clicks === null || clicks === void 0 ? void 0 : clicks[clicks.length - 1];
+    }
+  }, {
+    key: "getClickIndex",
+    value: function getClickIndex(click) {
+      var subDivs = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+      return (click.bar - 1) * this.beats + (click.beat - 1) * (subDivs !== null && subDivs !== void 0 ? subDivs : this.subDivs) + (click.subDiv - 1);
+    }
+  }, {
+    key: "getClickBarIndex",
+    value: function getClickBarIndex(click) {
+      var subDivs = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+      return (click.beat - 1) * (subDivs !== null && subDivs !== void 0 ? subDivs : this.subDivs) + (click.subDiv - 1);
+    } // returns adjustment required in seconds to make t fall on the nearest grid line
+    // toSubDivs - which sub division to quantize to (e.g. 4 = 16th notes)
+
+  }, {
+    key: "quantize",
+    value: function quantize(t) {
+      var _this5 = this;
+
+      var toSubDivs = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+      var to = toSubDivs || this.subDivs;
+      var timeInBar = t - this.barStart;
+      var gridTimes = this.gridTimes.concat([this.barTime]).filter(function (_, idx) {
+        return idx % (_this5.subDivs / to) === 0;
+      });
+      var closestSubDivTime = gridTimes.reduce(function (prev, curr) {
+        return Math.abs(curr - timeInBar) < Math.abs(prev - timeInBar) ? curr : prev;
+      });
+      var amount = closestSubDivTime - timeInBar;
+      var closestSubDiv = gridTimes.indexOf(closestSubDivTime);
+      if (closestSubDiv === this.beats * to) closestSubDiv = 0;
+      closestSubDiv++; // console.log(amount, amount > 0 ? 'early' : 'late', 'to', closestSubDiv);
+
+      return [amount, closestSubDiv];
+    }
+  }]);
+
+  return Metronome;
+}(); // fallback worker, but should use worker.js instead in thread
+
+var MetronomeWorker = /*#__PURE__*/function () {
+  function MetronomeWorker() {
+    _classCallCheck(this, MetronomeWorker);
+
+    _defineProperty(this, "interval", void 0);
+
+    _defineProperty(this, "timer", void 0);
+  }
+
+  _createClass(MetronomeWorker, [{
+    key: "onmessage",
+    value: function onmessage() {}
+  }, {
+    key: "postMessage",
+    value: function postMessage(data) {
+      if (data.interval) {
+        this.interval = data.interval;
+        this.clearTimer();
+      } else if (data === 'start') {
+        this.startTimer();
+        this.tick();
+      } else if (data === 'stop') {
+        this.clearTimer();
+      }
+    }
+  }, {
+    key: "startTimer",
+    value: function startTimer() {
+      this.timer = setInterval(this.tick.bind(this), this.interval * 1000);
+    }
+  }, {
+    key: "clearTimer",
+    value: function clearTimer() {
+      if (this.timer) {
+        clearInterval(this.timer);
+        this.timer = null;
+      }
+    }
+  }, {
+    key: "tick",
+    value: function tick() {
+      this.onmessage({
+        data: 'tick'
+      });
+    }
+  }]);
+
+  return MetronomeWorker;
+}();
+;// CONCATENATED MODULE: ./src/core/Clicker.js
+function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || Clicker_unsupportedIterableToArray(arr, i) || _nonIterableRest(); }
+
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+
+function Clicker_unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return Clicker_arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return Clicker_arrayLikeToArray(o, minLen); }
+
+function Clicker_arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
+
+function _iterableToArrayLimit(arr, i) { var _i = arr == null ? null : typeof Symbol !== "undefined" && arr[Symbol.iterator] || arr["@@iterator"]; if (_i == null) return; var _arr = []; var _n = true; var _d = false; var _s, _e; try { for (_i = _i.call(arr); !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
+
+function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
+
+function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { Promise.resolve(value).then(_next, _throw); } }
+
+function _asyncToGenerator(fn) { return function () { var self = this, args = arguments; return new Promise(function (resolve, reject) { var gen = fn.apply(self, args); function _next(value) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value); } function _throw(err) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err); } _next(undefined); }); }; }
+
+function Clicker_classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function Clicker_defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function Clicker_createClass(Constructor, protoProps, staticProps) { if (protoProps) Clicker_defineProperties(Constructor.prototype, protoProps); if (staticProps) Clicker_defineProperties(Constructor, staticProps); Object.defineProperty(Constructor, "prototype", { writable: false }); return Constructor; }
+
+var DEFAULT_SOUNDS = {
+  name: 'Defaults',
+  bar: 880.0,
+  beat: 440.0,
+  subDiv: 220.0,
+  user: 660.0
+};
+var Clicker = /*#__PURE__*/function () {
+  function Clicker(_ref) {
+    var audioContext = _ref.audioContext,
+        _ref$volume = _ref.volume,
+        volume = _ref$volume === void 0 ? 100 : _ref$volume,
+        _ref$sounds = _ref.sounds,
+        sounds = _ref$sounds === void 0 ? DEFAULT_SOUNDS : _ref$sounds;
+
+    Clicker_classCallCheck(this, Clicker);
+
+    this.audioContext = audioContext;
+    this.volume = volume;
+    this.loading = false;
+    this.gainNode = this.audioContext.createGain();
+    this.gainNode.connect(this.audioContext.destination);
+    this.setSounds(sounds);
+  }
+
+  Clicker_createClass(Clicker, [{
+    key: "setSounds",
+    value: function () {
+      var _setSounds = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(sounds) {
+        var result;
+        return regeneratorRuntime.wrap(function _callee$(_context) {
+          while (1) {
+            switch (_context.prev = _context.next) {
+              case 0:
+                _context.next = 2;
+                return this.fetchSounds(sounds);
+
+              case 2:
+                result = _context.sent;
+                this.sounds = result;
+
+              case 4:
+              case "end":
+                return _context.stop();
+            }
+          }
+        }, _callee, this);
+      }));
+
+      function setSounds(_x) {
+        return _setSounds.apply(this, arguments);
+      }
+
+      return setSounds;
+    }()
+  }, {
+    key: "fetchSounds",
+    value: function () {
+      var _fetchSounds = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2(sounds) {
+        var k, _sounds$k, sound;
+
+        return regeneratorRuntime.wrap(function _callee2$(_context2) {
+          while (1) {
+            switch (_context2.prev = _context2.next) {
+              case 0:
+                this.loading = true;
+                _context2.t0 = regeneratorRuntime.keys(sounds);
+
+              case 2:
+                if ((_context2.t1 = _context2.t0()).done) {
+                  _context2.next = 14;
+                  break;
+                }
+
+                k = _context2.t1.value;
+
+                if (!(k === 'name')) {
+                  _context2.next = 6;
+                  break;
+                }
+
+                return _context2.abrupt("continue", 2);
+
+              case 6:
+                if (!Array.isArray(sounds[k])) sounds[k] = [sounds[k], 1.0, 0.05];
+                _sounds$k = _slicedToArray(sounds[k], 1), sound = _sounds$k[0];
+
+                if (!(typeof sound === 'string')) {
+                  _context2.next = 12;
+                  break;
+                }
+
+                _context2.next = 11;
+                return fetchAudioBuffer(this.audioContext, sound);
+
+              case 11:
+                sounds[k][0] = _context2.sent;
+
+              case 12:
+                _context2.next = 2;
+                break;
+
+              case 14:
+                this.loading = false;
+                return _context2.abrupt("return", sounds);
+
+              case 16:
+              case "end":
+                return _context2.stop();
+            }
+          }
+        }, _callee2, this);
+      }));
+
+      function fetchSounds(_x2) {
+        return _fetchSounds.apply(this, arguments);
+      }
+
+      return fetchSounds;
+    }()
+  }, {
+    key: "setVolume",
+    value: function setVolume(volume) {
+      this.volume = volume;
+    }
+  }, {
+    key: "scheduleClickSound",
+    value: function scheduleClickSound(_ref2) {
+      var time = _ref2.time,
+          subDiv = _ref2.subDiv,
+          beat = _ref2.beat,
+          beats = _ref2.beats;
+      // console.log('sch click', beat, subDiv, this.volume);
+      if (this.loading) return;
+      var sound;
+      var sounds = this.sounds;
+
+      if (beat === 1 && subDiv === 1) {
+        sound = sounds.bar || sounds.beat;
+      } else if (beat === Math.ceil(beats / 2) + 1 && subDiv === 1) {
+        sound = sounds.half || sounds.beat;
+      } else if (beat > 1 && subDiv === 1) {
+        sound = sounds.beat;
+      } else {
+        sound = sounds.subDiv || sounds.beat;
+      }
+
+      var _sound = sound,
+          _sound2 = _slicedToArray(_sound, 3),
+          soundObj = _sound2[0],
+          relativeVolume = _sound2[1],
+          clickLength = _sound2[2];
+
+      var audioObj = this.playSoundAt(soundObj, time, clickLength, relativeVolume);
+      return audioObj;
+    }
+  }, {
+    key: "removeClickSound",
+    value: function removeClickSound(click) {
+      var _click$obj;
+
+      click === null || click === void 0 ? void 0 : (_click$obj = click.obj) === null || _click$obj === void 0 ? void 0 : _click$obj.stop(0);
+    }
+  }, {
+    key: "playSoundAt",
+    value: function playSoundAt(sound, time, clickLength) {
+      var _this$audioContext;
+
+      var relativeVolume = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 1.0;
+      if (((_this$audioContext = this.audioContext) === null || _this$audioContext === void 0 ? void 0 : _this$audioContext.state) === 'suspended') this.audioContext.resume();
+      var audioNode;
+
+      if (typeof sound === 'number') {
+        // freq
+        audioNode = this.audioContext.createOscillator();
+        audioNode.connect(this.gainNode);
+        audioNode.frequency.value = sound;
+        audioNode.start(time);
+        audioNode.stop(time + clickLength);
+      } else {
+        // buffer
+        audioNode = this.audioContext.createBufferSource();
+
+        try {
+          audioNode.buffer = sound;
+        } catch (e) {
+          console.error(e);
+        }
+
+        audioNode.connect(this.gainNode);
+        audioNode.start(time, 0, clickLength);
+      }
+
+      this.gainNode.gain.setValueAtTime(this.volume * relativeVolume / 100, time);
+      return audioNode;
+    }
+  }, {
+    key: "click",
+    value: function click() {
+      var t = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;
+
+      var _this$sounds$user = _slicedToArray(this.sounds.user, 3),
+          soundObj = _this$sounds$user[0],
+          vol = _this$sounds$user[1],
+          length = _this$sounds$user[2];
+
+      return this.playSoundAt(soundObj, t, length, vol);
+    }
+  }]);
+
+  return Clicker;
+}();
+
+function fetchAudioBuffer(_x3, _x4) {
+  return _fetchAudioBuffer.apply(this, arguments);
+}
+
+function _fetchAudioBuffer() {
+  _fetchAudioBuffer = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee3(audioContext, filepath) {
+    var response, arrayBuffer, audioBuffer;
+    return regeneratorRuntime.wrap(function _callee3$(_context3) {
+      while (1) {
+        switch (_context3.prev = _context3.next) {
+          case 0:
+            _context3.next = 2;
+            return fetch(filepath);
+
+          case 2:
+            response = _context3.sent;
+            _context3.next = 5;
+            return response.arrayBuffer();
+
+          case 5:
+            arrayBuffer = _context3.sent;
+            _context3.next = 8;
+            return audioContext.decodeAudioData(arrayBuffer);
+
+          case 8:
+            audioBuffer = _context3.sent;
+            return _context3.abrupt("return", audioBuffer);
+
+          case 10:
+          case "end":
+            return _context3.stop();
+        }
+      }
+    }, _callee3);
+  }));
+  return _fetchAudioBuffer.apply(this, arguments);
+}
+;// CONCATENATED MODULE: ./src/core/Visualizer.js
+function Visualizer_slicedToArray(arr, i) { return Visualizer_arrayWithHoles(arr) || Visualizer_iterableToArrayLimit(arr, i) || Visualizer_unsupportedIterableToArray(arr, i) || Visualizer_nonIterableRest(); }
+
+function Visualizer_nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+
+function Visualizer_unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return Visualizer_arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return Visualizer_arrayLikeToArray(o, minLen); }
+
+function Visualizer_arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
+
+function Visualizer_iterableToArrayLimit(arr, i) { var _i = arr == null ? null : typeof Symbol !== "undefined" && arr[Symbol.iterator] || arr["@@iterator"]; if (_i == null) return; var _arr = []; var _n = true; var _d = false; var _s, _e; try { for (_i = _i.call(arr); !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
+
+function Visualizer_arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
+
+function Visualizer_classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function Visualizer_defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function Visualizer_createClass(Constructor, protoProps, staticProps) { if (protoProps) Visualizer_defineProperties(Constructor.prototype, protoProps); if (staticProps) Visualizer_defineProperties(Constructor, staticProps); Object.defineProperty(Constructor, "prototype", { writable: false }); return Constructor; }
+
+function Visualizer_defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+var Visualizer = /*#__PURE__*/function () {
+  function Visualizer(_ref) {
+    var metronome = _ref.metronome,
+        _ref$qThreshold = _ref.qThreshold,
+        qThreshold = _ref$qThreshold === void 0 ? 0.04 : _ref$qThreshold;
+
+    Visualizer_classCallCheck(this, Visualizer);
+
+    this.m = metronome;
+    this.qThreshold = qThreshold;
+  }
+
+  Visualizer_createClass(Visualizer, [{
+    key: "start",
+    value: function start() {
+      this.progress = 0;
+      this.lastTime = 0;
+      this.savedClick = this.m.lastClick || {};
+      this.count = [];
+      this.qType = null;
+      this.userClicks = [];
+    }
+  }, {
+    key: "stop",
+    value: function stop() {
+      this.progress = 0;
+      this.count = [];
+      this.userClicks = [];
+      this.savedClick = null;
+      this.qType = null;
+    }
+  }, {
+    key: "update",
+    value: function update() {
+      var m = this.m,
+          savedClick = this.savedClick,
+          lastTime = this.lastTime,
+          userClicks = this.userClicks,
+          qThreshold = this.qThreshold;
+      var deltaT = m.elapsed - lastTime;
+      Visualizer.frameRate.push(deltaT);
+      if (Visualizer.frameRate.length > 100) Visualizer.frameRate.shift();
+      if (!m.started || m.elapsed < 0) return;
+      var savedClickIdx = m.getClickIndex(savedClick || {}) || 0;
+      var lastClick = m.lastClick || {}; // get last click index based on the saved click's number of sub divs
+
+      var lastClickIdx = m.getClickIndex(lastClick, savedClick.subDivs); // update now line
+
+      if (lastClickIdx > savedClickIdx) {
+        this.savedClick = lastClick;
+        var lastClickBarIdx = m.getClickBarIndex(lastClick);
+        this.progress = 1.0 / m.totalSubDivs * lastClickBarIdx;
+
+        if (lastClickBarIdx % 2 === 1) {
+          this.progress += 1.0 / m.totalSubDivs * (m.swing / 100);
+        }
+      } else {
+        var curProgress = this.progress;
+        var remProgress = 1.0 - curProgress;
+        var remTime = m.barTime * remProgress;
+        var perSecond = remProgress / remTime;
+        var deltaP = deltaT * perSecond;
+        var newProgress = (curProgress + deltaP) % 1.0;
+        this.progress = newProgress;
+      }
+
+      this.lastTime = m.elapsed; // update count
+
+      var beat = lastClick.beat || 1;
+      var sub = lastClick.subDiv || 1;
+      this.count = m.subDivs > 1 ? [beat, sub] : [beat]; // show timing info for user clicks
+
+      if (userClicks !== null && userClicks !== void 0 && userClicks.length) {
+        var t = userClicks.pop();
+
+        while (userClicks.length) {
+          userClicks.pop();
+        } // ignore old clicks
+
+
+        var _m$quantize = m.quantize(t, 1),
+            _m$quantize2 = Visualizer_slicedToArray(_m$quantize, 1),
+            qAmount = _m$quantize2[0];
+
+        this.qType = getQuantizeType(qAmount, qThreshold);
+      }
+    }
+  }], [{
+    key: "frameRateInfo",
+    get: function get() {
+      var arr = Visualizer.frameRate;
+      if (!(arr !== null && arr !== void 0 && arr.length)) return 0;
+      var mean = arr.reduce(function (a, b) {
+        return a + b;
+      }) / arr.length;
+      var std = Math.sqrt(arr.map(function (x) {
+        return Math.pow(x - mean, 2);
+      }).reduce(function (a, b) {
+        return a + b;
+      }) / arr.length);
+      return {
+        mean: mean,
+        std: std
+      };
+    }
+  }]);
+
+  return Visualizer;
+}();
+
+Visualizer_defineProperty(Visualizer, "frameRate", []);
+
+function getQuantizeType(q, threshold) {
+  if (q <= -1 * threshold) {
+    return 'late';
+  } else if (q >= threshold) {
+    return 'early';
+  } else {
+    return 'ontime';
+  }
+}
+;// CONCATENATED MODULE: ./src/core/index.js
+function core_ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); enumerableOnly && (symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; })), keys.push.apply(keys, symbols); } return keys; }
+
+function core_objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = null != arguments[i] ? arguments[i] : {}; i % 2 ? core_ownKeys(Object(source), !0).forEach(function (key) { core_defineProperty(target, key, source[key]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : core_ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } return target; }
+
+function core_defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+
+ // utility method for creating a default metronome/clicker setup
+
+function createMetronome() {
+  var mSettings = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+  var clickerSettings = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+  var audioContext = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : new AudioContext();
+  var clicker = new Clicker(core_objectSpread({
+    audioContext: audioContext
+  }, clickerSettings));
+  return new Metronome(core_objectSpread({
+    timerFn: function timerFn() {
+      return audioContext.currentTime;
+    },
+    clicker: clicker
+  }, mSettings));
+}
+
+
 
 
 /***/ }),
-/* 1 */
-/***/ (function(module, exports, __webpack_require__) {
+
+/***/ 666:
+/***/ (function(module) {
 
 /**
  * Copyright (c) 2014-present, Facebook, Inc.
@@ -829,7 +1583,7 @@ var runtime = (function (exports) {
   // as the regeneratorRuntime namespace. Otherwise create a new empty
   // object. Either way, the resulting object will be used to initialize
   // the regeneratorRuntime variable at the top of this file.
-   true ? module.exports : undefined
+   true ? module.exports : 0
 ));
 
 try {
@@ -853,848 +1607,71 @@ try {
 }
 
 
-/***/ }),
-/* 2 */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-// ESM COMPAT FLAG
-__webpack_require__.r(__webpack_exports__);
-
-// EXPORTS
-__webpack_require__.d(__webpack_exports__, "createMetronome", function() { return /* binding */ createMetronome; });
-__webpack_require__.d(__webpack_exports__, "Metronome", function() { return /* reexport */ Metronome; });
-__webpack_require__.d(__webpack_exports__, "Clicker", function() { return /* reexport */ Clicker; });
-__webpack_require__.d(__webpack_exports__, "DEFAULT_SOUNDS", function() { return /* reexport */ DEFAULT_SOUNDS; });
-__webpack_require__.d(__webpack_exports__, "Visualizer", function() { return /* reexport */ Visualizer; });
-
-// CONCATENATED MODULE: ./src/core/Metronome.js
-function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread(); }
-
-function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
-
-function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
-
-function _iterableToArray(iter) { if (typeof Symbol !== "undefined" && iter[Symbol.iterator] != null || iter["@@iterator"] != null) return Array.from(iter); }
-
-function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) return _arrayLikeToArray(arr); }
-
-function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
-
-function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); enumerableOnly && (symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; })), keys.push.apply(keys, symbols); } return keys; }
-
-function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = null != arguments[i] ? arguments[i] : {}; i % 2 ? ownKeys(Object(source), !0).forEach(function (key) { _defineProperty(target, key, source[key]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } return target; }
-
-function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
-
-function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); Object.defineProperty(Constructor, "prototype", { writable: false }); return Constructor; }
-
-var Metronome = /*#__PURE__*/function () {
-  function Metronome() {
-    var _this = this;
-
-    var settings = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-
-    _classCallCheck(this, Metronome);
-
-    var timerFn = settings.timerFn,
-        clicker = settings.clicker,
-        _settings$bpm = settings.bpm,
-        bpm = _settings$bpm === void 0 ? 80 : _settings$bpm,
-        _settings$beats = settings.beats,
-        beats = _settings$beats === void 0 ? 4 : _settings$beats,
-        _settings$subDivs = settings.subDivs,
-        subDivs = _settings$subDivs === void 0 ? 1 : _settings$subDivs,
-        _settings$swing = settings.swing,
-        swing = _settings$swing === void 0 ? 0 : _settings$swing,
-        _settings$workerUrl = settings.workerUrl,
-        workerUrl = _settings$workerUrl === void 0 ? null : _settings$workerUrl,
-        _settings$onNextClick = settings.onNextClick,
-        onNextClick = _settings$onNextClick === void 0 ? function () {} : _settings$onNextClick,
-        _settings$onUnschedul = settings.onUnscheduleClick,
-        onUnscheduleClick = _settings$onUnschedul === void 0 ? function () {} : _settings$onUnschedul,
-        _settings$onStart = settings.onStart,
-        onStart = _settings$onStart === void 0 ? function () {} : _settings$onStart,
-        _settings$onStop = settings.onStop,
-        onStop = _settings$onStop === void 0 ? function () {} : _settings$onStop,
-        _settings$onScheduler = settings.onSchedulerTick,
-        onSchedulerTick = _settings$onScheduler === void 0 ? function () {} : _settings$onScheduler,
-        _settings$lookaheadIn = settings.lookaheadInterval,
-        lookaheadInterval = _settings$lookaheadIn === void 0 ? 0.025 : _settings$lookaheadIn,
-        _settings$scheduleAhe = settings.scheduleAheadTime,
-        scheduleAheadTime = _settings$scheduleAhe === void 0 ? 0.1 : _settings$scheduleAhe,
-        _settings$startDelayT = settings.startDelayTime,
-        startDelayTime = _settings$startDelayT === void 0 ? 0.2 : _settings$startDelayT;
-    this.onStart = onStart;
-    this.onStop = onStop;
-    this.onNextClick = onNextClick;
-    this.onUnscheduleClick = onUnscheduleClick;
-    this.onSchedulerTick = onSchedulerTick;
-    this.timerFn = timerFn;
-    this.clicker = clicker;
-    this.lookaheadInterval = lookaheadInterval;
-    this.scheduleAheadTime = scheduleAheadTime;
-    this.startDelayTime = startDelayTime;
-    this.bpm = bpm;
-    this.beats = beats;
-    this.subDivs = subDivs;
-    this.swing = swing;
-    this.started = false; // prep the thread timer
-
-    if (workerUrl) {
-      this.worker = new Worker(workerUrl);
-    } else {
-      this.worker = new MetronomeWorker();
-    }
-
-    this.worker.onmessage = function (e) {
-      if (e.data === 'tick') {
-        _this.scheduler();
-
-        _this.onSchedulerTick();
-      }
-    };
-
-    this.worker.postMessage({
-      interval: this.lookaheadInterval
-    });
-  }
-
-  _createClass(Metronome, [{
-    key: "start",
-    value: function start() {
-      var _this$clicker, _this$clicker$audioCo;
-
-      if (this.started) return;
-      this.startTime = this.now + this.startDelayTime;
-      this.stopTime = null;
-      this.barStart = this.startTime;
-      this.lastBar = 0;
-      this.started = true;
-      this.scheduledClicks = [];
-      if (this.subDivs % 2 > 0) this.swing = 0;
-      this.next = {
-        bar: 1,
-        beat: 1,
-        subDiv: 1,
-        time: this.startTime
-      };
-      this.worker.postMessage('start');
-      this.onStart();
-
-      if (((_this$clicker = this.clicker) === null || _this$clicker === void 0 ? void 0 : (_this$clicker$audioCo = _this$clicker.audioContext) === null || _this$clicker$audioCo === void 0 ? void 0 : _this$clicker$audioCo.state) === 'suspended') {
-        this.clicker.audioContext.resume();
-      }
-    }
-  }, {
-    key: "stop",
-    value: function stop() {
-      if (!this.started) return;
-      this.stopTime = this.now;
-      this.started = false;
-      this.worker.postMessage('stop');
-      this.unscheduleClicks();
-      this.onStop();
-    }
-  }, {
-    key: "update",
-    value: function update(_ref) {
-      var bpm = _ref.bpm,
-          beats = _ref.beats,
-          subDivs = _ref.subDivs,
-          swing = _ref.swing;
-      this.unscheduleClicks();
-      if (bpm !== undefined) this.bpm = bpm;
-      if (beats !== undefined) this.beats = beats;
-      if (subDivs !== undefined) this.subDivs = subDivs;
-      if (swing !== undefined) this.swing = swing; // recalculate next scheduled beat if bar structure has changed
-
-      if ((bpm !== undefined || beats !== undefined) && this.started && this.scheduledClicks.length) {
-        this.next = _objectSpread({}, this.lastClick);
-
-        while (this.next.time <= this.now - this.subDivTime) {
-          this.next.time += this.subDivTime;
-        }
-
-        this.advance();
-      }
-    } // main method called by the thread timer when started
-
-  }, {
-    key: "scheduler",
-    value: function scheduler() {
-      if (!this.started) return; // update the bar start time for quantization purposes
-
-      var lc = this.lastClick;
-
-      if (((lc === null || lc === void 0 ? void 0 : lc.bar) || 0) > this.lastBar) {
-        this.lastBar = lc.bar;
-        this.barStart = lc.time;
-      }
-
-      while (this.next.time < this.now + this.scheduleAheadTime) {
-        this.scheduleClick();
-        this.advance(); // updates this.next.time
-      }
-    }
-  }, {
-    key: "scheduleClick",
-    value: function scheduleClick() {
-      var _this$clicker2;
-
-      var click = _objectSpread(_objectSpread({}, this.next), {}, {
-        beats: this.beats,
-        subDivs: this.subDivs
-      }); // notify clicker to schedule the actual sound - it returns a sound object
-      // that we keep around so that if it needs to be cancelled it can be passed
-      // to the onUnscheduleClick method
-
-
-      var obj = (_this$clicker2 = this.clicker) === null || _this$clicker2 === void 0 ? void 0 : _this$clicker2.scheduleClickSound(click);
-      this.onNextClick(click);
-      this.scheduledClicks.push(_objectSpread(_objectSpread({}, click), {}, {
-        obj: obj
-      })); // remove old clicks from memory
-
-      var now = this.now;
-      this.scheduledClicks = this.scheduledClicks.filter(function (c) {
-        return (c === null || c === void 0 ? void 0 : c.time) >= now - 10.0;
-      });
-    }
-  }, {
-    key: "advance",
-    value: function advance() {
-      // calculate next click time
-      var delta = this.beatTime / this.subDivs;
-
-      if (this.next.subDiv % 2 === 1) {
-        delta += delta * (this.swing / 100.0);
-      } else {
-        delta *= (100.0 - this.swing) / 100.0;
-      } // advance time
-
-
-      this.next.time += delta; // advance beat counter
-
-      if (this.next.subDiv % this.subDivs === 0) {
-        this.next.subDiv = 1;
-        this.next.beat++;
-
-        if (this.next.beat > this.beats) {
-          this.next.beat = 1;
-          this.next.bar++;
-        }
-      } else {
-        this.next.subDiv++;
-      }
-    }
-  }, {
-    key: "unscheduleClicks",
-    value: function unscheduleClicks() {
-      var _this2 = this;
-
-      this.scheduledClicks = (this.scheduledClicks || []).map(function (click) {
-        if (click.time > _this2.now) {
-          var _this2$clicker;
-
-          (_this2$clicker = _this2.clicker) === null || _this2$clicker === void 0 ? void 0 : _this2$clicker.removeClickSound(click);
-
-          _this2.onUnscheduleClick(click);
-
-          return null;
-        }
-
-        return click;
-      }).filter(Boolean);
-    }
-  }, {
-    key: "now",
-    get: function get() {
-      return this.timerFn();
-    }
-  }, {
-    key: "beatTime",
-    get: function get() {
-      return 60.0 / this.bpm;
-    }
-  }, {
-    key: "subDivTime",
-    get: function get() {
-      return this.beatTime / this.subDivs;
-    }
-  }, {
-    key: "barTime",
-    get: function get() {
-      return this.beats * this.beatTime;
-    }
-  }, {
-    key: "totalSubDivs",
-    get: function get() {
-      return this.beats * this.subDivs;
-    } // relative timestamps for all sub-divisions in a bar
-
-  }, {
-    key: "gridTimes",
-    get: function get() {
-      var _this3 = this;
-
-      var swingTime = this.barTime / this.totalSubDivs * (this.swing / 100) || 0;
-      return _toConsumableArray(Array(this.totalSubDivs).keys()).map(function (i) {
-        var t = i * (_this3.barTime / _this3.totalSubDivs);
-        return i % 2 === 1 ? t + swingTime : t;
-      });
-    }
-  }, {
-    key: "elapsed",
-    get: function get() {
-      return this.now - this.startTime;
-    }
-  }, {
-    key: "lastClick",
-    get: function get() {
-      var _this$scheduledClicks,
-          _this4 = this;
-
-      var clicks = (_this$scheduledClicks = this.scheduledClicks) === null || _this$scheduledClicks === void 0 ? void 0 : _this$scheduledClicks.filter(function (c) {
-        return c.time <= _this4.now;
-      });
-      return clicks === null || clicks === void 0 ? void 0 : clicks[clicks.length - 1];
-    }
-  }, {
-    key: "getClickIndex",
-    value: function getClickIndex(click) {
-      var subDivs = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
-      return (click.bar - 1) * this.beats + (click.beat - 1) * (subDivs !== null && subDivs !== void 0 ? subDivs : this.subDivs) + (click.subDiv - 1);
-    }
-  }, {
-    key: "getClickBarIndex",
-    value: function getClickBarIndex(click) {
-      var subDivs = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
-      return (click.beat - 1) * (subDivs !== null && subDivs !== void 0 ? subDivs : this.subDivs) + (click.subDiv - 1);
-    } // returns adjustment required in seconds to make t fall on the nearest grid line
-    // toSubDivs - which sub division to quantize to (e.g. 4 = 16th notes)
-
-  }, {
-    key: "quantize",
-    value: function quantize(t) {
-      var _this5 = this;
-
-      var toSubDivs = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
-      var to = toSubDivs || this.subDivs;
-      var timeInBar = t - this.barStart;
-      var gridTimes = this.gridTimes.concat([this.barTime]).filter(function (_, idx) {
-        return idx % (_this5.subDivs / to) === 0;
-      });
-      var closestSubDivTime = gridTimes.reduce(function (prev, curr) {
-        return Math.abs(curr - timeInBar) < Math.abs(prev - timeInBar) ? curr : prev;
-      });
-      var amount = closestSubDivTime - timeInBar;
-      var closestSubDiv = gridTimes.indexOf(closestSubDivTime);
-      if (closestSubDiv === this.beats * to) closestSubDiv = 0;
-      closestSubDiv++; // console.log(amount, amount > 0 ? 'early' : 'late', 'to', closestSubDiv);
-
-      return [amount, closestSubDiv];
-    }
-  }]);
-
-  return Metronome;
-}(); // fallback worker, but should use worker.js instead in thread
-
-var MetronomeWorker = /*#__PURE__*/function () {
-  function MetronomeWorker() {
-    _classCallCheck(this, MetronomeWorker);
-
-    _defineProperty(this, "interval", void 0);
-
-    _defineProperty(this, "timer", void 0);
-  }
-
-  _createClass(MetronomeWorker, [{
-    key: "onmessage",
-    value: function onmessage() {}
-  }, {
-    key: "postMessage",
-    value: function postMessage(data) {
-      if (data.interval) {
-        this.interval = data.interval;
-        this.clearTimer();
-      } else if (data === 'start') {
-        this.startTimer();
-        this.tick();
-      } else if (data === 'stop') {
-        this.clearTimer();
-      }
-    }
-  }, {
-    key: "startTimer",
-    value: function startTimer() {
-      this.timer = setInterval(this.tick.bind(this), this.interval * 1000);
-    }
-  }, {
-    key: "clearTimer",
-    value: function clearTimer() {
-      if (this.timer) {
-        clearInterval(this.timer);
-        this.timer = null;
-      }
-    }
-  }, {
-    key: "tick",
-    value: function tick() {
-      this.onmessage({
-        data: 'tick'
-      });
-    }
-  }]);
-
-  return MetronomeWorker;
-}();
-// CONCATENATED MODULE: ./src/core/Clicker.js
-function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || Clicker_unsupportedIterableToArray(arr, i) || _nonIterableRest(); }
-
-function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
-
-function Clicker_unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return Clicker_arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return Clicker_arrayLikeToArray(o, minLen); }
-
-function Clicker_arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
-
-function _iterableToArrayLimit(arr, i) { var _i = arr == null ? null : typeof Symbol !== "undefined" && arr[Symbol.iterator] || arr["@@iterator"]; if (_i == null) return; var _arr = []; var _n = true; var _d = false; var _s, _e; try { for (_i = _i.call(arr); !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
-
-function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
-
-function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { Promise.resolve(value).then(_next, _throw); } }
-
-function _asyncToGenerator(fn) { return function () { var self = this, args = arguments; return new Promise(function (resolve, reject) { var gen = fn.apply(self, args); function _next(value) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value); } function _throw(err) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err); } _next(undefined); }); }; }
-
-function Clicker_classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function Clicker_defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
-
-function Clicker_createClass(Constructor, protoProps, staticProps) { if (protoProps) Clicker_defineProperties(Constructor.prototype, protoProps); if (staticProps) Clicker_defineProperties(Constructor, staticProps); Object.defineProperty(Constructor, "prototype", { writable: false }); return Constructor; }
-
-var DEFAULT_SOUNDS = {
-  name: 'Defaults',
-  bar: 880.0,
-  beat: 440.0,
-  subDiv: 220.0,
-  user: 660.0
-};
-var Clicker = /*#__PURE__*/function () {
-  function Clicker(_ref) {
-    var audioContext = _ref.audioContext,
-        _ref$volume = _ref.volume,
-        volume = _ref$volume === void 0 ? 100 : _ref$volume,
-        _ref$sounds = _ref.sounds,
-        sounds = _ref$sounds === void 0 ? DEFAULT_SOUNDS : _ref$sounds;
-
-    Clicker_classCallCheck(this, Clicker);
-
-    this.audioContext = audioContext;
-    this.volume = volume;
-    this.loading = false;
-    this.gainNode = this.audioContext.createGain();
-    this.gainNode.connect(this.audioContext.destination);
-    this.setSounds(sounds);
-  }
-
-  Clicker_createClass(Clicker, [{
-    key: "setSounds",
-    value: function () {
-      var _setSounds = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(sounds) {
-        var result;
-        return regeneratorRuntime.wrap(function _callee$(_context) {
-          while (1) {
-            switch (_context.prev = _context.next) {
-              case 0:
-                _context.next = 2;
-                return this.fetchSounds(sounds);
-
-              case 2:
-                result = _context.sent;
-                this.sounds = result;
-
-              case 4:
-              case "end":
-                return _context.stop();
-            }
-          }
-        }, _callee, this);
-      }));
-
-      function setSounds(_x) {
-        return _setSounds.apply(this, arguments);
-      }
-
-      return setSounds;
-    }()
-  }, {
-    key: "fetchSounds",
-    value: function () {
-      var _fetchSounds = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2(sounds) {
-        var k, _sounds$k, sound;
-
-        return regeneratorRuntime.wrap(function _callee2$(_context2) {
-          while (1) {
-            switch (_context2.prev = _context2.next) {
-              case 0:
-                this.loading = true;
-                _context2.t0 = regeneratorRuntime.keys(sounds);
-
-              case 2:
-                if ((_context2.t1 = _context2.t0()).done) {
-                  _context2.next = 14;
-                  break;
-                }
-
-                k = _context2.t1.value;
-
-                if (!(k === 'name')) {
-                  _context2.next = 6;
-                  break;
-                }
-
-                return _context2.abrupt("continue", 2);
-
-              case 6:
-                if (!Array.isArray(sounds[k])) sounds[k] = [sounds[k], 1.0, 0.05];
-                _sounds$k = _slicedToArray(sounds[k], 1), sound = _sounds$k[0];
-
-                if (!(typeof sound === 'string')) {
-                  _context2.next = 12;
-                  break;
-                }
-
-                _context2.next = 11;
-                return fetchAudioBuffer(this.audioContext, sound);
-
-              case 11:
-                sounds[k][0] = _context2.sent;
-
-              case 12:
-                _context2.next = 2;
-                break;
-
-              case 14:
-                this.loading = false;
-                return _context2.abrupt("return", sounds);
-
-              case 16:
-              case "end":
-                return _context2.stop();
-            }
-          }
-        }, _callee2, this);
-      }));
-
-      function fetchSounds(_x2) {
-        return _fetchSounds.apply(this, arguments);
-      }
-
-      return fetchSounds;
-    }()
-  }, {
-    key: "setVolume",
-    value: function setVolume(volume) {
-      this.volume = volume;
-    }
-  }, {
-    key: "scheduleClickSound",
-    value: function scheduleClickSound(_ref2) {
-      var time = _ref2.time,
-          subDiv = _ref2.subDiv,
-          beat = _ref2.beat,
-          beats = _ref2.beats;
-      // console.log('sch click', beat, subDiv, this.volume);
-      if (this.loading) return;
-      var sound;
-      var sounds = this.sounds;
-
-      if (beat === 1 && subDiv === 1) {
-        sound = sounds.bar || sounds.beat;
-      } else if (beat === Math.ceil(beats / 2) + 1 && subDiv === 1) {
-        sound = sounds.half || sounds.beat;
-      } else if (beat > 1 && subDiv === 1) {
-        sound = sounds.beat;
-      } else {
-        sound = sounds.subDiv || sounds.beat;
-      }
-
-      var _sound = sound,
-          _sound2 = _slicedToArray(_sound, 3),
-          soundObj = _sound2[0],
-          relativeVolume = _sound2[1],
-          clickLength = _sound2[2];
-
-      var audioObj = this.playSoundAt(soundObj, time, clickLength, relativeVolume);
-      return audioObj;
-    }
-  }, {
-    key: "removeClickSound",
-    value: function removeClickSound(click) {
-      var _click$obj;
-
-      click === null || click === void 0 ? void 0 : (_click$obj = click.obj) === null || _click$obj === void 0 ? void 0 : _click$obj.stop(0);
-    }
-  }, {
-    key: "playSoundAt",
-    value: function playSoundAt(sound, time, clickLength) {
-      var _this$audioContext;
-
-      var relativeVolume = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 1.0;
-      if (((_this$audioContext = this.audioContext) === null || _this$audioContext === void 0 ? void 0 : _this$audioContext.state) === 'suspended') this.audioContext.resume();
-      var audioNode;
-
-      if (typeof sound === 'number') {
-        // freq
-        audioNode = this.audioContext.createOscillator();
-        audioNode.connect(this.gainNode);
-        audioNode.frequency.value = sound;
-        audioNode.start(time);
-        audioNode.stop(time + clickLength);
-      } else {
-        // buffer
-        audioNode = this.audioContext.createBufferSource();
-
-        try {
-          audioNode.buffer = sound;
-        } catch (e) {
-          console.error(e);
-        }
-
-        audioNode.connect(this.gainNode);
-        audioNode.start(time, 0, clickLength);
-      }
-
-      this.gainNode.gain.setValueAtTime(this.volume * relativeVolume / 100, time);
-      return audioNode;
-    }
-  }, {
-    key: "click",
-    value: function click() {
-      var t = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;
-
-      var _this$sounds$user = _slicedToArray(this.sounds.user, 3),
-          soundObj = _this$sounds$user[0],
-          vol = _this$sounds$user[1],
-          length = _this$sounds$user[2];
-
-      return this.playSoundAt(soundObj, t, length, vol);
-    }
-  }]);
-
-  return Clicker;
-}();
-
-function fetchAudioBuffer(_x3, _x4) {
-  return _fetchAudioBuffer.apply(this, arguments);
-}
-
-function _fetchAudioBuffer() {
-  _fetchAudioBuffer = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee3(audioContext, filepath) {
-    var response, arrayBuffer, audioBuffer;
-    return regeneratorRuntime.wrap(function _callee3$(_context3) {
-      while (1) {
-        switch (_context3.prev = _context3.next) {
-          case 0:
-            _context3.next = 2;
-            return fetch(filepath);
-
-          case 2:
-            response = _context3.sent;
-            _context3.next = 5;
-            return response.arrayBuffer();
-
-          case 5:
-            arrayBuffer = _context3.sent;
-            _context3.next = 8;
-            return audioContext.decodeAudioData(arrayBuffer);
-
-          case 8:
-            audioBuffer = _context3.sent;
-            return _context3.abrupt("return", audioBuffer);
-
-          case 10:
-          case "end":
-            return _context3.stop();
-        }
-      }
-    }, _callee3);
-  }));
-  return _fetchAudioBuffer.apply(this, arguments);
-}
-// CONCATENATED MODULE: ./src/core/Visualizer.js
-function Visualizer_slicedToArray(arr, i) { return Visualizer_arrayWithHoles(arr) || Visualizer_iterableToArrayLimit(arr, i) || Visualizer_unsupportedIterableToArray(arr, i) || Visualizer_nonIterableRest(); }
-
-function Visualizer_nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
-
-function Visualizer_unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return Visualizer_arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return Visualizer_arrayLikeToArray(o, minLen); }
-
-function Visualizer_arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
-
-function Visualizer_iterableToArrayLimit(arr, i) { var _i = arr == null ? null : typeof Symbol !== "undefined" && arr[Symbol.iterator] || arr["@@iterator"]; if (_i == null) return; var _arr = []; var _n = true; var _d = false; var _s, _e; try { for (_i = _i.call(arr); !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
-
-function Visualizer_arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
-
-function Visualizer_classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function Visualizer_defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
-
-function Visualizer_createClass(Constructor, protoProps, staticProps) { if (protoProps) Visualizer_defineProperties(Constructor.prototype, protoProps); if (staticProps) Visualizer_defineProperties(Constructor, staticProps); Object.defineProperty(Constructor, "prototype", { writable: false }); return Constructor; }
-
-function Visualizer_defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
-var Visualizer = /*#__PURE__*/function () {
-  function Visualizer(_ref) {
-    var metronome = _ref.metronome,
-        _ref$qThreshold = _ref.qThreshold,
-        qThreshold = _ref$qThreshold === void 0 ? 0.04 : _ref$qThreshold;
-
-    Visualizer_classCallCheck(this, Visualizer);
-
-    this.m = metronome;
-    this.qThreshold = qThreshold;
-  }
-
-  Visualizer_createClass(Visualizer, [{
-    key: "start",
-    value: function start() {
-      this.progress = 0;
-      this.lastTime = 0;
-      this.savedClick = this.m.lastClick || {};
-      this.count = [];
-      this.qType = null;
-      this.userClicks = [];
-    }
-  }, {
-    key: "stop",
-    value: function stop() {
-      this.progress = 0;
-      this.count = [];
-      this.userClicks = [];
-      this.savedClick = null;
-      this.qType = null;
-    }
-  }, {
-    key: "update",
-    value: function update() {
-      var m = this.m,
-          savedClick = this.savedClick,
-          lastTime = this.lastTime,
-          userClicks = this.userClicks,
-          qThreshold = this.qThreshold;
-      var deltaT = m.elapsed - lastTime;
-      Visualizer.frameRate.push(deltaT);
-      if (Visualizer.frameRate.length > 100) Visualizer.frameRate.shift();
-      if (!m.started || m.elapsed < 0) return;
-      var savedClickIdx = m.getClickIndex(savedClick || {}) || 0;
-      var lastClick = m.lastClick || {}; // get last click index based on the saved click's number of sub divs
-
-      var lastClickIdx = m.getClickIndex(lastClick, savedClick.subDivs); // update now line
-
-      if (lastClickIdx > savedClickIdx) {
-        this.savedClick = lastClick;
-        var lastClickBarIdx = m.getClickBarIndex(lastClick);
-        this.progress = 1.0 / m.totalSubDivs * lastClickBarIdx;
-
-        if (lastClickBarIdx % 2 === 1) {
-          this.progress += 1.0 / m.totalSubDivs * (m.swing / 100);
-        }
-      } else {
-        var curProgress = this.progress;
-        var remProgress = 1.0 - curProgress;
-        var remTime = m.barTime * remProgress;
-        var perSecond = remProgress / remTime;
-        var deltaP = deltaT * perSecond;
-        var newProgress = (curProgress + deltaP) % 1.0;
-        this.progress = newProgress;
-      }
-
-      this.lastTime = m.elapsed; // update count
-
-      var beat = lastClick.beat || 1;
-      var sub = lastClick.subDiv || 1;
-      this.count = m.subDivs > 1 ? [beat, sub] : [beat]; // show timing info for user clicks
-
-      if (userClicks !== null && userClicks !== void 0 && userClicks.length) {
-        var t = userClicks.pop();
-
-        while (userClicks.length) {
-          userClicks.pop();
-        } // ignore old clicks
-
-
-        var _m$quantize = m.quantize(t, 1),
-            _m$quantize2 = Visualizer_slicedToArray(_m$quantize, 1),
-            qAmount = _m$quantize2[0];
-
-        this.qType = getQuantizeType(qAmount, qThreshold);
-      }
-    }
-  }], [{
-    key: "frameRateInfo",
-    get: function get() {
-      var arr = Visualizer.frameRate;
-      if (!(arr !== null && arr !== void 0 && arr.length)) return 0;
-      var mean = arr.reduce(function (a, b) {
-        return a + b;
-      }) / arr.length;
-      var std = Math.sqrt(arr.map(function (x) {
-        return Math.pow(x - mean, 2);
-      }).reduce(function (a, b) {
-        return a + b;
-      }) / arr.length);
-      return {
-        mean: mean,
-        std: std
-      };
-    }
-  }]);
-
-  return Visualizer;
-}();
-
-Visualizer_defineProperty(Visualizer, "frameRate", []);
-
-function getQuantizeType(q, threshold) {
-  if (q <= -1 * threshold) {
-    return 'late';
-  } else if (q >= threshold) {
-    return 'early';
-  } else {
-    return 'ontime';
-  }
-}
-// CONCATENATED MODULE: ./src/core/index.js
-function core_ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); enumerableOnly && (symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; })), keys.push.apply(keys, symbols); } return keys; }
-
-function core_objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = null != arguments[i] ? arguments[i] : {}; i % 2 ? core_ownKeys(Object(source), !0).forEach(function (key) { core_defineProperty(target, key, source[key]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : core_ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } return target; }
-
-function core_defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
-
- // utility method for creating a default metronome/clicker setup
-
-function createMetronome() {
-  var mSettings = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-  var clickerSettings = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
-  var audioContext = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : new AudioContext();
-  var clicker = new Clicker(core_objectSpread({
-    audioContext: audioContext
-  }, clickerSettings));
-  return new Metronome(core_objectSpread({
-    timerFn: function timerFn() {
-      return audioContext.currentTime;
-    },
-    clicker: clicker
-  }, mSettings));
-}
-
-
-
-
 /***/ })
-/******/ ]);
+
+/******/ 	});
+/************************************************************************/
+/******/ 	// The module cache
+/******/ 	var __webpack_module_cache__ = {};
+/******/ 	
+/******/ 	// The require function
+/******/ 	function __webpack_require__(moduleId) {
+/******/ 		// Check if module is in cache
+/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 		if (cachedModule !== undefined) {
+/******/ 			return cachedModule.exports;
+/******/ 		}
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = __webpack_module_cache__[moduleId] = {
+/******/ 			// no module.id needed
+/******/ 			// no module.loaded needed
+/******/ 			exports: {}
+/******/ 		};
+/******/ 	
+/******/ 		// Execute the module function
+/******/ 		__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
+/******/ 	
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+/******/ 	
+/************************************************************************/
+/******/ 	/* webpack/runtime/define property getters */
+/******/ 	!function() {
+/******/ 		// define getter functions for harmony exports
+/******/ 		__webpack_require__.d = function(exports, definition) {
+/******/ 			for(var key in definition) {
+/******/ 				if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
+/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 				}
+/******/ 			}
+/******/ 		};
+/******/ 	}();
+/******/ 	
+/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
+/******/ 	!function() {
+/******/ 		__webpack_require__.o = function(obj, prop) { return Object.prototype.hasOwnProperty.call(obj, prop); }
+/******/ 	}();
+/******/ 	
+/******/ 	/* webpack/runtime/make namespace object */
+/******/ 	!function() {
+/******/ 		// define __esModule on exports
+/******/ 		__webpack_require__.r = function(exports) {
+/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+/******/ 			}
+/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 		};
+/******/ 	}();
+/******/ 	
+/************************************************************************/
+/******/ 	
+/******/ 	// startup
+/******/ 	// Load entry module and return exports
+/******/ 	// This entry module is referenced by other modules so it can't be inlined
+/******/ 	__webpack_require__(666);
+/******/ 	var __webpack_exports__ = __webpack_require__(291);
+/******/ 	Bipium = __webpack_exports__;
+/******/ 	
+/******/ })()
+;
