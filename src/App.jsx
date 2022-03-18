@@ -371,33 +371,31 @@ function App() {
             </select>
             <StepButtons val={subDivs} setter={setSubDivs} min={1} max={8} event="set_subdivs" />
 
-            {subDivs > 1 && (
-              <SwingField disabled={!canSwing}>
-                <label>
-                  <span>Swing:</span> <span>{canSwing ? swing : 0}%</span>
-                </label>{' '}
-                <Range
-                  min={0}
-                  max={99}
-                  step={1}
-                  value={canSwing ? swing : 0}
-                  onDrag={val => {
-                    setSwing(int(val));
-                    sendOneEvent('update_swing', '', val, int(val));
-                  }}
-                  disabled={!canSwing}
-                  ticks={[0, 33, 50]}
-                />
-                <StepButtons
-                  val={swing}
-                  setter={setSwing}
-                  min={0}
-                  max={99}
-                  disabled={!canSwing}
-                  event="set_swing"
-                />
-              </SwingField>
-            )}
+            <SwingField disabled={!canSwing}>
+              <label>
+                <span>Swing:</span> <span>{canSwing ? swing : 0}%</span>
+              </label>{' '}
+              <Range
+                min={0}
+                max={99}
+                step={1}
+                value={canSwing ? swing : 0}
+                onDrag={val => {
+                  setSwing(int(val));
+                  sendOneEvent('update_swing', '', val, int(val));
+                }}
+                disabled={!canSwing}
+                ticks={[0, 33, 50]}
+              />
+              <StepButtons
+                val={swing}
+                setter={setSwing}
+                min={0}
+                max={99}
+                disabled={!canSwing}
+                event="set_swing"
+              />
+            </SwingField>
           </>
         )}
       </PlaySubDivsField>
