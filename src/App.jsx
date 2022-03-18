@@ -51,7 +51,7 @@ function App() {
   const [volume, setVolume] = useSetting('volume', 100, int, localStorage);
   const [muted, setMuted] = useState(false);
   const [started, setStarted] = useState(false);
-  const [soundPack, setSoundPack] = useSetting('soundPack', 'defaults', String);
+  const [soundPack, setSoundPack] = useSetting('soundPack', 'drumkit', String);
   const [visualizers] = useSetting('visualizers', 'default', val => val.split(','));
 
   const [showSideBar, setShowSideBar] = useState(false);
