@@ -2,7 +2,7 @@ var Bipium;
 /******/ (function() { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 291:
+/***/ 175:
 /***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -18,19 +18,7 @@ __webpack_require__.d(__webpack_exports__, {
   "createMetronome": function() { return /* binding */ createMetronome; }
 });
 
-;// CONCATENATED MODULE: ./src/core/Metronome.js
-function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread(); }
-
-function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
-
-function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
-
-function _iterableToArray(iter) { if (typeof Symbol !== "undefined" && iter[Symbol.iterator] != null || iter["@@iterator"] != null) return Array.from(iter); }
-
-function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) return _arrayLikeToArray(arr); }
-
-function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
-
+;// CONCATENATED MODULE: ./src/core/lib/esm/Metronome.js
 function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); enumerableOnly && (symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; })), keys.push.apply(keys, symbols); } return keys; }
 
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = null != arguments[i] ? arguments[i] : {}; i % 2 ? ownKeys(Object(source), !0).forEach(function (key) { _defineProperty(target, key, source[key]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } return target; }
@@ -45,58 +33,51 @@ function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _d
 
 var Metronome = /*#__PURE__*/function () {
   function Metronome() {
-    var _this = this;
+    var _settings$bpm,
+        _settings$beats,
+        _settings$subDivs,
+        _settings$swing,
+        _settings$workerUrl,
+        _settings$onNextClick,
+        _settings$onUnschedul,
+        _settings$onStart,
+        _settings$onStop,
+        _settings$onScheduler,
+        _settings$lookaheadIn,
+        _settings$scheduleAhe,
+        _settings$startDelayT,
+        _this = this;
 
     var settings = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
     _classCallCheck(this, Metronome);
 
-    var timerFn = settings.timerFn,
-        clicker = settings.clicker,
-        _settings$bpm = settings.bpm,
-        bpm = _settings$bpm === void 0 ? 80 : _settings$bpm,
-        _settings$beats = settings.beats,
-        beats = _settings$beats === void 0 ? 4 : _settings$beats,
-        _settings$subDivs = settings.subDivs,
-        subDivs = _settings$subDivs === void 0 ? 1 : _settings$subDivs,
-        _settings$swing = settings.swing,
-        swing = _settings$swing === void 0 ? 0 : _settings$swing,
-        _settings$workerUrl = settings.workerUrl,
-        workerUrl = _settings$workerUrl === void 0 ? null : _settings$workerUrl,
-        _settings$onNextClick = settings.onNextClick,
-        onNextClick = _settings$onNextClick === void 0 ? function () {} : _settings$onNextClick,
-        _settings$onUnschedul = settings.onUnscheduleClick,
-        onUnscheduleClick = _settings$onUnschedul === void 0 ? function () {} : _settings$onUnschedul,
-        _settings$onStart = settings.onStart,
-        onStart = _settings$onStart === void 0 ? function () {} : _settings$onStart,
-        _settings$onStop = settings.onStop,
-        onStop = _settings$onStop === void 0 ? function () {} : _settings$onStop,
-        _settings$onScheduler = settings.onSchedulerTick,
-        onSchedulerTick = _settings$onScheduler === void 0 ? function () {} : _settings$onScheduler,
-        _settings$lookaheadIn = settings.lookaheadInterval,
-        lookaheadInterval = _settings$lookaheadIn === void 0 ? 0.025 : _settings$lookaheadIn,
-        _settings$scheduleAhe = settings.scheduleAheadTime,
-        scheduleAheadTime = _settings$scheduleAhe === void 0 ? 0.1 : _settings$scheduleAhe,
-        _settings$startDelayT = settings.startDelayTime,
-        startDelayTime = _settings$startDelayT === void 0 ? 0.2 : _settings$startDelayT;
-    this.onStart = onStart;
-    this.onStop = onStop;
-    this.onNextClick = onNextClick;
-    this.onUnscheduleClick = onUnscheduleClick;
-    this.onSchedulerTick = onSchedulerTick;
-    this.timerFn = timerFn;
-    this.clicker = clicker;
-    this.lookaheadInterval = lookaheadInterval;
-    this.scheduleAheadTime = scheduleAheadTime;
-    this.startDelayTime = startDelayTime;
-    this.bpm = bpm;
-    this.beats = beats;
-    this.subDivs = subDivs;
-    this.swing = swing;
+    // required:
+    this.timerFn = settings.timerFn; // provides microseconds, e.g. AudioContext::currentTime
+
+    this.clicker = settings.clicker; // provide clicker class to schedule sounds with the audio context
+    // basic config - use update() to adjust on the fly:
+
+    this.bpm = (_settings$bpm = settings.bpm) !== null && _settings$bpm !== void 0 ? _settings$bpm : 80;
+    this.beats = (_settings$beats = settings.beats) !== null && _settings$beats !== void 0 ? _settings$beats : 4;
+    this.subDivs = (_settings$subDivs = settings.subDivs) !== null && _settings$subDivs !== void 0 ? _settings$subDivs : 1;
+    this.swing = (_settings$swing = settings.swing) !== null && _settings$swing !== void 0 ? _settings$swing : 0;
+    this.workerUrl = (_settings$workerUrl = settings.workerUrl) !== null && _settings$workerUrl !== void 0 ? _settings$workerUrl : null; // supply URL for worker thread, otherwise uses local timer
+    // optional metronome events:
+
+    this.onNextClick = (_settings$onNextClick = settings.onNextClick) !== null && _settings$onNextClick !== void 0 ? _settings$onNextClick : function () {};
+    this.onUnscheduleClick = (_settings$onUnschedul = settings.onUnscheduleClick) !== null && _settings$onUnschedul !== void 0 ? _settings$onUnschedul : function () {};
+    this.onStart = (_settings$onStart = settings.onStart) !== null && _settings$onStart !== void 0 ? _settings$onStart : function () {};
+    this.onStop = (_settings$onStop = settings.onStop) !== null && _settings$onStop !== void 0 ? _settings$onStop : function () {};
+    this.onSchedulerTick = (_settings$onScheduler = settings.onSchedulerTick) !== null && _settings$onScheduler !== void 0 ? _settings$onScheduler : function () {}; // detailed configuration:
+
+    this.lookaheadInterval = (_settings$lookaheadIn = settings.lookaheadInterval) !== null && _settings$lookaheadIn !== void 0 ? _settings$lookaheadIn : 0.025;
+    this.scheduleAheadTime = (_settings$scheduleAhe = settings.scheduleAheadTime) !== null && _settings$scheduleAhe !== void 0 ? _settings$scheduleAhe : .1;
+    this.startDelayTime = (_settings$startDelayT = settings.startDelayTime) !== null && _settings$startDelayT !== void 0 ? _settings$startDelayT : 0.2;
     this.started = false; // prep the thread timer
 
-    if (workerUrl) {
-      this.worker = new Worker(workerUrl);
+    if (this.workerUrl) {
+      this.worker = new Worker(this.workerUrl);
     } else {
       this.worker = new MetronomeWorker();
     }
@@ -293,7 +274,7 @@ var Metronome = /*#__PURE__*/function () {
       var _this3 = this;
 
       var swingTime = this.barTime / this.totalSubDivs * (this.swing / 100) || 0;
-      return _toConsumableArray(Array(this.totalSubDivs).keys()).map(function (i) {
+      return Array.from(Array(this.totalSubDivs).keys()).map(function (i) {
         var t = i * (_this3.barTime / _this3.totalSubDivs);
         return i % 2 === 1 ? t + swingTime : t;
       });
@@ -357,15 +338,11 @@ var Metronome = /*#__PURE__*/function () {
 var MetronomeWorker = /*#__PURE__*/function () {
   function MetronomeWorker() {
     _classCallCheck(this, MetronomeWorker);
-
-    _defineProperty(this, "interval", void 0);
-
-    _defineProperty(this, "timer", void 0);
   }
 
   _createClass(MetronomeWorker, [{
     key: "onmessage",
-    value: function onmessage() {}
+    value: function onmessage(_) {}
   }, {
     key: "postMessage",
     value: function postMessage(data) {
@@ -403,14 +380,14 @@ var MetronomeWorker = /*#__PURE__*/function () {
 
   return MetronomeWorker;
 }();
-;// CONCATENATED MODULE: ./src/core/Clicker.js
-function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || Clicker_unsupportedIterableToArray(arr, i) || _nonIterableRest(); }
+;// CONCATENATED MODULE: ./src/core/lib/esm/Clicker.js
+function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray(arr, i) || _nonIterableRest(); }
 
 function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
 
-function Clicker_unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return Clicker_arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return Clicker_arrayLikeToArray(o, minLen); }
+function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
 
-function Clicker_arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
+function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
 
 function _iterableToArrayLimit(arr, i) { var _i = arr == null ? null : typeof Symbol !== "undefined" && arr[Symbol.iterator] || arr["@@iterator"]; if (_i == null) return; var _arr = []; var _n = true; var _d = false; var _s, _e; try { for (_i = _i.call(arr); !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
 
@@ -676,7 +653,7 @@ function _fetchAudioBuffer() {
   }));
   return _fetchAudioBuffer.apply(this, arguments);
 }
-;// CONCATENATED MODULE: ./src/core/Visualizer.js
+;// CONCATENATED MODULE: ./src/core/lib/esm/Visualizer.js
 function Visualizer_slicedToArray(arr, i) { return Visualizer_arrayWithHoles(arr) || Visualizer_iterableToArrayLimit(arr, i) || Visualizer_unsupportedIterableToArray(arr, i) || Visualizer_nonIterableRest(); }
 
 function Visualizer_nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
@@ -694,8 +671,6 @@ function Visualizer_classCallCheck(instance, Constructor) { if (!(instance insta
 function Visualizer_defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
 
 function Visualizer_createClass(Constructor, protoProps, staticProps) { if (protoProps) Visualizer_defineProperties(Constructor.prototype, protoProps); if (staticProps) Visualizer_defineProperties(Constructor, staticProps); Object.defineProperty(Constructor, "prototype", { writable: false }); return Constructor; }
-
-function Visualizer_defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
 var Visualizer = /*#__PURE__*/function () {
   function Visualizer(_ref) {
@@ -806,8 +781,7 @@ var Visualizer = /*#__PURE__*/function () {
 
   return Visualizer;
 }();
-
-Visualizer_defineProperty(Visualizer, "frameRate", []);
+Visualizer.frameRate = [];
 
 function getQuantizeType(q, threshold) {
   if (q <= -1 * threshold) {
@@ -818,12 +792,12 @@ function getQuantizeType(q, threshold) {
     return 'ontime';
   }
 }
-;// CONCATENATED MODULE: ./src/core/index.js
-function core_ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); enumerableOnly && (symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; })), keys.push.apply(keys, symbols); } return keys; }
+;// CONCATENATED MODULE: ./src/core/lib/esm/index.js
+function esm_ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); enumerableOnly && (symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; })), keys.push.apply(keys, symbols); } return keys; }
 
-function core_objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = null != arguments[i] ? arguments[i] : {}; i % 2 ? core_ownKeys(Object(source), !0).forEach(function (key) { core_defineProperty(target, key, source[key]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : core_ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } return target; }
+function esm_objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = null != arguments[i] ? arguments[i] : {}; i % 2 ? esm_ownKeys(Object(source), !0).forEach(function (key) { esm_defineProperty(target, key, source[key]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : esm_ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } return target; }
 
-function core_defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+function esm_defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
 
  // utility method for creating a default metronome/clicker setup
@@ -832,10 +806,10 @@ function createMetronome() {
   var mSettings = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
   var clickerSettings = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
   var audioContext = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : new AudioContext();
-  var clicker = new Clicker(core_objectSpread({
+  var clicker = new Clicker(esm_objectSpread({
     audioContext: audioContext
   }, clickerSettings));
-  return new Metronome(core_objectSpread({
+  return new Metronome(esm_objectSpread({
     timerFn: function timerFn() {
       return audioContext.currentTime;
     },
@@ -1670,7 +1644,7 @@ try {
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module is referenced by other modules so it can't be inlined
 /******/ 	__webpack_require__(666);
-/******/ 	var __webpack_exports__ = __webpack_require__(291);
+/******/ 	var __webpack_exports__ = __webpack_require__(175);
 /******/ 	Bipium = __webpack_exports__;
 /******/ 	
 /******/ })()

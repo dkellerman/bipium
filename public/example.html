@@ -8,13 +8,13 @@
 
     <script>
       window.onload = function () {
-        m = Bipium.createMetronome({
-          workerUrl: './dist/worker.min.js',
+        window.m = Bipium.createMetronome({
+          workerUrl: './dist/worker.js',
           bpm: 80,
           subDivs: 1,
         });
 
-        v = new Bipium.Visualizer({ metronome: m });
+        window.v = new Bipium.Visualizer({ metronome: m });
 
         const count = document.getElementById('count');
         const progress = document.getElementById('progress');

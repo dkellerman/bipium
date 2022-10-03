@@ -5,11 +5,11 @@ module.exports = {
   entry: {
     'bipium-core': [
       'regenerator-runtime/runtime.js',
-      path.resolve(__dirname, 'src/core/index.js')
+      path.resolve(__dirname, 'src/core/lib/esm/index.js')
     ],
     'bipium-core.min': [
       'regenerator-runtime/runtime.js',
-      path.resolve(__dirname, 'src/core/index.js')
+      path.resolve(__dirname, 'src/core/lib/cjs/index.js')
     ],
   },
   output: {

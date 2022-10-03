@@ -1,4 +1,6 @@
-export const DEFAULT_SOUNDS = {
+import {AudioNode, Click, FinalSoundSpec, Sound, SoundPack} from "./types";
+
+export const DEFAULT_SOUNDS: SoundPack = {
   name: 'Defaults',
   bar: 880.0,
   beat: 440.0,
@@ -6,8 +8,20 @@ export const DEFAULT_SOUNDS = {
   user: 660.0,
 };
 
+export interface ClickerOptions {
+  audioContext: InstanceType<typeof AudioContext>;
+  volume?: number;
+  sounds?: SoundPack;
+};
+
 export class Clicker {
-  constructor({ audioContext, volume = 100, sounds = DEFAULT_SOUNDS }) {
+  audioContext: InstanceType<typeof AudioContext>;
+  volume: number;
+  loading: boolean;
+  gainNode: InstanceType<typeof GainNode>;
+  sounds: SoundPack = {};
+
+  constructor({ audioContext, volume = 100, sounds = DEFAULT_SOUNDS }: ClickerOptions) {
     this.audioContext = audioContext;
     this.volume = volume;
     this.loading = false;
@@ -16,19 +30,23 @@ export class Clicker {
     this.setSounds(sounds);
   }
 
-  async setSounds(sounds) {
-    const result = await this.fetchSounds(sounds);
-    this.sounds = result;
+  async setSounds(sounds: SoundPack) {
+    this.sounds = await this.fetchSounds(sounds);
   }
 
-  async fetchSounds(sounds) {
+  async fetchSounds(sounds: SoundPack): Promise<SoundPack> {
     this.loading = true;
     for (const k in sounds) {
       if (k === 'name') continue;
-      if (!Array.isArray(sounds[k])) sounds[k] = [sounds[k], 1.0, 0.05];
-      const [sound] = sounds[k];
+      let sound;
+      if (!Array.isArray(sounds[k])) {
+        sound = sounds[k] as Sound;
+        sounds[k] = [sound, 1.0, 0.05];
+      } else {
+        sound = sounds[0];
+      }
       if (typeof sound === 'string') {
-        sounds[k][0] = await fetchAudioBuffer(this.audioContext, sound);
+        (sounds[k] as any[])[0] = await fetchAudioBuffer(this.audioContext, sound);
       }
     }
     this.loading = false;
@@ -36,11 +54,16 @@ export class Clicker {
     return sounds;
   }
 
-  setVolume(volume) {
+  setVolume(volume: number) {
     this.volume = volume;
   }
 
-  scheduleClickSound({ time, subDiv, beat, beats }) {
+  scheduleClickSound({ time, subDiv, beat, beats }: {
+    time: number;
+    subDiv: number;
+    beat: number;
+    beats: number;
+  }) {
     // console.log('sch click', beat, subDiv, this.volume);
     if (this.loading) return;
 
@@ -56,19 +79,18 @@ export class Clicker {
       sound = sounds.subDiv || sounds.beat;
     }
 
-    const [soundObj, relativeVolume, clickLength] = sound;
-    const audioObj = this.playSoundAt(soundObj, time, clickLength, relativeVolume);
-    return audioObj;
+    const [soundObj, relativeVolume, clickLength] = sound as any;
+    return this.playSoundAt(soundObj, time, clickLength, relativeVolume);
   }
 
-  removeClickSound(click) {
+  removeClickSound(click: Click) {
     click?.obj?.stop(0);
   }
 
-  playSoundAt(sound, time, clickLength, relativeVolume = 1.0) {
+  playSoundAt(sound: Sound, time: number, clickLength: number, relativeVolume: number = 1.0): AudioNode {
     if (this.audioContext?.state === 'suspended') this.audioContext.resume();
 
-    let audioNode;
+    let audioNode: AudioNode;
     if (typeof sound === 'number') {
       // freq
       audioNode = this.audioContext.createOscillator();
@@ -80,7 +102,7 @@ export class Clicker {
       // buffer
       audioNode = this.audioContext.createBufferSource();
       try {
-        audioNode.buffer = sound;
+        audioNode.buffer = sound as AudioBuffer;
       } catch (e) {
         console.error(e);
       }
@@ -92,15 +114,14 @@ export class Clicker {
     return audioNode;
   }
 
-  click(t = 0) {
-    const [soundObj, vol, length] = this.sounds.user;
+  click(t = 0): AudioNode {
+    const [soundObj, vol, length] = this.sounds.user as any;
     return this.playSoundAt(soundObj, t, length, vol);
   }
 }
 
-async function fetchAudioBuffer(audioContext, filepath) {
+async function fetchAudioBuffer(audioContext: AudioContext, filepath: string) {
   const response = await fetch(filepath);
   const arrayBuffer = await response.arrayBuffer();
-  const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-  return audioBuffer;
+  return await audioContext.decodeAudioData(arrayBuffer);
 }

@@ -2,11 +2,29 @@
   "name": "@dkellerman/bipium-core",
   "version": "1.0.4",
   "description": "Metronome",
-  "main": "index.js",
+  "main": "./lib/cjs/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "clean": "rm -rf ./lib",
+    "build": "npm run clean && npm run build:esm && npm run build:cjs",
+    "build:esm": "tsc -p ./tsconfig.esm.json",
+    "build:cjs": "tsc -p ./tsconfig.cjs.json",
+    "prepack": "npm run build"
   },
   "author": "David Kellerman <david@silvermoon.org>",
   "license": "MIT",
-  "homepage": "https://bipium.com"
+  "homepage": "https://bipium.com",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./lib/esm/types/index.d.ts",
+        "default": "./lib/esm/index.mjs"
+      },
+      "require": {
+        "types": "./lib/cjs/types/index.d.ts",
+        "default": "./lib/cjs/index.js"
+      }
+    }
+  },
+  "types": "./lib/cjs/types/index.d.ts",
+  "files": ["./lib/**/*"]
 }
