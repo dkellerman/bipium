@@ -43,10 +43,11 @@ export class Clicker {
         sound = sounds[k] as Sound;
         sounds[k] = [sound, 1.0, 0.05];
       } else {
-        sound = sounds[0];
+        sound = (sounds[k] as any)[0];
       }
       if (typeof sound === 'string') {
-        (sounds[k] as any[])[0] = await fetchAudioBuffer(this.audioContext, sound);
+        const buf = await fetchAudioBuffer(this.audioContext, sound);
+        (sounds[k] as any[])[0] = buf;
       }
     }
     this.loading = false;
