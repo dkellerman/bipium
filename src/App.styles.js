@@ -65,7 +65,8 @@ export const Layout = styled.main`
   }
 
   select {
-    padding: 12px 5px;
+    padding: 0 5px;
+    height: 50px;
     font-size: ${bodyCondensedFontSize};
     border-radius: 0;
   }
@@ -160,6 +161,7 @@ export const TapButton = styled.button`
   border-width: 2px;
   padding: 15px 25px;
   margin-bottom: 5px;
+  font-size: ${smallFontSize};
   @media only screen and (max-height: ${condensedHeight}) {
     padding: 10px 25px;
   }

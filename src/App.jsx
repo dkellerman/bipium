@@ -533,7 +533,7 @@ const BPMArea = ({ clicker, onChange }) => {
           onDrag={val => {
             setBpm(validBpm(val));
           }}
-          labelRotation={-90}
+          labelRotation={-60}
           ticks={[50, 80, 100, 120, 140, 160, 180, 200, 220, 240, bpmMax]}
         />
       </div>
