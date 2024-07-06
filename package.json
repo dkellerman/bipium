@@ -9,7 +9,6 @@
     "@inlet/react-pixi": "^6.6.5",
     "copy-to-clipboard": "^3.3.1",
     "domexception": "^4.0.0",
-    "express-recaptcha": "^5.0.2",
     "local-storage-fallback": "^4.1.2",
     "lodash": "^4.17.21",
     "pixi.js": "^6.2.2",
