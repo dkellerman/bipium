@@ -33,6 +33,13 @@ export function DefaultVisualizer({
   const descRef = useRef();
 
   useEffect(() => {
+    setTimeout(drawGrid, 0);
+    m.opts.onUpdateOptions = () => {
+      drawGrid();
+    };
+  }, [m]);
+
+  useEffect(() => {
     if (m.started) {
       nowLineRef.current.x = 0;
       descRef.current.text = DEFAULT_DESC_TEXT;
@@ -100,8 +107,7 @@ export function DefaultVisualizer({
     requestAnimationFrame(draw);
   }, [m.started, m.barTime, m.bpm]);
 
-  // draw grid only when it changes
-  useEffect(() => {
+  function drawGrid() {
     if (!showGrid) return;
     const g = gridRef.current;
     g.clear();
@@ -112,7 +118,7 @@ export function DefaultVisualizer({
       g.moveTo(x, 0);
       g.lineTo(x, height);
     });
-  }, [m.beats, m.swing, m.subDivs]);
+  }
 
   return (
     <>

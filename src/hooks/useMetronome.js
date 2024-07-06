@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Metronome } from '../core';
 
 export function useMetronome(settings) {

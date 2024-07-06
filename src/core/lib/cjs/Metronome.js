@@ -74,6 +74,7 @@ class Metronome {
         (_b = (_a = this.opts).onStop) === null || _b === void 0 ? void 0 : _b.call(_a);
     }
     update({ bpm, beats, subDivs, swing }) {
+        var _a, _b;
         this.unscheduleClicks();
         if (bpm !== undefined)
             this.opts.bpm = bpm;
@@ -92,6 +93,7 @@ class Metronome {
             }
             this.advance();
         }
+        (_b = (_a = this.opts).onUpdateOptions) === null || _b === void 0 ? void 0 : _b.call(_a, this.opts);
     }
     // main method called by the thread timer when started
     scheduler() {

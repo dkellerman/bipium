@@ -86,6 +86,7 @@ export class Metronome {
             }
             this.advance();
         }
+        this.opts.onUpdateOptions?.(this.opts);
     }
     // main method called by the thread timer when started
     scheduler() {

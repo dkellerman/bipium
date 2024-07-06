@@ -14,6 +14,7 @@ export interface MetronomeOptions {
     onStart?: () => void;
     onStop?: () => void;
     onSchedulerTick?: () => void;
+    onUpdateOptions?: (opts: MetronomeOptions) => void;
     lookaheadInterval?: number;
     scheduleAheadTime?: number;
     startDelayTime?: number;
