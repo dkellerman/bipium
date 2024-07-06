@@ -139,7 +139,7 @@ export const StartButton = styled.button`
   border-radius: 50%;
   padding: 20px;
   margin-top: 15px;
-  font-size: ${xlargeFontSize};
+  font-size: ${largeFontSize};
   @media only screen and (max-height: ${condensedHeight}) {
     font-size: ${largeFontSize};
     margin-top: 5px;
@@ -155,6 +155,8 @@ export const TapButton = styled.button`
   color: ${black};
   background: ${white};
   border-radius: 50%;
+  border-color: black;
+  border-width: 2px;
   padding: 15px 25px;
   margin-bottom: 5px;
   @media only screen and (max-height: ${condensedHeight}) {
