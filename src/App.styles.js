@@ -17,7 +17,7 @@ export const bodyFontSize = '20px';
 export const bodyCondensedFontSize = '18px';
 export const largeCondensedFontSize = '24px';
 export const largeFontSize = '28px';
-export const xlargeFontSize = '40px';
+export const xlargeFontSize = '36px';
 
 export const divColor = 0xbbbbbb;
 export const subDivColor = 0x666666;
@@ -51,6 +51,23 @@ export const Layout = styled.main`
   width: 100%;
   align-items: center;
   padding: 0 0 40px 0;
+
+  nav {
+    width: 100%;
+    padding: 0 0 10px 0;
+    background: ${lightBlue};
+    h1 {
+      margin: 0;
+      padding: 10px 0;
+      text-align: center;
+      font-size: 36px;
+    }
+  }
+
+  select {
+    padding: 10px 5px;
+    font-size: ${bodyCondensedFontSize};
+  }
 
   @media only screen and (max-height: ${condensedHeight}) {
     &,
@@ -148,9 +165,11 @@ export const TapButton = styled.button`
 export const StepButton = styled.button`
   color: ${black};
   background: ${white};
-  padding: 12px;
-  margin: 0 0 12px 5px;
+  padding: 13px;
+  margin: 0px 0 12px 5px;
   background: ${lightGray};
+  position: relative;
+  top: -2px;
   @media only screen and (max-height: ${condensedHeight}) {
     padding: 6px 12px 6px 12px;
   }
@@ -192,10 +211,10 @@ export const CloseIcon = styled(RiCloseLine).attrs({
 `;
 
 export const SettingsIcon = styled(FiSettings).attrs({
-  size: 32,
+  size: 28,
 })`
   position: absolute;
-  top: 13px;
+  top: 9px;
   left: 25px;
   z-index: 1000;
   &:hover {
@@ -302,6 +321,7 @@ export const ButtonAsLink = styled.button`
     padding: 0;
     margin: 13px 0 0 0;
     border-bottom: 1px dotted ${gray};
+    font-size: ${bodyCondensedFontSize};
   }
 `;
 

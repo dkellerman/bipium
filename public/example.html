@@ -14,15 +14,15 @@
           subDivs: 1,
         });
 
-        window.v = new Bipium.Visualizer({ metronome: m });
+        window.viz = new Bipium.Visualizer({ metronome: m });
 
         const count = document.getElementById('count');
         const progress = document.getElementById('progress');
 
         requestAnimationFrame(function redraw() {
-          v.update();
-          count.innerText = v.count ? v.count.join('-') : '';
-          progress.style.width = `${(v.progress || 0) * 100}%`;
+          viz.update();
+          count.innerText = viz.count ? viz.count.join('-') : '';
+          progress.style.width = `${(viz.progress || 0) * 100}%`;
           requestAnimationFrame(redraw);
         });
       };
@@ -47,8 +47,8 @@
       <label>Play sub divisions</label>
 
       <p>
-        <button onclick="m.start(); v.start();">Start</button>
-        <button onclick="m.stop(); v.stop()">Stop</button>
+        <button onclick="m.start(); viz.start();">Start</button>
+        <button onclick="m.stop(); viz.stop()">Stop</button>
       </p>
 
       <!-- visualizer -->
