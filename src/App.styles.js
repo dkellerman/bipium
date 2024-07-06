@@ -65,8 +65,9 @@ export const Layout = styled.main`
   }
 
   select {
-    padding: 10px 5px;
+    padding: 12px 5px;
     font-size: ${bodyCondensedFontSize};
+    border-radius: 0;
   }
 
   @media only screen and (max-height: ${condensedHeight}) {
@@ -80,7 +81,7 @@ export const Layout = styled.main`
   }
 
   fieldset {
-    margin: 5px 0;
+    margin: 7px 0 5px 0;
     padding: 10px;
     border: 1px solid ${lightGray};
     text-align: center;
@@ -167,11 +168,10 @@ export const TapButton = styled.button`
 export const StepButton = styled.button`
   color: ${black};
   background: ${white};
-  padding: 13px;
+  padding: 12px;
   margin: 0px 0 12px 5px;
   background: ${lightGray};
-  position: relative;
-  top: -2px;
+  font-size: 18px;
   @media only screen and (max-height: ${condensedHeight}) {
     padding: 6px 12px 6px 12px;
   }
@@ -487,10 +487,10 @@ export const RangeTick = styled.div`
 
 export const RangeTickLabel = styled.div`
   position: absolute;
-  font-size: 18px;
+  font-size: 17px;
   color: ${black};
   top: 100%;
-  transform: translate(-50%, 1.2rem);
+  transform: translate(-50%, 1.2rem) ${({ rotation }) => rotation && `rotate(${rotation}deg)`};
   white-space: nowrap;
   padding-top: 5px;
   border-bottom: 1px dotted ${gray};

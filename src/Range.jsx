@@ -41,6 +41,7 @@ export const Range = ({ ticks: customTicks = [], ...props }) => {
         {ticks.map(({ value, getTickProps }) => (
           <RangeTick {...getTickProps()}>
             <RangeTickLabel
+              rotation={props.labelRotation}
               onClick={e => {
                 e.preventDefault();
                 e.stopPropagation();
