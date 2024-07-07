@@ -23,7 +23,6 @@ __To use__: click start.
 ## Info
 - Written by David Kellerman
 - Code available on [Github](https://github.com/dkellerman/bipium)
-- [Here's a rhymes dicionary based on actual songs](https://rhymes.now.sh)
 `;
 
 export default function About() {
