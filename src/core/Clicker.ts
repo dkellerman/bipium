@@ -1,4 +1,4 @@
-import {AudioNode, Click, FinalSoundSpec, Sound, SoundPack} from "./types";
+import { AudioNode, Click, Pattern, Sound, SoundPack } from './types';
 
 export const DEFAULT_SOUNDS: SoundPack = {
   name: 'Defaults',
@@ -12,17 +12,20 @@ export interface ClickerOptions {
   audioContext: InstanceType<typeof AudioContext>;
   volume?: number;
   sounds?: SoundPack;
-};
+  pattern?: Pattern;
+}
 
 export class Clicker {
   audioContext: InstanceType<typeof AudioContext>;
   volume: number;
   loading: boolean;
   gainNode: InstanceType<typeof GainNode>;
+  pattern?: Pattern;
   sounds: SoundPack = {};
 
-  constructor({ audioContext, volume = 100, sounds = DEFAULT_SOUNDS }: ClickerOptions) {
+  constructor({ audioContext, volume = 100, sounds = DEFAULT_SOUNDS, pattern }: ClickerOptions) {
     this.audioContext = audioContext;
+    this.pattern = pattern;
     this.volume = volume;
     this.loading = false;
     this.gainNode = this.audioContext.createGain();
@@ -59,14 +62,29 @@ export class Clicker {
     this.volume = volume;
   }
 
-  scheduleClickSound({ time, subDiv, beat, beats }: {
+  setPattern(pattern: Pattern) {
+    this.pattern = pattern;
+  }
+
+  scheduleClickSound({
+    time,
+    subDiv,
+    subDivs,
+    beat,
+    beats,
+  }: {
     time: number;
     subDiv: number;
+    subDivs: number;
     beat: number;
     beats: number;
   }) {
-    // console.log('sch click', beat, subDiv, this.volume);
     if (this.loading) return;
+
+    const beatNum = (beat - 1) * subDivs + subDiv;
+    if (this.pattern && !this.pattern[beatNum - 1]) return;
+
+    console.log('sch click', beatNum, beat, subDiv, this.volume);
 
     let sound;
     const sounds = this.sounds;
@@ -81,14 +99,21 @@ export class Clicker {
     }
 
     const [soundObj, relativeVolume, clickLength] = sound as any;
-    return this.playSoundAt(soundObj, time, clickLength, relativeVolume);
+    const patternVolume = this.pattern?.[beatNum - 1] ?? 1;
+    const vol = relativeVolume * patternVolume;
+    return this.playSoundAt(soundObj, time, clickLength, vol);
   }
 
   removeClickSound(click: Click) {
     click?.obj?.stop(0);
   }
 
-  playSoundAt(sound: Sound, time: number, clickLength: number, relativeVolume: number = 1.0): AudioNode {
+  playSoundAt(
+    sound: Sound,
+    time: number,
+    clickLength: number,
+    relativeVolume: number = 1.0,
+  ): AudioNode {
     if (this.audioContext?.state === 'suspended') this.audioContext.resume();
 
     let audioNode: AudioNode;

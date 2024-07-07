@@ -53,18 +53,47 @@ export function DefaultVisualizer({
     }
   }, [m.started]);
 
-  useEffect(() => {
-    const handleUserClick = e => {
-      if (!m.started) return;
-      if (e.type === 'touchstart' && e.target.nodeName !== 'CANVAS') return;
+  const handleUserClick = useCallback(
+    e => {
+      if (e.target.nodeName !== 'CANVAS') return;
+
+      if (!m.started || e.type === 'click') {
+        if (!m.clicker) return;
+        const canvas = e.target;
+        const rect = canvas.getBoundingClientRect();
+        let x, y;
+        if (e.clientX !== undefined && e.clientY !== undefined) {
+          x = e.clientX - rect.left;
+          y = e.clientY - rect.top;
+        } else if (e.touches && e.touches.length > 0) {
+          x = e.touches[0].clientX - rect.left;
+          y = e.touches[0].clientY - rect.top;
+        }
+        const divWidth = width / m.totalSubDivs;
+        const beatIdx = Math.floor(x / divWidth);
+        const pattern = m.clicker.pattern ?? new Array(m.totalSubDivs).fill(0);
+        pattern[beatIdx] = !pattern[beatIdx] ? 1 : 0;
+        m.clicker.setPattern(pattern);
+        drawGrid();
+        return;
+      }
+
       if (e.type === 'keydown' && e.key !== 'Control') return;
+      if (e.type === 'click') return;
+
       v.current.userClicks.push(m.now);
       m.clicker?.click();
-    };
+    },
+    [m],
+  );
+
+  useEffect(() => {
+    window.addEventListener('click', handleUserClick);
     window.addEventListener('keydown', handleUserClick);
     window.addEventListener('touchstart', handleUserClick);
 
     return () => {
+      window.removeEventListener('click', handleUserClick);
       window.removeEventListener('keydown', handleUserClick);
       window.removeEventListener('touchstart', handleUserClick);
     };
@@ -113,10 +142,17 @@ export function DefaultVisualizer({
     g.clear();
     m.gridTimes?.forEach((t, i) => {
       const x = (t / m.barTime) * width;
+      const x2 = m.gridTimes[i + 1] ? (m.gridTimes[i + 1] / m.barTime) * width : width;
       const isSubDiv = i % m.subDivs > 0;
       g.lineStyle(1, isSubDiv ? subDivColor : divColor);
       g.moveTo(x, 0);
       g.lineTo(x, height);
+      if (m.clicker?.pattern) {
+
+        g.beginFill(0x444000000, m.clicker.pattern[i]);
+        g.drawRect(x, 0, x2 - x, height);
+        g.endFill();
+      }
     });
   }
 

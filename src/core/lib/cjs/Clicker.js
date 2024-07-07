@@ -17,11 +17,11 @@ exports.DEFAULT_SOUNDS = {
     subDiv: 220.0,
     user: 660.0,
 };
-;
 class Clicker {
-    constructor({ audioContext, volume = 100, sounds = exports.DEFAULT_SOUNDS }) {
+    constructor({ audioContext, volume = 100, sounds = exports.DEFAULT_SOUNDS, pattern }) {
         this.sounds = {};
         this.audioContext = audioContext;
+        this.pattern = pattern;
         this.volume = volume;
         this.loading = false;
         this.gainNode = this.audioContext.createGain();
@@ -59,10 +59,17 @@ class Clicker {
     setVolume(volume) {
         this.volume = volume;
     }
-    scheduleClickSound({ time, subDiv, beat, beats }) {
-        // console.log('sch click', beat, subDiv, this.volume);
+    setPattern(pattern) {
+        this.pattern = pattern;
+    }
+    scheduleClickSound({ time, subDiv, subDivs, beat, beats, }) {
+        var _a, _b;
         if (this.loading)
             return;
+        const beatNum = (beat - 1) * subDivs + subDiv;
+        if (this.pattern && !this.pattern[beatNum - 1])
+            return;
+        console.log('sch click', beatNum, beat, subDiv, this.volume);
         let sound;
         const sounds = this.sounds;
         if (beat === 1 && subDiv === 1) {
@@ -78,7 +85,9 @@ class Clicker {
             sound = sounds.subDiv || sounds.beat;
         }
         const [soundObj, relativeVolume, clickLength] = sound;
-        return this.playSoundAt(soundObj, time, clickLength, relativeVolume);
+        const patternVolume = (_b = (_a = this.pattern) === null || _a === void 0 ? void 0 : _a[beatNum - 1]) !== null && _b !== void 0 ? _b : 1;
+        const vol = relativeVolume * patternVolume;
+        return this.playSoundAt(soundObj, time, clickLength, vol);
     }
     removeClickSound(click) {
         var _a;

@@ -1,23 +1,27 @@
-import { AudioNode, Click, Sound, SoundPack } from "./types";
+import { AudioNode, Click, Pattern, Sound, SoundPack } from './types';
 export declare const DEFAULT_SOUNDS: SoundPack;
 export interface ClickerOptions {
     audioContext: InstanceType<typeof AudioContext>;
     volume?: number;
     sounds?: SoundPack;
+    pattern?: Pattern;
 }
 export declare class Clicker {
     audioContext: InstanceType<typeof AudioContext>;
     volume: number;
     loading: boolean;
     gainNode: InstanceType<typeof GainNode>;
+    pattern?: Pattern;
     sounds: SoundPack;
-    constructor({ audioContext, volume, sounds }: ClickerOptions);
+    constructor({ audioContext, volume, sounds, pattern }: ClickerOptions);
     setSounds(sounds: SoundPack): Promise<void>;
     fetchSounds(sounds: SoundPack): Promise<SoundPack>;
     setVolume(volume: number): void;
-    scheduleClickSound({ time, subDiv, beat, beats }: {
+    setPattern(pattern: Pattern): void;
+    scheduleClickSound({ time, subDiv, subDivs, beat, beats, }: {
         time: number;
         subDiv: number;
+        subDivs: number;
         beat: number;
         beats: number;
     }): AudioNode | undefined;

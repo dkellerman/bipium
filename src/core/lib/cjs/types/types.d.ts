@@ -14,4 +14,5 @@ export declare type Click = {
     subDivs: number;
     time: number;
 };
+export declare type Pattern = number[];
 //# sourceMappingURL=types.d.ts.map

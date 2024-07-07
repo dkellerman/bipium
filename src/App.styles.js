@@ -67,6 +67,7 @@ export const Layout = styled.main`
   select {
     padding: 0 5px;
     height: 50px;
+    color: black;
     font-size: ${bodyCondensedFontSize};
     border-radius: 0;
   }

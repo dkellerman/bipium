@@ -36,6 +36,7 @@ import { sendEvent, sendOneEvent, sendFrameRate } from './tracking';
 const int = x => x && parseInt(x, 10);
 const float = x => x && parseFloat(x);
 const bool = x => (x && [true, 1, '1', 'true', 't'].includes(x)) || false;
+const list = of => x => x ? x.split(',').map(of) : null;
 
 const bpmMin = 20.0;
 const bpmMax = 320.0;
@@ -47,6 +48,7 @@ function App() {
   const [beats, setBeats] = useSetting('beats', 4, int);
   const [subDivs, setSubDivs] = useSetting('subDivs', 1, int);
   const [swing, setSwing] = useSetting('swing', 0, int);
+  const [pattern,] = useSetting('pattern', '', list(int));
   const [playSubDivs, setPlaySubDivs] = useSetting('playSubDivs', true, bool);
   const [volume, setVolume] = useSetting('volume', 100, int, localStorage);
   const [muted, setMuted] = useState(false);
@@ -68,6 +70,7 @@ function App() {
     audioContext: audioContext.current,
     volume,
     sounds: SOUND_PACKS[soundPack],
+    pattern,
   });
 
   const m = useMetronome({

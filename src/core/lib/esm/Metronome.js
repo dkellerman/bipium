@@ -5,7 +5,7 @@ const defaultOptions = {
     swing: 0,
     workerUrl: undefined,
     lookaheadInterval: 0.025,
-    scheduleAheadTime: .1,
+    scheduleAheadTime: 0.1,
     startDelayTime: 0.2,
 };
 export class Metronome {
@@ -17,7 +17,14 @@ export class Metronome {
         this.scheduledClicks = [];
         this.opts = { ...defaultOptions, ...opts };
         this.started = false;
-        this.next = { bar: 0, beat: 0, beats: this.opts.beats, subDiv: 0, subDivs: this.opts.subDivs, time: 0 };
+        this.next = {
+            bar: 0,
+            beat: 0,
+            beats: this.opts.beats,
+            subDiv: 0,
+            subDivs: this.opts.subDivs,
+            time: 0,
+        };
         // prep the thread timer
         if (this.opts.workerUrl) {
             this.worker = new Worker(this.opts.workerUrl);
@@ -54,8 +61,8 @@ export class Metronome {
         };
         this.worker.postMessage('start');
         this.opts.onStart?.();
-        if (this.opts.clicker?.audioContext?.state === 'suspended') {
-            this.opts.clicker.audioContext.resume();
+        if (this.clicker?.audioContext?.state === 'suspended') {
+            this.clicker.audioContext.resume();
         }
     }
     stop() {
@@ -67,7 +74,7 @@ export class Metronome {
         this.unscheduleClicks();
         this.opts.onStop?.();
     }
-    update({ bpm, beats, subDivs, swing }) {
+    update({ bpm, beats, subDivs, swing, }) {
         this.unscheduleClicks();
         if (bpm !== undefined)
             this.opts.bpm = bpm;
@@ -94,7 +101,7 @@ export class Metronome {
             return;
         // update the bar start time for quantization purposes
         const lc = this.lastClick;
-        if (lc && ((lc.bar || 0) > this.lastBar)) {
+        if (lc && (lc.bar || 0) > this.lastBar) {
             this.lastBar = lc.bar;
             this.barStart = lc.time;
         }
@@ -112,7 +119,7 @@ export class Metronome {
         // notify clicker to schedule the actual sound - it returns a sound object
         // that we keep around so that if it needs to be cancelled it can be passed
         // to the onUnscheduleClick method
-        const obj = this.opts.clicker?.scheduleClickSound(click);
+        const obj = this.clicker?.scheduleClickSound(click);
         this.opts.onNextClick?.(click);
         this.scheduledClicks.push({ ...click, obj });
         // remove old clicks from memory
@@ -147,13 +154,16 @@ export class Metronome {
         this.scheduledClicks = (this.scheduledClicks || [])
             .map((click) => {
             if (click.time > this.now) {
-                this.opts.clicker?.removeClickSound(click);
+                this.clicker?.removeClickSound(click);
                 this.opts.onUnscheduleClick?.(click);
                 return null;
             }
             return click;
         })
             .filter(Boolean);
+    }
+    get clicker() {
+        return this.opts?.clicker;
     }
     get now() {
         return this.opts.timerFn();

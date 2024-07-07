@@ -1,5 +1,5 @@
-import { Clicker } from "./Clicker";
-import { Click } from "./types";
+import { Clicker } from './Clicker';
+import { Click } from './types';
 export interface MetronomeOptions {
     timerFn: () => number;
     clicker?: InstanceType<typeof Clicker>;
@@ -32,7 +32,7 @@ export declare class Metronome {
     constructor(opts: MetronomeOptions);
     start(): void;
     stop(): void;
-    update({ bpm, beats, subDivs, swing }: {
+    update({ bpm, beats, subDivs, swing, }: {
         bpm?: number;
         beats?: number;
         subDivs?: number;
@@ -42,6 +42,7 @@ export declare class Metronome {
     scheduleClick(): void;
     advance(): void;
     unscheduleClicks(): void;
+    get clicker(): Clicker | undefined;
     get now(): number;
     get beatTime(): number;
     get subDivTime(): number;

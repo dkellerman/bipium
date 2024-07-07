@@ -1,5 +1,5 @@
-import { Metronome } from "./Metronome";
-import { Click } from "./types";
+import { Metronome } from './Metronome';
+import { Click } from './types';
 export interface VisualizerOptions {
     metronome: InstanceType<typeof Metronome>;
     qThreshold?: number;

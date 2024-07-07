@@ -8,7 +8,7 @@ const defaultOptions = {
     swing: 0,
     workerUrl: undefined,
     lookaheadInterval: 0.025,
-    scheduleAheadTime: .1,
+    scheduleAheadTime: 0.1,
     startDelayTime: 0.2,
 };
 class Metronome {
@@ -20,7 +20,14 @@ class Metronome {
         this.scheduledClicks = [];
         this.opts = Object.assign(Object.assign({}, defaultOptions), opts);
         this.started = false;
-        this.next = { bar: 0, beat: 0, beats: this.opts.beats, subDiv: 0, subDivs: this.opts.subDivs, time: 0 };
+        this.next = {
+            bar: 0,
+            beat: 0,
+            beats: this.opts.beats,
+            subDiv: 0,
+            subDivs: this.opts.subDivs,
+            time: 0,
+        };
         // prep the thread timer
         if (this.opts.workerUrl) {
             this.worker = new Worker(this.opts.workerUrl);
@@ -59,8 +66,8 @@ class Metronome {
         };
         this.worker.postMessage('start');
         (_b = (_a = this.opts).onStart) === null || _b === void 0 ? void 0 : _b.call(_a);
-        if (((_d = (_c = this.opts.clicker) === null || _c === void 0 ? void 0 : _c.audioContext) === null || _d === void 0 ? void 0 : _d.state) === 'suspended') {
-            this.opts.clicker.audioContext.resume();
+        if (((_d = (_c = this.clicker) === null || _c === void 0 ? void 0 : _c.audioContext) === null || _d === void 0 ? void 0 : _d.state) === 'suspended') {
+            this.clicker.audioContext.resume();
         }
     }
     stop() {
@@ -73,7 +80,7 @@ class Metronome {
         this.unscheduleClicks();
         (_b = (_a = this.opts).onStop) === null || _b === void 0 ? void 0 : _b.call(_a);
     }
-    update({ bpm, beats, subDivs, swing }) {
+    update({ bpm, beats, subDivs, swing, }) {
         var _a, _b;
         this.unscheduleClicks();
         if (bpm !== undefined)
@@ -101,7 +108,7 @@ class Metronome {
             return;
         // update the bar start time for quantization purposes
         const lc = this.lastClick;
-        if (lc && ((lc.bar || 0) > this.lastBar)) {
+        if (lc && (lc.bar || 0) > this.lastBar) {
             this.lastBar = lc.bar;
             this.barStart = lc.time;
         }
@@ -116,7 +123,7 @@ class Metronome {
         // notify clicker to schedule the actual sound - it returns a sound object
         // that we keep around so that if it needs to be cancelled it can be passed
         // to the onUnscheduleClick method
-        const obj = (_a = this.opts.clicker) === null || _a === void 0 ? void 0 : _a.scheduleClickSound(click);
+        const obj = (_a = this.clicker) === null || _a === void 0 ? void 0 : _a.scheduleClickSound(click);
         (_c = (_b = this.opts).onNextClick) === null || _c === void 0 ? void 0 : _c.call(_b, click);
         this.scheduledClicks.push(Object.assign(Object.assign({}, click), { obj }));
         // remove old clicks from memory
@@ -152,13 +159,17 @@ class Metronome {
             .map((click) => {
             var _a, _b, _c;
             if (click.time > this.now) {
-                (_a = this.opts.clicker) === null || _a === void 0 ? void 0 : _a.removeClickSound(click);
+                (_a = this.clicker) === null || _a === void 0 ? void 0 : _a.removeClickSound(click);
                 (_c = (_b = this.opts).onUnscheduleClick) === null || _c === void 0 ? void 0 : _c.call(_b, click);
                 return null;
             }
             return click;
         })
             .filter(Boolean);
+    }
+    get clicker() {
+        var _a;
+        return (_a = this.opts) === null || _a === void 0 ? void 0 : _a.clicker;
     }
     get now() {
         return this.opts.timerFn();
