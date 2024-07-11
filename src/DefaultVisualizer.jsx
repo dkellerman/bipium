@@ -148,8 +148,7 @@ export function DefaultVisualizer({
       g.moveTo(x, 0);
       g.lineTo(x, height);
       if (m.clicker?.pattern) {
-
-        g.beginFill(0x444000000, m.clicker.pattern[i]);
+        g.beginFill(0x005500, m.clicker.pattern[i]);
         g.drawRect(x, 0, x2 - x, height);
         g.endFill();
       }
