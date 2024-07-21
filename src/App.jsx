@@ -348,7 +348,7 @@ function App() {
             sendEvent('set_play_subdivs', 'App', val, val ? 1 : 0);
           }}
         />
-        <label>Play {!playSubDivs && 'sub divs'}</label>
+        <label>Play: {!playSubDivs && 'sub divs'}</label>
 
         {playSubDivs && (
           <>
