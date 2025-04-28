@@ -9,6 +9,8 @@ export const lightBlue = 'aliceblue';
 export const gray = '#999';
 export const lightGray = '#eee';
 export const red = 'red';
+export const bloodRed = '#b91c1c';
+export const emeraldGreen = '#16803c';
 export const black = '#010101';
 export const white = '#fefefe';
 
@@ -49,8 +51,19 @@ export const Layout = styled.main`
   display: flex;
   flex-direction: column;
   width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
   align-items: center;
   padding: 0 0 40px 0;
+
+  /* Generic hover zoom for all buttons and clickable icons */
+  button, svg {
+    transition: transform 0.15s ease-in-out;
+    &:hover {
+      cursor: pointer;
+      transform: scale(1.03);
+    }
+  }
 
   nav {
     width: 100%;
@@ -69,6 +82,12 @@ export const Layout = styled.main`
     height: 50px;
     font-size: ${bodyCondensedFontSize};
     border-radius: 0;
+    color: ${black};
+    -webkit-text-fill-color: ${black};
+  }
+
+  select option {
+    color: ${black};
   }
 
   @media only screen and (max-height: ${condensedHeight}) {
@@ -112,10 +131,11 @@ export const Nav = styled.nav`
   background: ${lightBlue};
   padding: 0;
   margin: 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: relative;
 
   h3,
   h3 a {
-    width: 100%;
     padding: 0;
     margin: 3px;
     text-align: center !important;
@@ -137,7 +157,7 @@ export const Nav = styled.nav`
 
 export const StartButton = styled.button`
   color: ${white};
-  background: ${green};
+  background: ${emeraldGreen};
   border-radius: 50%;
   padding: 20px;
   margin-top: 15px;
@@ -150,7 +170,7 @@ export const StartButton = styled.button`
 
 export const StopButton = styled(StartButton)`
   color: ${white};
-  background: ${red};
+  background: ${bloodRed};
 `;
 
 export const TapButton = styled.button`
@@ -203,7 +223,7 @@ export const CloseIcon = styled(RiCloseLine).attrs({
 })`
   position: absolute;
   top: 13px;
-  left: 25px;
+  right: 15px;
   z-index: 10000;
   &:hover {
     cursor: pointer;
@@ -215,18 +235,15 @@ export const CloseIcon = styled(RiCloseLine).attrs({
 `;
 
 export const SettingsIcon = styled(FiSettings).attrs({
-  size: 28,
+  size: 24,
 })`
   position: absolute;
-  top: 9px;
-  left: 25px;
+  top: 11px;
+  right: 15px;
   z-index: 1000;
-  &:hover {
-    cursor: pointer;
-  }
   @media only screen and (max-height: ${condensedHeight}) {
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
   }
 `;
 
@@ -239,16 +256,14 @@ export const Divider = styled.div`
 export const SideBar = styled.aside`
   position: fixed;
   top: 0;
-  left: 0;
+  right: calc(50% - 240px);
   height: 100vh;
   width: 320px;
   background: ${lightBlue};
   z-index: 1000;
-  padding-left: 32px;
-  padding-top: 58px;
-  box-shadow: 2px 3px 4px rgba(0, 0, 0, 0.15);
-  overflow: auto;
-  touch-action: pan-y;
+  padding: 58px 25px 0 25px;
+  box-shadow: -2px 3px 4px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
 
   ul {
     list-style: none;
@@ -272,8 +287,10 @@ const volumeIconStyle = css`
   position: relative;
   left: -12px;
   vertical-align: -9px;
+  transition: transform 0.15s ease-in-out;
   &:hover {
     cursor: pointer;
+    transform: scale(1.03);
   }
 `;
 
@@ -356,8 +373,10 @@ export const BPMField = styled.fieldset`
   label {
     display: ${props => (props.editing ? 'none' : 'inline-block')};
     border-bottom: 1px dotted ${gray};
+    transition: transform 0.15s ease-in-out;
     &:hover {
       cursor: pointer;
+      transform: scale(1.03);
     }
   }
 
@@ -415,6 +434,10 @@ export const BeatsField = styled.fieldset`
 export const PlaySubDivsField = styled.fieldset`
   && {
     text-align: left;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+    border: 0;
+    padding: 18px 14px;
+    background: ${white};
   }
   select,
   input[type='checkbox'] {
@@ -510,7 +533,9 @@ export const RangeHandle = styled.div`
   border-radius: 100%;
   background: ${rangeHandleColor};
   border: solid 1px ${gray};
+  transition: transform 0.15s ease-in-out;
   &:hover {
     cursor: pointer;
+    transform: scale(1.05);
   }
 `;

@@ -193,16 +193,16 @@ function App() {
 
   return (
     <Layout>
-      <NavBar />
-
-      {showSideBar ? (
-        <CloseIcon onClick={() => setShowSideBar(false)} />
-      ) : (
-        <SettingsIcon onClick={() => setShowSideBar(true)} />
-      )}
+      <NavBar>
+        {showSideBar ? (
+          <CloseIcon showSideBar={showSideBar} onClick={() => setShowSideBar(false)} />
+        ) : (
+          <SettingsIcon showSideBar={showSideBar} onClick={() => setShowSideBar(true)} />
+        )}
+      </NavBar>
 
       {showSideBar && (
-        <SideBar>
+        <SideBar show={showSideBar}>
           <ul>
             <li>
               <VolumeSliderSide>
