@@ -256,7 +256,6 @@ export const Divider = styled.div`
 export const SideBar = styled.aside`
   position: fixed;
   top: 0;
-  right: calc(50% - 240px);
   height: 100vh;
   width: 320px;
   background: ${lightBlue};
@@ -264,6 +263,14 @@ export const SideBar = styled.aside`
   padding: 58px 25px 0 25px;
   box-shadow: -2px 3px 4px rgba(0, 0, 0, 0.15);
   overflow: hidden;
+  transition: transform 0.4s ease;
+  right: 0;
+  transform: translateX(${props => props.show ? '0' : '320px'});
+
+  @media only screen and (min-width: 1024px) {
+    right: calc(50% - 240px);
+    transform: translateX(${props => props.show ? '320px' : '0'});
+  }
 
   ul {
     list-style: none;
