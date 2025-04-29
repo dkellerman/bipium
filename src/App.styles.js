@@ -263,7 +263,7 @@ export const SettingsIcon = styled(FiSettings).attrs({
   size: 22,
 })`
   position: absolute;
-  top: 11px;
+  top: 9px;
   right: 15px;
   z-index: 1000;
   @media only screen and (max-height: ${condensedHeight}) {
