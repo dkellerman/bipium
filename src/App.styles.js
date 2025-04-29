@@ -55,6 +55,12 @@ export const Layout = styled.main`
   margin: 0 auto;
   align-items: center;
   padding: 0 0 40px 0;
+  min-height: 100dvh;
+
+  @media only screen and (max-width: 668px) {
+    min-height: auto;
+    padding: 0 0 40px 0;
+  }
 
   /* Generic hover zoom for all buttons and clickable icons */
   button, svg {
