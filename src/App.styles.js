@@ -75,6 +75,10 @@ export const Layout = styled.main`
       text-align: center;
       font-size: 36px;
     }
+    a {
+      text-decoration: none;
+      font-size: 26px;
+    }
   }
 
   select {
@@ -159,7 +163,7 @@ export const StartButton = styled.button`
   color: ${white};
   background: ${emeraldGreen};
   border-radius: 50%;
-  padding: 20px;
+  padding: 16px;
   margin-top: 15px;
   font-size: ${largeFontSize};
   @media only screen and (max-height: ${condensedHeight}) {
@@ -410,12 +414,12 @@ export const BPMField = styled.fieldset`
 
   .range {
     display: inline-block;
-    margin-top: 15px;
-    margin-bottom: 5px;
+    margin-top: 25px;
+    margin-bottom: 15px;
     width: calc(100% - 20px);
     @media only screen and (max-height: ${condensedHeight}) {
-      margin-top: 10px;
-      margin-bottom: 5px;
+      margin-top: 15px;
+      margin-bottom: 10px;
     }
   }
 `;
@@ -444,6 +448,7 @@ export const PlaySubDivsField = styled.fieldset`
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
     border: 0;
     padding: 18px 14px;
+    margin-top: 3px;
     background: ${white};
   }
   select,
@@ -454,7 +459,7 @@ export const PlaySubDivsField = styled.fieldset`
 
 export const SwingField = styled.div`
   display: flex;
-  margin-top: 10px;
+  margin-top: 15px;
   width: 100%;
 
   label {
@@ -471,7 +476,7 @@ export const SwingField = styled.div`
     margin-bottom: 10px;
   }
   @media only screen and (max-height: ${condensedHeight}) {
-    margin-top: 5px;
+    margin-top: 8px;
   }
 `;
 

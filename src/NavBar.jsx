@@ -6,8 +6,7 @@ export const NavBar = ({ children }) => (
   <Nav>
     <h3>
       <Link to="/">
-        <span className="bipium">B</span>
-        <span>ipium</span>
+        <span className="bipium">Bipium</span>
       </Link>
     </h3>
     {children}

@@ -492,7 +492,7 @@ const BPMArea = ({ clicker, onChange }) => {
           sendOneEvent('tap');
         }}
       >
-        <span style={{ borderBottom: '1px dotted gray' }}>T</span>ap
+        <span>T</span>ap
       </TapButton>
 
       <input
