@@ -67,7 +67,7 @@ export const Layout = styled.main`
 
   nav {
     width: 100%;
-    padding: 0 0 10px 0;
+    padding: 0 0 5px 0;
     background: ${lightBlue};
     h1 {
       margin: 0;
@@ -239,7 +239,7 @@ export const CloseIcon = styled(RiCloseLine).attrs({
 `;
 
 export const SettingsIcon = styled(FiSettings).attrs({
-  size: 24,
+  size: 22,
 })`
   position: absolute;
   top: 11px;
