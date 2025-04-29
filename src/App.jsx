@@ -48,7 +48,7 @@ function App() {
   const [subDivs, setSubDivs] = useSetting('subDivs', 1, int);
   const [swing, setSwing] = useSetting('swing', 0, int);
   const [playSubDivs, setPlaySubDivs] = useSetting('playSubDivs', true, bool);
-  const [volume, setVolume] = useSetting('volume', 100, int, localStorage);
+  const [volume, setVolume] = useSetting('volume', 35, int, localStorage);
   const [muted, setMuted] = useState(false);
   const [started, setStarted] = useState(false);
   const [soundPack, setSoundPack] = useSetting('soundPack', 'drumkit', String);
@@ -492,7 +492,7 @@ const BPMArea = ({ clicker, onChange }) => {
           sendOneEvent('tap');
         }}
       >
-        Tap
+        <span style={{ borderBottom: '1px dotted gray' }}>T</span>ap
       </TapButton>
 
       <input
