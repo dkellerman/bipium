@@ -9,6 +9,7 @@ import {
   countFont,
   correctNoteColor,
   incorrectNoteColor,
+  descriptionFont,
 } from './App.styles';
 
 const touchEnabled = 'ontouchstart' in window;
@@ -148,7 +149,7 @@ export function DefaultVisualizer({
             x={width / 2}
             y={height - 20}
             anchor={0.5}
-            style={{ fontSize: 18, fill: 'white', fontWeight: 'bold' }}
+            style={descriptionFont}
           />
         </Stage>
       )}

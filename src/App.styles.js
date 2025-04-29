@@ -38,8 +38,15 @@ export const rangeTickColor = gray;
 
 export const countFont = {
   fill: 0xffffff,
-  fontFamily: 'monospace',
+  fontFamily: 'Figtree',
   strokeThickness: 10,
+};
+
+export const descriptionFont = {
+  fill: 0xffffff,
+  fontFamily: 'Figtree',
+  fontSize: 18,
+  fontWeight: 'bold',
 };
 
 export const condensedHeight = '639px';
@@ -48,6 +55,7 @@ export const Layout = styled.main`
   background: ${white};
   color: ${black};
   font-size: ${bodyFontSize};
+  font-family: 'Figtree', sans-serif;
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -56,10 +64,15 @@ export const Layout = styled.main`
   align-items: center;
   padding: 0 0 40px 0;
   min-height: 100dvh;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 
   @media only screen and (max-width: 668px) {
-    min-height: auto;
+    min-height: 100dvh;
     padding: 0 0 40px 0;
+  }
+
+  @media only screen and (max-height: ${condensedHeight}) {
+    padding: 0 0 10px 0;
   }
 
   /* Generic hover zoom for all buttons and clickable icons */
@@ -170,11 +183,13 @@ export const StartButton = styled.button`
   background: ${emeraldGreen};
   border-radius: 50%;
   padding: 16px;
-  margin-top: 15px;
+  margin-top: 10px;
+  margin-bottom: 10px;
   font-size: ${largeFontSize};
   @media only screen and (max-height: ${condensedHeight}) {
     font-size: ${largeFontSize};
-    margin-top: 5px;
+    margin-top: 0px;
+    margin-bottom: 15px;
   }
 `;
 
@@ -333,7 +348,11 @@ const VolumeSlider = styled.div`
   }
 `;
 
-export const VolumeSliderMain = styled(VolumeSlider)``;
+export const VolumeSliderMain = styled(VolumeSlider)`
+  @media only screen and (max-height: ${condensedHeight}) {
+    margin: -10px 0 0 0;
+  }
+`;
 
 export const VolumeSliderSide = styled(VolumeSlider)`
   margin-bottom: 40px;
@@ -379,7 +398,7 @@ export const BPMField = styled.fieldset`
 
   @media only screen and (max-height: ${condensedHeight}) {
     && {
-      margin-top: 8px;
+      margin-top: 5px;
     }
   }
 
@@ -401,31 +420,25 @@ export const BPMField = styled.fieldset`
   input[type='number'] {
     margin: 0 40px;
     font-size: ${largeFontSize};
-    width: 100px;
+    width: 110px;
   }
 
   @media only screen and (max-height: ${condensedHeight}) {
     label,
     input[type='number'] {
       font-size: ${largeCondensedFontSize};
-    }
-  }
-
-  @media only screen and (max-width: 374px) {
-    label,
-    input[type='number'] {
-      margin: 0 20px;
+      margin: 0 40px;
     }
   }
 
   .range {
     display: inline-block;
-    margin-top: 25px;
-    margin-bottom: 15px;
+    margin-top: 20px;
+    margin-bottom: 12px;
     width: calc(100% - 20px);
     @media only screen and (max-height: ${condensedHeight}) {
-      margin-top: 15px;
-      margin-bottom: 10px;
+      margin-top: 12px;
+      margin-bottom: 8px;
     }
   }
 `;
@@ -433,6 +446,7 @@ export const BPMField = styled.fieldset`
 export const BeatsField = styled.fieldset`
   && {
     border: 0;
+    margin-top: 3px;
   }
   select {
     display: inline-block;
@@ -443,7 +457,7 @@ export const BeatsField = styled.fieldset`
   @media only screen and (max-height: ${condensedHeight}) {
     && {
       margin-bottom: 0;
-      margin-top: 3px;
+      margin-top: 2px;
     }
   }
 `;
@@ -451,11 +465,14 @@ export const BeatsField = styled.fieldset`
 export const PlaySubDivsField = styled.fieldset`
   && {
     text-align: left;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12), 0 -1px 2px rgba(0, 0, 0, 0.04), 2px 0 3px rgba(0, 0, 0, 0.04);
     border: 0;
-    padding: 18px 14px;
-    margin-top: 3px;
+    padding: 16px 14px;
+    margin-top: 2px;
     background: ${white};
+    @media only screen and (max-height: ${condensedHeight}) {
+      padding: 16px 14px 25px 14px;
+    }
   }
   select,
   input[type='checkbox'] {
@@ -465,11 +482,11 @@ export const PlaySubDivsField = styled.fieldset`
 
 export const SwingField = styled.div`
   display: flex;
-  margin-top: 15px;
+  margin-top: 12px;
   width: 100%;
 
   label {
-    padding-top: 15px;
+    padding-top: 12px;
     margin-left: 0;
     margin-right: 10px;
     font-size: ${bodyCondensedFontSize};
@@ -478,11 +495,11 @@ export const SwingField = styled.div`
   }
   .range {
     flex: 1;
-    padding-top: 18px;
-    margin-bottom: 10px;
+    padding-top: 15px;
+    margin-bottom: 8px;
   }
   @media only screen and (max-height: ${condensedHeight}) {
-    margin-top: 8px;
+    margin-top: 6px;
   }
 `;
 
