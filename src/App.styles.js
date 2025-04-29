@@ -27,8 +27,8 @@ export const nowLineColor = 0x00ff00;
 export const incorrectNoteColor = 0xff0000;
 export const correctNoteColor = 0x00ff00;
 
-export const rangeHandleWidth = 36;
-export const rangeHandleHeight = 36;
+export const rangeHandleWidth = 32;
+export const rangeHandleHeight = 32;
 export const rangeHandleColor = white;
 export const rangeTrackHeight = 7;
 export const rangeTrackColor = lightGray;
@@ -181,10 +181,12 @@ export const Nav = styled.nav`
 export const StartButton = styled.button`
   color: ${white};
   background: ${emeraldGreen};
-  border-radius: 50%;
-  padding: 16px;
+  border: 0;
+  border-radius: 5px;
+  padding: 12px 32px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   margin-top: 10px;
-  margin-bottom: 10px;
+  margin-bottom: 18px;
   font-size: ${largeFontSize};
   @media only screen and (max-height: ${condensedHeight}) {
     font-size: ${largeFontSize};
