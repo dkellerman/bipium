@@ -16,8 +16,15 @@ import { Card, CardContent } from './components/ui/card';
 import { Separator } from './components/ui/separator';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from './components/ui/sheet';
 import { Switch } from './components/ui/switch';
+import { BIPIUM_API_DEFAULT_CONFIG, createBipiumRuntimeApi } from './lib/api';
 import { cn } from './lib/utils';
-import type { BooleanInput, ClickerInstance, NumberInput, StateSetter } from './types';
+import type {
+  BipiumApiConfig,
+  BooleanInput,
+  ClickerInstance,
+  NumberInput,
+  StateSetter,
+} from './types';
 
 type NumberConverter = (value: NumberInput) => number;
 type StepSetter = StateSetter<number>;
@@ -117,6 +124,21 @@ function App() {
   const forceRender = () => _update(x => !x);
 
   const audioContext = useRef(new AudioContext());
+  const beatsRef = useRef(beats);
+  const subDivsRef = useRef(subDivs);
+  const playSubDivsRef = useRef(playSubDivs);
+  const swingRef = useRef(swing);
+  const soundPackRef = useRef(soundPack);
+  const volumeRef = useRef(volume);
+  const startedRef = useRef(started);
+
+  beatsRef.current = beats;
+  subDivsRef.current = subDivs;
+  playSubDivsRef.current = playSubDivs;
+  swingRef.current = swing;
+  soundPackRef.current = soundPack;
+  volumeRef.current = volume;
+  startedRef.current = started;
 
   const canSwing = subDivs % 2 === 0;
   const swingActive = playSubDivs && canSwing && swingEnabled;
@@ -207,6 +229,71 @@ function App() {
       m.update({ bpm: val });
     }
   }, []);
+
+  const getApiConfig = useCallback(
+    (): BipiumApiConfig => ({
+      bpm: bpm.current,
+      beats: beatsRef.current,
+      subDivs: subDivsRef.current,
+      playSubDivs: playSubDivsRef.current,
+      swing: swingRef.current,
+      soundPack: soundPackRef.current,
+      volume: volumeRef.current,
+    }),
+    [],
+  );
+
+  const applyApiConfig = useCallback(
+    (next: BipiumApiConfig) => {
+      const normalized: BipiumApiConfig = {
+        ...BIPIUM_API_DEFAULT_CONFIG,
+        ...next,
+      };
+
+      updateBPM(normalized.bpm);
+      setBeats(int(normalized.beats));
+      setPlaySubDivs(Boolean(normalized.playSubDivs));
+      setSubDivs(int(normalized.subDivs));
+      setSwing(validSwing(normalized.swing, 0));
+      setSwingEnabled(normalized.swing > 0);
+      previousSwingRef.current = normalized.swing > 0 ? normalized.swing : 0;
+      setSoundPack(normalized.soundPack);
+      setVolume(int(normalized.volume));
+    },
+    [updateBPM],
+  );
+
+  useEffect(() => {
+    const runtime = createBipiumRuntimeApi({
+      getConfig: getApiConfig,
+      applyConfig: applyApiConfig,
+      startPlayback: () => {
+        setStarted(true);
+      },
+      stopPlayback: () => {
+        setStarted(false);
+      },
+      togglePlayback: () => {
+        const next = !startedRef.current;
+        setStarted(next);
+        return next;
+      },
+      isPlaying: () => startedRef.current,
+      tap: () => {
+        clicker.click();
+      },
+      now: () => audioContext.current.currentTime,
+      getSoundPacks: () => Object.keys(SOUND_PACKS),
+    });
+
+    window.bpm = runtime;
+
+    return () => {
+      if (window.bpm === runtime) {
+        delete window.bpm;
+      }
+    };
+  }, [applyApiConfig, clicker, getApiConfig]);
 
   useEffect(() => {
     clicker.setSounds(SOUND_PACKS[soundPack || 'defaults']);
@@ -463,6 +550,9 @@ function App() {
               >
                 Code
               </a>
+              <Link className="block underline" to="/api">
+                API
+              </Link>
               {buildSha && (
                 <p className="text-xs text-slate-500">Build: {buildSha.substring(1, 5)}</p>
               )}
@@ -578,15 +668,15 @@ function App() {
                     {swingEnabled && (
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 text-[1.1rem] leading-none text-slate-500">
-	                          <span>Swing:</span>
-	                          <div className="flex items-center gap-1.5">
-	                            {!canSwing ? (
-	                              <span className="text-slate-500">even sub divs only</span>
-	                            ) : editingSwing ? (
-	                              <span
-	                                className={cn(
-	                                  'inline-flex items-center gap-0.5 border-b border-dotted border-slate-500 pb-px',
-	                                  'leading-none text-slate-600',
+                          <span>Swing:</span>
+                          <div className="flex items-center gap-1.5">
+                            {!canSwing ? (
+                              <span className="text-slate-500">even sub divs only</span>
+                            ) : editingSwing ? (
+                              <span
+                                className={cn(
+                                  'inline-flex items-center gap-0.5 border-b border-dotted border-slate-500 pb-px',
+                                  'leading-none text-slate-600',
                                 )}
                               >
                                 <input
@@ -624,20 +714,20 @@ function App() {
                                 disabled={!canSwing}
                                 onClick={() => setEditingSwing(true)}
                               >
-	                                {formatSwing(swing)}%
-	                              </button>
-	                            )}
-	                            {canSwing && !editingSwing && Number(swing) > 0 && (
-	                              <Button
-	                                type="button"
-	                                variant="ghost"
-	                                size="icon"
-	                                className="h-5 w-5 rounded-full p-0 text-slate-500 hover:text-slate-700"
-	                                aria-label="Reset swing to 0"
-	                                onClick={() => {
-	                                  setSwing(0);
-	                                  sendOneEvent('update_swing', '', 0, 0);
-	                                }}
+                                {formatSwing(swing)}%
+                              </button>
+                            )}
+                            {canSwing && !editingSwing && Number(swing) > 0 && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-5 w-5 rounded-full p-0 text-slate-500 hover:text-slate-700"
+                                aria-label="Reset swing to 0"
+                                onClick={() => {
+                                  setSwing(0);
+                                  sendOneEvent('update_swing', '', 0, 0);
+                                }}
                               >
                                 <X className="h-3 w-3" />
                               </Button>
@@ -707,7 +797,7 @@ function App() {
         {!started ? (
           <Button
             type="button"
-            className="h-[3.4rem] bg-emerald-700 px-10 text-[1.6rem] text-white hover:bg-emerald-800"
+            className="h-[3.8rem] bg-emerald-700 px-10 text-[1.6rem] text-white hover:bg-emerald-800 sm:h-[3.4rem]"
             onClick={e => {
               e.preventDefault();
               start();
@@ -719,7 +809,7 @@ function App() {
         ) : (
           <Button
             type="button"
-            className="h-[3.4rem] bg-red-700 px-10 text-[1.6rem] text-white hover:bg-red-800"
+            className="h-[3.8rem] bg-red-700 px-10 text-[1.6rem] text-white hover:bg-red-800 sm:h-[3.4rem]"
             onClick={e => {
               e.preventDefault();
               stop();
@@ -907,7 +997,7 @@ const BPMArea = ({ clicker, onChange, className }: BPMAreaProps) => {
             setBpm(validBpm(val));
           }}
           labelRotation={-60}
-          tickClassName="text-[17px] sm:text-[18px]"
+          tickClassName="text-[19px] sm:text-[18px]"
           ticks={[50, 80, 100, 120, 140, 160, 180, 200, 220, 240, bpmMax]}
         />
       </div>
@@ -932,7 +1022,7 @@ const StepButtons = ({
         type="button"
         variant="outline"
         size="icon"
-        className="h-12 w-12 p-[0.55rem] text-[1.9rem]"
+        className="h-[3.35rem] w-[3.35rem] p-[0.7rem] text-[1.9rem] sm:h-12 sm:w-12 sm:p-[0.55rem]"
         disabled={disabled || Number(val) >= Number(max)}
         onClick={() => {
           setter(x => (x < max ? Math.min(Number(max), conv(x) + step) : x));
@@ -945,7 +1035,7 @@ const StepButtons = ({
         type="button"
         variant="outline"
         size="icon"
-        className="h-12 w-12 p-[0.55rem] text-[1.9rem]"
+        className="h-[3.35rem] w-[3.35rem] p-[0.7rem] text-[1.9rem] sm:h-12 sm:w-12 sm:p-[0.55rem]"
         disabled={disabled || Number(val) <= Number(min)}
         onClick={() => {
           setter(x => (x > min ? Math.max(Number(min), conv(x) - step) : x));

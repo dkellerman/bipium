@@ -19,8 +19,8 @@ export function useSetting<T>(
     'reset' in q
       ? defVal
       : queryValue === ''
-        ? storageValue ?? defVal
-        : queryValue ?? storageValue ?? defVal;
+        ? (storageValue ?? defVal)
+        : (queryValue ?? storageValue ?? defVal);
   const [val, setVal] = useState<T>(transform(initialValue));
 
   useEffect(() => {

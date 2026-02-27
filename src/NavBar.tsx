@@ -12,15 +12,15 @@ export const NavBar = ({ children }: WithChildrenProps) => (
   >
     <h1
       className={cn(
-        'm-0 text-center text-[1.55rem] font-medium leading-none tracking-tight text-emerald-700',
+        'm-0 text-center text-[1.55rem] font-medium leading-none tracking-tight text-emerald-800',
         'sm:text-[1.65rem]',
       )}
     >
       <Link className="no-underline" to="/">
         <span className="text-emerald-800">B</span>
-        <span className="text-emerald-700">i</span>
+        <span className="text-emerald-600">i</span>
         <span className="text-emerald-800">p</span>
-        <span className="text-emerald-700">iu</span>
+        <span className="text-emerald-600">iu</span>
         <span className="text-emerald-800">m</span>
       </Link>
     </h1>

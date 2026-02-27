@@ -21,7 +21,8 @@
     "sessionstorage": "^0.1.0",
     "standardized-audio-context": "^25.3.72",
     "tailwind-merge": "^3.5.0",
-    "tailwindcss": "^4.2.1"
+    "tailwindcss": "^4.2.1",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.2.1",

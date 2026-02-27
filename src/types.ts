@@ -74,3 +74,61 @@ export interface TrackingWindow extends Window {
 export type MetronomeInstance = Metronome;
 export type ClickerInstance = Clicker;
 export type MetronomeSettings = MetronomeOptions;
+
+export interface BipiumApiConfig {
+  bpm: number;
+  beats: number;
+  subDivs: number;
+  playSubDivs: boolean;
+  swing: number;
+  soundPack: string;
+  volume: number;
+}
+
+export interface BipiumApiSchemaJson {
+  config: unknown;
+  configPatch: unknown;
+}
+
+export type BipiumValidationResult =
+  | { ok: true; value: BipiumApiConfig }
+  | { ok: false; error: string };
+
+export interface BipiumRuntimeApi {
+  version: number;
+  entrypoint: 'window.bpm';
+  discovery: {
+    ui: string;
+    markdown: string;
+    llms: string;
+    agents: string;
+  };
+  defaults: BipiumApiConfig;
+  schemas: {
+    config: unknown;
+    configPatch: unknown;
+  };
+  schemaJson: BipiumApiSchemaJson;
+  getSchemaJson(): BipiumApiSchemaJson;
+  start(
+    bpm?: number,
+    beats?: number,
+    subDivs?: number,
+    playSubDivs?: boolean,
+    swing?: number,
+    soundPack?: string,
+    volume?: number,
+  ): BipiumApiConfig;
+  stop(): void;
+  toggle(): boolean;
+  isStarted(): boolean;
+  getConfig(): BipiumApiConfig;
+  setConfig(partial: Partial<BipiumApiConfig>): BipiumApiConfig;
+  validateConfig(input: unknown): BipiumValidationResult;
+  fromQuery(query?: string): BipiumApiConfig;
+  toQuery(config?: Partial<BipiumApiConfig>): string;
+  applyQuery(query?: string): BipiumApiConfig;
+  tap(): void;
+  getSoundPacks(): string[];
+  now(): number;
+}

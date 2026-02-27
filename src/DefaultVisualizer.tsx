@@ -139,20 +139,23 @@ export function DefaultVisualizer({
     requestAnimationFrame(draw);
   }, [mAny.started, mAny.barTime, mAny.opts?.bpm]);
 
-  const drawGrid = useCallback((g: any) => {
-    if (!g) return;
-    g.clear();
-    if (!showGrid) return;
-    if (!mAny.barTime) return;
-    mAny.gridTimes?.forEach((t: number, i: number) => {
-      const x = (t / mAny.barTime) * width;
-      const isSubDiv = i % (mAny.opts?.subDivs || 1) > 0;
-      g.setStrokeStyle({ width: 1, color: isSubDiv ? subDivColor : divColor });
-      g.moveTo(x, 0);
-      g.lineTo(x, height);
-      g.stroke();
-    });
-  }, [showGrid, width, height, mAny.barTime, mAny.opts?.subDivs, mAny.gridTimes]);
+  const drawGrid = useCallback(
+    (g: any) => {
+      if (!g) return;
+      g.clear();
+      if (!showGrid) return;
+      if (!mAny.barTime) return;
+      mAny.gridTimes?.forEach((t: number, i: number) => {
+        const x = (t / mAny.barTime) * width;
+        const isSubDiv = i % (mAny.opts?.subDivs || 1) > 0;
+        g.setStrokeStyle({ width: 1, color: isSubDiv ? subDivColor : divColor });
+        g.moveTo(x, 0);
+        g.lineTo(x, height);
+        g.stroke();
+      });
+    },
+    [showGrid, width, height, mAny.barTime, mAny.opts?.subDivs, mAny.gridTimes],
+  );
 
   return (
     <>

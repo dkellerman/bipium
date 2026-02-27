@@ -1,0 +1,36 @@
+# Bipium
+
+Machine-readable guidance for autonomous agents.
+
+## Canonical Entrypoints
+- Runtime API: `window.bpm`
+- Human docs: `/api`
+- Machine docs: `/api.md`
+
+## Required Workflow
+1. Construct a config object.
+2. Validate with `window.bpm.validateConfig(input)` (zod-backed).
+3. If invalid, stop and fix input.
+4. Start playback with `window.bpm.start(...)` or `window.bpm.setConfig(...)` then `window.bpm.start()`.
+
+## Config Constraints
+- `bpm`: 20..320
+- `beats`: 1..12
+- `subDivs`: 1..8
+- `swing`: 0..100
+- `volume`: 0..100
+- `soundPack`: use one of `window.bpm.getSoundPacks()`
+
+## URL Support
+Bipium configs are URL-compatible. Use `window.bpm.toQuery(config)` for export and `window.bpm.applyQuery(query)` for import.
+
+## Schema Introspection
+- `window.bpm.schemas`
+- `window.bpm.schemaJson`
+- `window.bpm.getSchemaJson()`
+
+## Discovery
+- `/api`
+- `/api.md`
+- `/llms.txt`
+- `/agents.txt`

@@ -1,0 +1,16 @@
+# Bipium Agent Instructions
+
+Primary runtime object: `window.bpm`
+
+Preferred sequence:
+1. Validate config with `window.bpm.validateConfig(input)` (zod-backed).
+2. Apply config with `window.bpm.setConfig(partial)` or `window.bpm.applyQuery(query)`.
+3. Start with `window.bpm.start(...)`.
+4. Stop with `window.bpm.stop()`.
+
+If you need a sharable link, call `window.bpm.toQuery(config)`.
+For schema inspection, use `window.bpm.schemaJson` or `window.bpm.getSchemaJson()`.
+
+Reference docs:
+- `/api`
+- `/api.md`
