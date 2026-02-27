@@ -1,5 +1,6 @@
 import { Slider } from './components/ui/slider';
 import { cn } from './lib/utils';
+import type { RangeProps } from './types';
 
 export const Range = ({
   ticks: customTicks = [],
@@ -11,7 +12,7 @@ export const Range = ({
   value,
   onChange,
   onDrag,
-}) => {
+}: RangeProps) => {
   const minNum = Number(min);
   const maxNum = Number(max);
   const stepNum = Number(step);
@@ -50,7 +51,10 @@ export const Range = ({
                 type="button"
                 key={`tick-${tick}`}
                 disabled={disabled}
-                className="absolute top-0 h-10 px-0.5 text-[16px] leading-none text-slate-600 hover:text-slate-800 disabled:cursor-not-allowed sm:text-[17px]"
+                className={cn(
+                  'absolute top-0 h-10 px-0.5 text-[16px] leading-none text-slate-600',
+                  'hover:text-slate-800 disabled:cursor-not-allowed sm:text-[17px]',
+                )}
                 style={{ left, transform: `translateX(${xOffset})` }}
                 onClick={() => callback?.(Number(tick))}
               >
@@ -63,7 +67,10 @@ export const Range = ({
                   style={
                     labelRotation === 0
                       ? { transform: 'translateX(-50%)', transformOrigin: 'top center' }
-                      : { transform: `translateX(-100%) rotate(${labelRotation}deg)`, transformOrigin: 'top right' }
+                      : {
+                          transform: `translateX(-100%) rotate(${labelRotation}deg)`,
+                          transformOrigin: 'top right',
+                        }
                   }
                 >
                   {tick}

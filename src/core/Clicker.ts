@@ -1,7 +1,7 @@
-import {AudioNode, Click, FinalSoundSpec, Sound, SoundPack} from "./types";
+import { AudioNode, Click, FinalSoundSpec, Sound, SoundPack } from './types';
 
 export const DEFAULT_SOUNDS: SoundPack = {
-  name: 'Defaults',
+  name: 'Beeps',
   bar: 880.0,
   beat: 440.0,
   subDiv: 220.0,
@@ -12,7 +12,7 @@ export interface ClickerOptions {
   audioContext: InstanceType<typeof AudioContext>;
   volume?: number;
   sounds?: SoundPack;
-};
+}
 
 export class Clicker {
   audioContext: InstanceType<typeof AudioContext>;
@@ -59,7 +59,12 @@ export class Clicker {
     this.volume = volume;
   }
 
-  scheduleClickSound({ time, subDiv, beat, beats }: {
+  scheduleClickSound({
+    time,
+    subDiv,
+    beat,
+    beats,
+  }: {
     time: number;
     subDiv: number;
     beat: number;
@@ -88,7 +93,12 @@ export class Clicker {
     click?.obj?.stop(0);
   }
 
-  playSoundAt(sound: Sound, time: number, clickLength: number, relativeVolume: number = 1.0): AudioNode {
+  playSoundAt(
+    sound: Sound,
+    time: number,
+    clickLength: number,
+    relativeVolume: number = 1.0,
+  ): AudioNode {
     if (this.audioContext?.state === 'suspended') this.audioContext.resume();
 
     let audioNode: AudioNode;

@@ -1,8 +1,9 @@
 import { useState, useRef, useCallback } from 'react';
+import type { TapBPMResult } from '../types';
 
-export function useTapBPM(defVal) {
+export function useTapBPM(defVal: number): TapBPMResult {
   const [bpm, setBPM] = useState(defVal);
-  const taps = useRef([]);
+  const taps = useRef<number[]>([]);
 
   const handleTap = useCallback(() => {
     const now = Date.now();

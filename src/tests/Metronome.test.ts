@@ -1,6 +1,8 @@
 import { act } from 'react-dom/test-utils';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Metronome, Visualizer, Clicker, DEFAULT_SOUNDS } from '../core';
 import { AudioContext } from 'standardized-audio-context-mock';
+import type { Click } from '../core/types';
 
 let now = 0.0;
 let lookahead = 0.025;
@@ -8,23 +10,25 @@ let lookahead = 0.025;
 function fwd(t = lookahead) {
   return act(() => {
     now += t;
-    jest.advanceTimersByTime(t * 1000);
+    vi.advanceTimersByTime(t * 1000);
     console.log('now =>', now);
   });
 }
 
-const mockOnNextClick = jest.fn(c => console.log('onNextClick =>', c.time));
-const mockOnUnscheduleClick = jest.fn(c => console.log('onUnscheduleClick =>', c.time));
+const mockOnNextClick = vi.fn((click: Click) => console.log('onNextClick =>', click.time));
+const mockOnUnscheduleClick = vi.fn((click: Click) =>
+  console.log('onUnscheduleClick =>', click.time),
+);
 const mockAudioContext = new AudioContext();
-const mockClicker = new Clicker({ audioContext: mockAudioContext });
-const scheduleClickSound = jest.spyOn(mockClicker, 'scheduleClickSound');
-const removeClickSound = jest.spyOn(mockClicker, 'removeClickSound');
+const mockClicker = new Clicker({ audioContext: mockAudioContext as any });
+const scheduleClickSound = vi.spyOn(mockClicker, 'scheduleClickSound');
+const removeClickSound = vi.spyOn(mockClicker, 'removeClickSound');
 
 describe('metronome', () => {
   beforeEach(async () => {
     now = 0.0;
-    jest.useFakeTimers();
-    jest.clearAllMocks();
+    vi.useFakeTimers();
+    vi.clearAllMocks();
     await mockClicker.setSounds(DEFAULT_SOUNDS);
   });
 

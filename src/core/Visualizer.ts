@@ -1,5 +1,5 @@
-import { Metronome } from "./Metronome";
-import { Click } from "./types";
+import { Metronome } from './Metronome';
+import { Click } from './types';
 
 export interface VisualizerOptions {
   metronome: InstanceType<typeof Metronome>;
@@ -15,9 +15,9 @@ export class Visualizer {
 
   progress: number = 0;
   lastTime: number = 0;
-  savedClick: Click|null = null;
+  savedClick: Click | null = null;
   count: number[] = [];
-  qType: string|null = null;
+  qType: string | null = null;
   userClicks: number[] = [];
 
   static frameRate: number[] = [];
@@ -59,7 +59,7 @@ export class Visualizer {
     const lastClickIdx = m.getClickIndex(lastClick, savedClick?.subDivs);
 
     // update now line
-    if (lastClick && (lastClickIdx > savedClickIdx)) {
+    if (lastClick && lastClickIdx > savedClickIdx) {
       this.savedClick = lastClick;
       const lastClickBarIdx = m.getClickBarIndex(lastClick);
       this.progress = (1.0 / m.totalSubDivs) * lastClickBarIdx;
@@ -72,7 +72,7 @@ export class Visualizer {
       const remTime = m.barTime * remProgress;
       const perSecond = remProgress / remTime;
       const deltaP = deltaT * perSecond;
-      this.progress = (curProgress + deltaP) % 1.0;;
+      this.progress = (curProgress + deltaP) % 1.0;
     }
 
     this.lastTime = m.elapsed;
@@ -96,8 +96,10 @@ export class Visualizer {
     const arr = Visualizer.frameRate;
     if (!arr?.length) return 0;
 
-    const mean: number = arr.reduce((a, b) => (a + b)) / arr.length;
-    const std: number = Math.sqrt(arr.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b) / arr.length);
+    const mean: number = arr.reduce((a, b) => a + b) / arr.length;
+    const std: number = Math.sqrt(
+      arr.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b) / arr.length,
+    );
     return {
       mean,
       std,

@@ -1,5 +1,5 @@
-import { Clicker } from "./Clicker";
-import { Click } from "./types";
+import { Clicker } from './Clicker';
+import { Click } from './types';
 
 export interface MetronomeOptions {
   timerFn: () => number;
@@ -28,7 +28,7 @@ const defaultOptions: Partial<MetronomeOptions> = {
   swing: 0,
   workerUrl: undefined,
   lookaheadInterval: 0.025,
-  scheduleAheadTime: .1,
+  scheduleAheadTime: 0.1,
   startDelayTime: 0.2,
 };
 
@@ -46,7 +46,14 @@ export class Metronome {
   constructor(opts: MetronomeOptions) {
     this.opts = { ...defaultOptions, ...opts } as Required<MetronomeOptions>;
     this.started = false;
-    this.next = { bar: 0, beat: 0, beats: this.opts.beats, subDiv: 0, subDivs: this.opts.subDivs, time: 0 };
+    this.next = {
+      bar: 0,
+      beat: 0,
+      beats: this.opts.beats,
+      subDiv: 0,
+      subDivs: this.opts.subDivs,
+      time: 0,
+    };
 
     // prep the thread timer
     if (this.opts.workerUrl) {
@@ -103,7 +110,12 @@ export class Metronome {
     this.opts.onStop?.();
   }
 
-  update({ bpm, beats, subDivs, swing }: {
+  update({
+    bpm,
+    beats,
+    subDivs,
+    swing,
+  }: {
     bpm?: number;
     beats?: number;
     subDivs?: number;
@@ -118,8 +130,7 @@ export class Metronome {
 
     // recalculate next scheduled beat if bar structure has changed
     if ((bpm !== undefined || beats !== undefined) && this.started && this.scheduledClicks.length) {
-      if (this.lastClick)
-        this.next = { ...this.lastClick } ;
+      if (this.lastClick) this.next = { ...this.lastClick };
       while (this.next.time <= this.now - this.subDivTime) {
         this.next.time += this.subDivTime;
       }
@@ -135,7 +146,7 @@ export class Metronome {
 
     // update the bar start time for quantization purposes
     const lc = this.lastClick;
-    if (lc && ((lc.bar || 0) > this.lastBar)) {
+    if (lc && (lc.bar || 0) > this.lastBar) {
       this.lastBar = lc.bar;
       this.barStart = lc.time;
     }
@@ -236,12 +247,12 @@ export class Metronome {
     return this.now - this.startTime;
   }
 
-  get lastClick(): Click|null {
+  get lastClick(): Click | null {
     const clicks = this.scheduledClicks?.filter((c: Click) => c.time <= this.now);
     return clicks?.[clicks.length - 1] || null;
   }
 
-  getClickIndex(click: Click|null, subDivs?: number): number {
+  getClickIndex(click: Click | null, subDivs?: number): number {
     if (!click) return -1;
     return (
       (click.bar - 1) * this.opts.beats +
@@ -299,8 +310,7 @@ class MetronomeWorker {
   }
 
   startTimer() {
-    if (this.interval)
-      this.timer = setInterval(this.tick.bind(this), this.interval * 1000);
+    if (this.interval) this.timer = setInterval(this.tick.bind(this), this.interval * 1000);
   }
 
   clearTimer() {

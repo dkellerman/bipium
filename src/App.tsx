@@ -18,23 +18,63 @@ import { Separator } from './components/ui/separator';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from './components/ui/sheet';
 import { Switch } from './components/ui/switch';
 import { cn } from './lib/utils';
+import type { BooleanInput, ClickerInstance, NumberInput, StateSetter } from './types';
 
-const int = x => x && parseInt(x, 10);
-const float = x => x && parseFloat(x);
-const bool = x => (x && [true, 1, '1', 'true', 't'].includes(x)) || false;
+type NumberConverter = (value: NumberInput) => number;
+type StepSetter = StateSetter<number>;
+
+interface StepButtonsProps {
+  val: number;
+  setter: StepSetter;
+  min: number;
+  max: number;
+  step?: number;
+  conv?: NumberConverter;
+  disabled?: boolean;
+  event?: string | null;
+  className?: string;
+}
+
+interface BPMAreaProps {
+  clicker: ClickerInstance;
+  onChange?: (value: number) => void;
+  className?: string;
+}
+
+interface ConfigurationQuery {
+  bpm: number;
+  beats: number;
+  playSubDivs: boolean;
+  swing?: number;
+  subDivs?: number;
+  soundPack?: string;
+}
+
+const int: NumberConverter = value => {
+  const parsed = Number.parseInt(String(value), 10);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const float: NumberConverter = value => {
+  const parsed = Number.parseFloat(String(value));
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const bool = (value: BooleanInput) =>
+  (value && [true, 1, '1', 'true', 't'].includes(value)) || false;
 
 const bpmMin = 20.0;
 const bpmMax = 320.0;
 const bpmDefault = 80.0;
-const validBpm = val => Math.max(Math.min(bpmMax, val || bpmDefault), bpmMin);
-const validSwing = (val, fallback = 0) => {
+const validBpm = (val: number) => Math.max(Math.min(bpmMax, val || bpmDefault), bpmMin);
+const validSwing = (val: NumberInput, fallback = 0) => {
   const fallbackNum = Number(fallback);
   const base = Number.isFinite(fallbackNum) ? fallbackNum : 0;
   const n = Number(val);
   if (!Number.isFinite(n)) return Math.max(0, Math.min(100, base));
   return Math.max(0, Math.min(100, n));
 };
-const formatSwing = val => {
+const formatSwing = (val: number) => {
   const n = Number(val);
   if (!Number.isFinite(n)) return '0';
   return Number.isInteger(n) ? `${n}` : `${Number(n.toFixed(2))}`;
@@ -43,7 +83,12 @@ const buildSha = import.meta.env.VITE_VERCEL_GIT_COMMIT_SHA || '';
 const panelClass = 'mt-2 w-[calc(100%-1rem)]';
 
 function App() {
-  const bpm = useRef();
+  const queryParams = qs.parse(window.location.search);
+  const hasUrlParams = Object.keys(queryParams).length > 0;
+  const hasSwingParam = Object.prototype.hasOwnProperty.call(queryParams, 'swing');
+  const swingFromUrl = validSwing(float(queryParams.swing as NumberInput), 0);
+
+  const bpm = useRef<number>(bpmDefault);
   const [beats, setBeats] = useSetting('beats', 4, int);
   const [subDivs, setSubDivs] = useSetting('subDivs', 1, int);
   const [swing, setSwing] = useSetting('swing', 0, float);
@@ -53,17 +98,22 @@ function App() {
   const [muted, setMuted] = useState(false);
   const [started, setStarted] = useState(false);
   const [soundPack, setSoundPack] = useSetting('soundPack', 'drumkit', String);
-  const [visualizers] = useSetting('visualizers', 'default', val => val.split(','));
+  const [visualizers] = useSetting<string[]>('visualizers', ['default'], val => {
+    if (Array.isArray(val)) return val.map(String);
+    return String(val).split(',');
+  });
 
   const [showSideBar, setShowSideBar] = useState(false);
-  const [copiedURL, setCopiedURL] = useState(null);
+  const [copiedURL, setCopiedURL] = useState<string | null>(null);
   const [showVolume, setShowVolume] = useState(false);
   const [editingSwing, setEditingSwing] = useState(false);
   const cancelSwingEditRef = useRef(false);
   const previousSwingRef = useRef(swing || 0);
-  const swingInputRef = useRef(null);
-  const volumeControlRef = useRef(null);
-  const [viewportWidth, setViewportWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 390);
+  const swingInputRef = useRef<HTMLInputElement | null>(null);
+  const volumeControlRef = useRef<HTMLDivElement | null>(null);
+  const [viewportWidth, setViewportWidth] = useState(
+    typeof window !== 'undefined' ? window.innerWidth : 390,
+  );
   const [, _update] = useState(false);
   const forceRender = () => _update(x => !x);
 
@@ -103,7 +153,7 @@ function App() {
   }, []);
 
   const setSwingEnabledWithRestore = useCallback(
-    val => {
+    (val: boolean) => {
       if (!val) {
         previousSwingRef.current = swing;
         setSwingEnabled(false);
@@ -119,13 +169,13 @@ function App() {
     [swing],
   );
 
-  const setPlaySubDivsWithTracking = useCallback(val => {
+  const setPlaySubDivsWithTracking = useCallback((val: boolean) => {
     setPlaySubDivs(val);
     sendEvent('set_play_subdivs', 'App', val, val ? 1 : 0);
   }, []);
 
   const commitSwingInput = useCallback(
-    rawValue => {
+    (rawValue: NumberInput) => {
       const next = validSwing(float(rawValue), swing);
       setSwing(next);
       setEditingSwing(false);
@@ -152,7 +202,7 @@ function App() {
     forceRender();
   }, [playSubDivs, subDivs, swing, swingEnabled, canSwing, beats, m.started]);
 
-  const updateBPM = React.useCallback(val => {
+  const updateBPM = React.useCallback((val: number) => {
     bpm.current = val;
     if (m.started) {
       m.update({ bpm: val });
@@ -204,8 +254,13 @@ function App() {
   useEffect(() => {
     if (!showVolume) return;
 
-    const onPointerDown = e => {
-      if (volumeControlRef.current && !volumeControlRef.current.contains(e.target)) {
+    const onPointerDown = (event: PointerEvent) => {
+      const targetNode = event.target as Node | null;
+      if (
+        volumeControlRef.current &&
+        targetNode &&
+        !volumeControlRef.current.contains(targetNode)
+      ) {
         setShowVolume(false);
       }
     };
@@ -221,6 +276,21 @@ function App() {
   }, [playSubDivs, swingEnabled]);
 
   useEffect(() => {
+    if (!hasUrlParams) return;
+
+    if (hasSwingParam && swingFromUrl > 0) {
+      setSwing(swingFromUrl);
+      setSwingEnabled(true);
+      previousSwingRef.current = swingFromUrl;
+      return;
+    }
+
+    setSwing(0);
+    setSwingEnabled(false);
+    previousSwingRef.current = 0;
+  }, []);
+
+  useEffect(() => {
     if (editingSwing && swingInputRef.current) {
       cancelSwingEditRef.current = false;
       swingInputRef.current.value = formatSwing(swing);
@@ -230,10 +300,9 @@ function App() {
   }, [editingSwing, swing]);
 
   const copyConfigurationURL = useCallback(() => {
-    const q = { bpm: bpm.current, beats, playSubDivs };
+    const q: ConfigurationQuery = { bpm: bpm.current, beats, playSubDivs };
     if (playSubDivs) {
       q.swing = swing;
-      q.swingEnabled = swingEnabled;
       q.subDivs = subDivs;
     }
     if (soundPack !== 'defaults') {
@@ -241,7 +310,7 @@ function App() {
     }
     const url = qs.stringifyUrl({
       url: `${window.location.protocol}//${window.location.host}`,
-      query: q,
+      query: q as any,
     });
     copyToClipboard(url, {
       format: 'text/plain',
@@ -249,10 +318,15 @@ function App() {
         setCopiedURL(url);
       },
     });
-  }, [bpm.current, beats, playSubDivs, swing, swingEnabled, subDivs, soundPack]);
+  }, [bpm.current, beats, playSubDivs, swing, subDivs, soundPack]);
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-[480px] flex-col items-center bg-white pb-2 text-slate-900 shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
+    <main
+      className={cn(
+        'mx-auto flex min-h-dvh w-full max-w-[480px] flex-col items-center bg-white pb-2 text-slate-900',
+        'shadow-[0_2px_8px_rgba(0,0,0,0.08)]',
+      )}
+    >
       <NavBar>
         <Button
           type="button"
@@ -375,7 +449,9 @@ function App() {
               >
                 Code
               </a>
-              {buildSha && <p className="text-xs text-slate-500">Build: {buildSha.substring(1, 5)}</p>}
+              {buildSha && (
+                <p className="text-xs text-slate-500">Build: {buildSha.substring(1, 5)}</p>
+              )}
             </div>
           </div>
         </SheetContent>
@@ -396,7 +472,10 @@ function App() {
             <div className="flex items-center gap-2">
               <label className="text-[1rem] leading-none">Beats:</label>
               <select
-                className="h-11 min-w-16 rounded-md border border-slate-300 bg-white px-2 text-[1.35rem] leading-none outline-none"
+                className={cn(
+                  'h-11 min-w-16 rounded-md border border-slate-300 bg-white px-2',
+                  'text-[1.35rem] leading-none outline-none',
+                )}
                 value={beats}
                 onChange={e => {
                   const val = int(e.target.value);
@@ -429,12 +508,21 @@ function App() {
             >
               <div className="flex items-center gap-2">
                 <div onClick={e => e.stopPropagation()}>
-                  <Switch checked={playSubDivs} onCheckedChange={val => setPlaySubDivsWithTracking(val)} />
+                  <Switch
+                    checked={playSubDivs}
+                    onCheckedChange={val => setPlaySubDivsWithTracking(val)}
+                  />
                 </div>
                 <label className="cursor-pointer text-[1.15rem] leading-none">Play sub divs</label>
                 {playSubDivs && (
-                  <div className="ml-4 flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
-                    <Switch checked={swingEnabled} onCheckedChange={val => setSwingEnabledWithRestore(val)} />
+                  <div
+                    className="ml-4 flex items-center gap-1.5"
+                    onClick={e => e.stopPropagation()}
+                  >
+                    <Switch
+                      checked={swingEnabled}
+                      onCheckedChange={val => setSwingEnabledWithRestore(val)}
+                    />
                     <span className="text-[1.15rem] leading-none">Swing</span>
                   </div>
                 )}
@@ -462,7 +550,13 @@ function App() {
                     <option value="2">8th notes</option>
                     <option value="1">Quarter notes</option>
                   </select>
-                  <StepButtons val={subDivs} setter={setSubDivs} min={1} max={8} event="set_subdivs" />
+                  <StepButtons
+                    val={subDivs}
+                    setter={setSubDivs}
+                    min={1}
+                    max={8}
+                    event="set_subdivs"
+                  />
                 </div>
 
                 <div className="pt-1">
@@ -473,7 +567,12 @@ function App() {
                           <span>Swing:</span>
                           <div className="flex items-center gap-1.5">
                             {editingSwing ? (
-                              <span className="inline-flex items-center gap-0.5 border-b border-dotted border-slate-500 pb-px leading-none text-slate-600">
+                              <span
+                                className={cn(
+                                  'inline-flex items-center gap-0.5 border-b border-dotted border-slate-500 pb-px',
+                                  'leading-none text-slate-600',
+                                )}
+                              >
                                 <input
                                   ref={swingInputRef}
                                   type="number"
@@ -528,7 +627,14 @@ function App() {
                             )}
                           </div>
                         </div>
-                        <StepButtons val={swing} setter={setSwing} min={0} max={100} conv={float} event="set_swing" />
+                        <StepButtons
+                          val={swing}
+                          setter={setSwing}
+                          min={0}
+                          max={100}
+                          conv={float}
+                          event="set_swing"
+                        />
                       </div>
                     )}
                     {swingEnabled && (
@@ -562,7 +668,12 @@ function App() {
         <Card className="-mt-px w-[calc(100%-1rem)]" key={`v-${idx}`}>
           <CardContent className="p-1.5">
             <div className="flex w-full justify-center leading-none">
-              <DefaultVisualizer id={id} metronome={m} width={visualizerWidth} height={visualizerHeight} />
+              <DefaultVisualizer
+                id={id}
+                metronome={m}
+                width={visualizerWidth}
+                height={visualizerHeight}
+              />
             </div>
           </CardContent>
         </Card>
@@ -584,7 +695,7 @@ function App() {
         ) : (
           <Button
             type="button"
-            className="h-11 bg-red-700 px-7 text-[1.6rem] text-white hover:bg-red-800"
+            className="h-[3.2rem] bg-red-700 px-10 text-[1.6rem] text-white hover:bg-red-800"
             onClick={e => {
               e.preventDefault();
               stop();
@@ -600,12 +711,13 @@ function App() {
         <div
           ref={volumeControlRef}
           className="relative h-12 w-[352px] max-w-[calc(100%-2.25rem)]"
-          onMouseEnter={() => setShowVolume(true)}
           onMouseLeave={() => setShowVolume(false)}
         >
           <div
             className={cn(
-              'pointer-events-none absolute left-1/2 top-1/2 w-full -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-full border border-slate-300 bg-white px-3 shadow-sm transition-all duration-200',
+              'pointer-events-none absolute left-1/2 top-1/2 w-full -translate-x-1/2 -translate-y-1/2',
+              'overflow-hidden rounded-full border border-slate-300 bg-white px-3 shadow-sm',
+              'transition-all duration-200',
               showVolume ? 'pointer-events-auto scale-x-100 opacity-100' : 'scale-x-0 opacity-0',
             )}
             style={{ transformOrigin: 'center center' }}
@@ -622,7 +734,11 @@ function App() {
                   sendOneEvent(`mute_${muted ? 'off' : 'on'}`);
                 }}
               >
-                {muted ? <VolumeX className="h-[18px] w-[18px]" /> : <Volume2 className="h-[18px] w-[18px]" />}
+                {muted ? (
+                  <VolumeX className="h-[18px] w-[18px]" />
+                ) : (
+                  <Volume2 className="h-[18px] w-[18px]" />
+                )}
               </Button>
               <div className="min-w-0 flex-1">
                 <Range
@@ -644,8 +760,12 @@ function App() {
               type="button"
               variant="outline"
               size="icon"
-              className="absolute left-1/2 top-1/2 h-11 w-11 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white p-2 shadow-md"
+              className={cn(
+                'absolute left-1/2 top-1/2 h-11 w-11 -translate-x-1/2 -translate-y-1/2 rounded-full',
+                'bg-white p-2 shadow-md',
+              )}
               aria-label="Show volume controls"
+              onMouseEnter={() => setShowVolume(true)}
               onFocus={() => setShowVolume(true)}
               onClick={() => {
                 setShowVolume(true);
@@ -660,11 +780,11 @@ function App() {
   );
 }
 
-const BPMArea = ({ clicker, onChange, className }) => {
+const BPMArea = ({ clicker, onChange, className }: BPMAreaProps) => {
   const [bpm, setBpm] = useSetting('bpm', bpmDefault, float);
   const [editingBPM, setEditingBPM] = useState(false);
   const { bpm: tappedBPM, handleTap } = useTapBPM(bpm);
-  const bpmRef = useRef();
+  const bpmRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     setBpm(validBpm(float(tappedBPM) || bpm));
@@ -682,7 +802,7 @@ const BPMArea = ({ clicker, onChange, className }) => {
 
   useEffect(() => {
     if (editingBPM && bpmRef.current) {
-      bpmRef.current.value = bpm;
+      bpmRef.current.value = String(bpm);
       bpmRef.current.focus();
       bpmRef.current.select();
     }
@@ -690,71 +810,76 @@ const BPMArea = ({ clicker, onChange, className }) => {
 
   return (
     <div className={className}>
-        <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-1">
-          <Button
-            type="button"
-            variant="outline"
-            className="h-[4.85rem] w-[4.85rem] rounded-full p-0 text-[1.55rem]"
-            onClick={e => handleTap(e)}
-            onMouseDown={() => {
-              clicker.click();
-              sendOneEvent('tap');
-            }}
-          >
-            Tap
-          </Button>
+      <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-1">
+        <Button
+          type="button"
+          variant="outline"
+          className="h-[4.85rem] w-[4.85rem] rounded-full p-0 text-[1.55rem]"
+          onClick={() => handleTap()}
+          onMouseDown={() => {
+            clicker.click();
+            sendOneEvent('tap');
+          }}
+        >
+          Tap
+        </Button>
 
-          <div className="flex justify-center">
-            {editingBPM ? (
-              <input
-                ref={bpmRef}
-                type="number"
-                min={bpmMin}
-                max={bpmMax}
-                defaultValue={bpm}
-                size={5}
-                className="h-10 w-[8.75rem] border-b border-dotted border-slate-500 bg-transparent px-1 text-center text-[2.1rem] leading-none outline-none"
-                onBlur={e => {
-                  setBpm(validBpm(float(e.target.value) || bpm));
+        <div className="flex justify-center">
+          {editingBPM ? (
+            <input
+              ref={bpmRef}
+              type="number"
+              min={bpmMin}
+              max={bpmMax}
+              defaultValue={bpm}
+              size={5}
+              className={cn(
+                'h-10 w-[8.75rem] border-b border-dotted border-slate-500 bg-transparent px-1',
+                'text-center text-[2.1rem] leading-none outline-none',
+              )}
+              onBlur={e => {
+                const target = e.target as HTMLInputElement;
+                setBpm(validBpm(float(target.value) || bpm));
+                setEditingBPM(false);
+              }}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  const target = e.target as HTMLInputElement;
+                  setBpm(validBpm(float(target.value) || bpm));
                   setEditingBPM(false);
-                }}
-                onKeyDown={e => {
-                  if (e.key === 'Enter') {
-                    setBpm(validBpm(float(e.target.value) || bpm));
-                    setEditingBPM(false);
-                  }
-                }}
-              />
-            ) : (
-              <button
-                type="button"
-                className="whitespace-nowrap border-b border-dotted border-slate-500 text-[2.1rem] leading-none"
-                onClick={() => {
-                  setEditingBPM(true);
-                  sendEvent('edit_bpm');
-                }}
-              >
-                {bpm} BPM
-              </button>
-            )}
-          </div>
-
-          <StepButtons val={bpm} setter={setBpm} min={20} max={300} conv={float} />
+                }
+              }}
+            />
+          ) : (
+            <button
+              type="button"
+              className="whitespace-nowrap border-b border-dotted border-slate-500 text-[2.1rem] leading-none"
+              onClick={() => {
+                setEditingBPM(true);
+                sendEvent('edit_bpm');
+              }}
+            >
+              {bpm} BPM
+            </button>
+          )}
         </div>
 
-        <div className="-mb-1 px-5">
-          <Range
-            min={bpmMin}
-            max={bpmMax}
-            step={1}
-            value={bpm}
-            onDrag={val => {
-              setBpm(validBpm(val));
-            }}
-            labelRotation={-60}
-            ticks={[50, 80, 100, 120, 140, 160, 180, 200, 220, 240, bpmMax]}
-          />
-        </div>
+        <StepButtons val={bpm} setter={setBpm} min={20} max={300} conv={float} />
+      </div>
+
+      <div className="-mb-1 px-5">
+        <Range
+          min={bpmMin}
+          max={bpmMax}
+          step={1}
+          value={bpm}
+          onDrag={val => {
+            setBpm(validBpm(val));
+          }}
+          labelRotation={-60}
+          ticks={[50, 80, 100, 120, 140, 160, 180, 200, 220, 240, bpmMax]}
+        />
+      </div>
     </div>
   );
 };
@@ -769,7 +894,7 @@ const StepButtons = ({
   disabled = false,
   event = null,
   className,
-}) => {
+}: StepButtonsProps) => {
   return (
     <div className={cn('flex items-center gap-1', className)}>
       <Button

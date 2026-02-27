@@ -1,9 +1,30 @@
 import * as React from 'react';
 import { cn } from '../../lib/utils';
 
-const Slider = React.forwardRef(
-  ({ className, value = [0], min = 0, max = 100, step = 1, disabled = false, onValueChange, ...props }, ref) => {
-    const trackRef = React.useRef(null);
+interface SliderProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onChange'> {
+  value?: number[] | number;
+  min?: number;
+  max?: number;
+  step?: number;
+  disabled?: boolean;
+  onValueChange?: (value: number[]) => void;
+}
+
+const Slider = React.forwardRef<HTMLDivElement, SliderProps>(
+  (
+    {
+      className,
+      value = [0],
+      min = 0,
+      max = 100,
+      step = 1,
+      disabled = false,
+      onValueChange,
+      ...props
+    },
+    ref,
+  ) => {
+    const trackRef = React.useRef<HTMLDivElement | null>(null);
     const current = Array.isArray(value) ? value[0] : value;
     const dragging = React.useRef(false);
     const minNum = Number(min);
@@ -13,8 +34,11 @@ const Slider = React.forwardRef(
     const pct = ((safeCurrent - minNum) / (maxNum - minNum || 1)) * 100;
 
     const emitFromClientX = React.useCallback(
-      clientX => {
-        if (!trackRef.current || disabled) return;
+      (clientX: number) => {
+        if (!trackRef.current || disabled) {
+          return;
+        }
+
         const rect = trackRef.current.getBoundingClientRect();
         const clampedX = Math.max(rect.left, Math.min(rect.right, clientX));
         const ratio = (clampedX - rect.left) / (rect.width || 1);
@@ -27,14 +51,20 @@ const Slider = React.forwardRef(
     );
 
     React.useEffect(() => {
-      const onMouseMove = e => {
-        if (!dragging.current) return;
-        emitFromClientX(e.clientX);
+      const onMouseMove = (event: MouseEvent) => {
+        if (!dragging.current) {
+          return;
+        }
+        emitFromClientX(event.clientX);
       };
-      const onTouchMove = e => {
-        if (!dragging.current) return;
-        emitFromClientX(e.touches?.[0]?.clientX ?? 0);
+
+      const onTouchMove = (event: TouchEvent) => {
+        if (!dragging.current) {
+          return;
+        }
+        emitFromClientX(event.touches?.[0]?.clientX ?? 0);
       };
+
       const onEnd = () => {
         dragging.current = false;
       };
@@ -55,38 +85,45 @@ const Slider = React.forwardRef(
     return (
       <div
         ref={ref}
-        className={cn(
-          'relative flex h-12 w-full touch-none items-center select-none',
-          className,
-        )}
-        onMouseDown={e => {
-          if (disabled) return;
+        className={cn('relative flex h-12 w-full touch-none items-center select-none', className)}
+        onMouseDown={event => {
+          if (disabled) {
+            return;
+          }
           dragging.current = true;
-          emitFromClientX(e.clientX);
+          emitFromClientX(event.clientX);
         }}
-        onTouchStart={e => {
-          if (disabled) return;
+        onTouchStart={event => {
+          if (disabled) {
+            return;
+          }
           dragging.current = true;
-          emitFromClientX(e.touches?.[0]?.clientX ?? 0);
+          emitFromClientX(event.touches?.[0]?.clientX ?? 0);
         }}
         {...props}
       >
         <div
           ref={trackRef}
           className={cn(
-            'h-[7px] w-full rounded-[3px] border border-slate-400 bg-slate-200 shadow-[inset_0_1px_2px_rgba(0,0,0,0.5)]',
+            'h-[7px] w-full rounded-[3px] border border-slate-400 bg-slate-200',
+            'shadow-[inset_0_1px_2px_rgba(0,0,0,0.5)]',
             disabled && 'opacity-60',
           )}
         />
         <button
           type="button"
           disabled={disabled}
-          className="absolute top-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-slate-400 bg-white shadow-sm"
+          className={cn(
+            'absolute top-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full',
+            'border-2 border-slate-400 bg-white shadow-sm',
+          )}
           style={{ left: `${pct}%` }}
-          onMouseDown={e => {
-            e.preventDefault();
-            e.stopPropagation();
-            if (disabled) return;
+          onMouseDown={event => {
+            event.preventDefault();
+            event.stopPropagation();
+            if (disabled) {
+              return;
+            }
             dragging.current = true;
           }}
         />

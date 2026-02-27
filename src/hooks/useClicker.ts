@@ -1,7 +1,8 @@
 import { useRef } from 'react';
 import { Clicker, DEFAULT_SOUNDS } from '../core';
+import type { ClickerHookOptions, SoundPacks } from '../types';
 
-export const SOUND_PACKS = {
+export const SOUND_PACKS: SoundPacks = {
   defaults: {
     ...DEFAULT_SOUNDS,
     user: ['/audio/stick.mp3', 1.0, 0.25],
@@ -16,10 +17,16 @@ export const SOUND_PACKS = {
   },
 };
 
-export function useClicker({ audioContext, volume = 100, sounds = SOUND_PACKS.defaults } = {}) {
+const defaultClickerOptions: ClickerHookOptions = {
+  volume: 100,
+  sounds: SOUND_PACKS.defaults,
+};
+
+export function useClicker(options: ClickerHookOptions = defaultClickerOptions) {
+  const { audioContext, volume = 100, sounds = SOUND_PACKS.defaults } = options;
   const clicker = useRef(
     new Clicker({
-      audioContext,
+      audioContext: audioContext as AudioContext,
       volume,
       sounds,
     }),

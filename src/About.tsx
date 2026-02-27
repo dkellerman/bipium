@@ -2,6 +2,7 @@ import ReactMarkdown from 'react-markdown';
 import { Link } from 'react-router-dom';
 import { buttonVariants } from './components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './components/ui/card';
+import { cn } from './lib/utils';
 
 const ABOUT = `
 ## About Bipium
@@ -28,7 +29,12 @@ __To use__: click start.
 
 export default function About() {
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-[480px] flex-col gap-3 bg-white px-3 py-4 text-slate-900 shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
+    <main
+      className={cn(
+        'mx-auto flex min-h-dvh w-full max-w-[480px] flex-col gap-3 bg-white px-3 py-4 text-slate-900',
+        'shadow-[0_2px_8px_rgba(0,0,0,0.08)]',
+      )}
+    >
       <div>
         <Link className={buttonVariants({ variant: 'outline' })} to="/">
           Back to app
