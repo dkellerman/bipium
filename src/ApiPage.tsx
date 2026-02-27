@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { Button, buttonVariants } from './components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './components/ui/card';
 import { cn } from './lib/utils';
-import { BIPIUM_API_DEFAULT_CONFIG, BIPIUM_API_DISCOVERY } from './lib/api';
+import { BIPIUM_API_DEFAULT_CONFIG, BIPIUM_API_DISCOVERY } from './api';
 import type { BipiumApiConfig, BipiumValidationResult } from './types';
 import { useApi } from './hooks/useApi';
 

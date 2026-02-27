@@ -5,7 +5,7 @@ import type {
   BipiumApiSchemaJson,
   BipiumRuntimeApi,
   BipiumValidationResult,
-} from '../types';
+} from './types';
 
 export const BIPIUM_API_VERSION = 1;
 

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { AudioContext } from 'standardized-audio-context';
 import { Clicker, Metronome } from '../core';
-import { BIPIUM_API_DEFAULT_CONFIG, createBipiumRuntimeApi } from '../lib/api';
+import { BIPIUM_API_DEFAULT_CONFIG, createBipiumRuntimeApi } from '../api';
 import type { BipiumApiConfig, BipiumRuntimeApi } from '../types';
 import { SOUND_PACKS } from './useClicker';
 

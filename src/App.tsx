@@ -16,7 +16,7 @@ import { Card, CardContent } from './components/ui/card';
 import { Separator } from './components/ui/separator';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from './components/ui/sheet';
 import { Switch } from './components/ui/switch';
-import { BIPIUM_API_DEFAULT_CONFIG, createBipiumRuntimeApi } from './lib/api';
+import { BIPIUM_API_DEFAULT_CONFIG, createBipiumRuntimeApi } from './api';
 import { cn } from './lib/utils';
 import type {
   BipiumApiConfig,
