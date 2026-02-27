@@ -13,7 +13,10 @@ if (rootElement) {
   root.render(
     <React.StrictMode>
       <Router>
-        <div className="min-h-dvh bg-slate-50" style={{ touchAction: 'pan-y pinch-zoom' }}>
+        <div
+          className="min-h-dvh bg-gradient-to-b from-[#f8fbff] via-[#eef6ff] to-[#f8fbff]"
+          style={{ touchAction: 'pan-y pinch-zoom' }}
+        >
           <Routes>
             <Route path="/" element={<App />} />
             <Route path="/api" element={<ApiPage />} />
