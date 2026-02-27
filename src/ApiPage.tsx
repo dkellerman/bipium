@@ -42,7 +42,7 @@ const METHOD_DOCS = [
     summary: 'Returns schemaJson as a fresh value for logs/tooling.',
   },
   {
-    method: 'window.bpm.start(bpm?, beats?, subDivs?, playSubDivs?, swing?, soundPack?, volume?)',
+    method: 'window.bpm.start(bpm?, beats?, subDivs?, swing?, soundPack?, volume?)',
     summary: 'Apply optional config parameters, validate, then start playback.',
   },
   { method: 'window.bpm.stop()', summary: 'Stop playback.' },

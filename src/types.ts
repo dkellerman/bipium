@@ -114,7 +114,6 @@ export interface BipiumRuntimeApi {
     bpm?: number,
     beats?: number,
     subDivs?: number,
-    playSubDivs?: boolean,
     swing?: number,
     soundPack?: string,
     volume?: number,

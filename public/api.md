@@ -17,7 +17,7 @@ Do not start playback with invalid config.
 
 ## Start Method
 
-- `window.bpm.start(bpm?, beats?, subDivs?, playSubDivs?, swing?, soundPack?, volume?)`
+- `window.bpm.start(bpm?, beats?, subDivs?, swing?, soundPack?, volume?)`
 
 All parameters are optional. Any defined argument is validated and applied before starting.
 

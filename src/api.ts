@@ -243,14 +243,19 @@ export function createBipiumRuntimeApi(controls: BipiumRuntimeControls): BipiumR
     getSchemaJson() {
       return schemas.schemaJson;
     },
-    start(bpm, beats, subDivs, playSubDivs, swing, soundPack, volume) {
+    start(bpm, beats, subDivs, swing, soundPack, volume) {
       const patch: Partial<BipiumApiConfig> = {};
 
       if (bpm !== undefined) patch.bpm = bpm;
       if (beats !== undefined) patch.beats = beats;
-      if (subDivs !== undefined) patch.subDivs = subDivs;
-      if (playSubDivs !== undefined) patch.playSubDivs = playSubDivs;
-      if (swing !== undefined) patch.swing = swing;
+      if (subDivs !== undefined) {
+        patch.subDivs = subDivs;
+        patch.playSubDivs = true;
+      }
+      if (swing !== undefined) {
+        patch.swing = swing;
+        patch.playSubDivs = true;
+      }
       if (soundPack !== undefined) patch.soundPack = soundPack;
       if (volume !== undefined) patch.volume = volume;
 
