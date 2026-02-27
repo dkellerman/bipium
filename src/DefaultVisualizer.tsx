@@ -44,7 +44,6 @@ export function DefaultVisualizer({
   const v = useRef(new Visualizer({ metronome: mAny }));
   const nowLineRef = useRef<any>(null);
   const countRef = useRef<any>(null);
-  const gridRef = useRef<any>(null);
   const descRef = useRef<any>(null);
 
   const centerTextAt = (textNode: any, centerX: number, centerY: number) => {
@@ -53,13 +52,6 @@ export function DefaultVisualizer({
     textNode.x = Math.round(centerX - (bounds.x + bounds.width / 2));
     textNode.y = Math.round(centerY - (bounds.y + bounds.height / 2));
   };
-
-  useEffect(() => {
-    setTimeout(drawGrid, 0);
-    mAny.opts.onUpdateOptions = () => {
-      drawGrid();
-    };
-  }, [mAny]);
 
   useEffect(() => {
     countRef.current?.anchor?.set?.(0);
@@ -147,11 +139,11 @@ export function DefaultVisualizer({
     requestAnimationFrame(draw);
   }, [mAny.started, mAny.barTime, mAny.opts?.bpm]);
 
-  function drawGrid() {
-    if (!showGrid) return;
-    const g = gridRef.current;
+  const drawGrid = useCallback((g: any) => {
     if (!g) return;
     g.clear();
+    if (!showGrid) return;
+    if (!mAny.barTime) return;
     mAny.gridTimes?.forEach((t: number, i: number) => {
       const x = (t / mAny.barTime) * width;
       const isSubDiv = i % (mAny.opts?.subDivs || 1) > 0;
@@ -160,7 +152,7 @@ export function DefaultVisualizer({
       g.lineTo(x, height);
       g.stroke();
     });
-  }
+  }, [showGrid, width, height, mAny.barTime, mAny.opts?.subDivs, mAny.gridTimes]);
 
   return (
     <>
@@ -173,7 +165,7 @@ export function DefaultVisualizer({
           resolution={1}
           roundPixels
         >
-          <pixiGraphics ref={gridRef} draw={() => {}} />
+          <pixiGraphics draw={drawGrid} />
 
           <pixiGraphics
             ref={nowLineRef}
