@@ -12,6 +12,7 @@ node_modules
 
 # production
 /build
+/dist
 
 # misc
 .DS_Store
@@ -27,4 +28,3 @@ yarn-error.log*
 .vercel
 
 TODO.md
-

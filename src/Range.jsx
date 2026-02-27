@@ -1,62 +1,78 @@
-import { useCallback, useRef } from 'react';
-import { useRanger } from 'react-ranger';
-import { StyledRange, RangeTrack, RangeTick, RangeTickLabel, RangeHandle } from './App.styles';
+import { Slider } from './components/ui/slider';
+import { cn } from './lib/utils';
 
-let rangeId = 0;
-
-export const Range = ({ ticks: customTicks = [], ...props }) => {
-  const { getTrackProps, handles, ticks } = useRanger({
-    values: [props.value],
-    onChange: props.disabled ? () => {} : vals => props.onChange?.(vals[0]),
-    onDrag: props.disabled ? () => {} : vals => props.onDrag?.(vals[0]),
-    min: parseInt(props.min, 10),
-    max: parseInt(props.max, 10),
-    stepSize: parseInt(props.step, 10),
-    ticks: customTicks,
-  });
-
-  const trackId = useRef(`range-${++rangeId}`);
-
-  const handleTrackClick = useCallback(
-    e => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      const track = e.target || e.srcElement;
-      if (props.disabled || track?.id !== trackId.current) return;
-
-      const rect = track.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const w = track.clientWidth || 0;
-      const val = Math.round((x / w) * (props.max - props.min) + props.min);
-
-      (props.onChange || props.onDrag)?.(val);
-    },
-    [props],
-  );
+export const Range = ({
+  ticks: customTicks = [],
+  labelRotation = 0,
+  disabled = false,
+  min,
+  max,
+  step,
+  value,
+  onChange,
+  onDrag,
+}) => {
+  const minNum = Number(min);
+  const maxNum = Number(max);
+  const stepNum = Number(step);
+  const currentValue = Number.isFinite(Number(value)) ? Number(value) : minNum;
+  const callback = onDrag || onChange;
+  const hasTicks = customTicks.length > 0;
+  const compactTicks = labelRotation === 0;
 
   return (
-    <StyledRange hasTicks={customTicks?.length > 0} disabled={props.disabled}>
-      <RangeTrack {...getTrackProps()} onClick={handleTrackClick} id={trackId.current}>
-        {ticks.map(({ value, getTickProps }) => (
-          <RangeTick {...getTickProps()}>
-            <RangeTickLabel
-              rotation={props.labelRotation}
-              onClick={e => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (props.disabled) return;
-                (props.onChange || props.onDrag)?.(value);
-              }}
-            >
-              {value}
-            </RangeTickLabel>
-          </RangeTick>
-        ))}
-        {handles.map(({ getHandleProps }) => (
-          <RangeHandle {...getHandleProps()} />
-        ))}
-      </RangeTrack>
-    </StyledRange>
+    <div
+      className={cn(
+        'w-full',
+        hasTicks && (compactTicks ? 'pb-5' : 'pb-8'),
+        disabled && 'pointer-events-none opacity-55',
+      )}
+    >
+      <Slider
+        min={minNum}
+        max={maxNum}
+        step={stepNum}
+        value={[currentValue]}
+        disabled={disabled}
+        onValueChange={vals => callback?.(vals[0])}
+      />
+
+      {hasTicks && (
+        <div className={cn('relative select-none', compactTicks ? '-mt-3 h-6' : '-mt-5 h-10')}>
+          {customTicks.map((tick, idx) => {
+            const left = `${((Number(tick) - minNum) / (maxNum - minNum)) * 100}%`;
+            const isFirst = idx === 0;
+            const isLast = idx === customTicks.length - 1;
+            const xOffset = isFirst ? '-25%' : isLast ? '-100%' : '-50%';
+
+            return (
+              <button
+                type="button"
+                key={`tick-${tick}`}
+                disabled={disabled}
+                className="absolute top-0 h-10 px-0.5 text-[16px] leading-none text-slate-600 hover:text-slate-800 disabled:cursor-not-allowed sm:text-[17px]"
+                style={{ left, transform: `translateX(${xOffset})` }}
+                onClick={() => callback?.(Number(tick))}
+              >
+                <span className="absolute left-1/2 -top-px h-[16px] w-px -translate-x-1/2 bg-slate-500" />
+                <span
+                  className={cn(
+                    'absolute left-1/2 inline-block whitespace-nowrap border-b border-dotted border-slate-400',
+                    compactTicks ? 'top-[8px]' : 'top-[11px]',
+                  )}
+                  style={
+                    labelRotation === 0
+                      ? { transform: 'translateX(-50%)', transformOrigin: 'top center' }
+                      : { transform: `translateX(-100%) rotate(${labelRotation}deg)`, transformOrigin: 'top right' }
+                  }
+                >
+                  {tick}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 };

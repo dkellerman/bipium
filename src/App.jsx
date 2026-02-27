@@ -6,32 +6,18 @@ import useKeypress from 'react-use-keypress';
 import { Link } from 'react-router-dom';
 import localStorage from 'local-storage-fallback';
 import { AudioContext } from 'standardized-audio-context';
-import {
-  Layout,
-  StartButton,
-  StopButton,
-  TapButton,
-  StepButton,
-  CloseIcon,
-  SettingsIcon,
-  VolumeIcon,
-  VolumeSliderSide,
-  VolumeSliderMain,
-  SideBar,
-  SoundPack,
-  ButtonAsLink,
-  BPMField,
-  BeatsField,
-  PlaySubDivsField,
-  SwingField,
-  Divider,
-  VisualizerField,
-} from './App.styles';
+import { Settings, Volume2, VolumeX, X } from 'lucide-react';
 import { DefaultVisualizer } from './DefaultVisualizer';
 import { useTapBPM, useSetting, useClicker, useMetronome, SOUND_PACKS } from './hooks';
 import { NavBar } from './NavBar';
 import { Range } from './Range';
 import { sendEvent, sendOneEvent, sendFrameRate } from './tracking';
+import { Button } from './components/ui/button';
+import { Card, CardContent } from './components/ui/card';
+import { Separator } from './components/ui/separator';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from './components/ui/sheet';
+import { Switch } from './components/ui/switch';
+import { cn } from './lib/utils';
 
 const int = x => x && parseInt(x, 10);
 const float = x => x && parseFloat(x);
@@ -41,12 +27,27 @@ const bpmMin = 20.0;
 const bpmMax = 320.0;
 const bpmDefault = 80.0;
 const validBpm = val => Math.max(Math.min(bpmMax, val || bpmDefault), bpmMin);
+const validSwing = (val, fallback = 0) => {
+  const fallbackNum = Number(fallback);
+  const base = Number.isFinite(fallbackNum) ? fallbackNum : 0;
+  const n = Number(val);
+  if (!Number.isFinite(n)) return Math.max(0, Math.min(100, base));
+  return Math.max(0, Math.min(100, n));
+};
+const formatSwing = val => {
+  const n = Number(val);
+  if (!Number.isFinite(n)) return '0';
+  return Number.isInteger(n) ? `${n}` : `${Number(n.toFixed(2))}`;
+};
+const buildSha = import.meta.env.VITE_VERCEL_GIT_COMMIT_SHA || '';
+const panelClass = 'mt-2 w-[calc(100%-1rem)]';
 
 function App() {
   const bpm = useRef();
   const [beats, setBeats] = useSetting('beats', 4, int);
   const [subDivs, setSubDivs] = useSetting('subDivs', 1, int);
-  const [swing, setSwing] = useSetting('swing', 0, int);
+  const [swing, setSwing] = useSetting('swing', 0, float);
+  const [swingEnabled, setSwingEnabled] = useSetting('swingEnabled', true, bool);
   const [playSubDivs, setPlaySubDivs] = useSetting('playSubDivs', true, bool);
   const [volume, setVolume] = useSetting('volume', 35, int, localStorage);
   const [muted, setMuted] = useState(false);
@@ -56,13 +57,22 @@ function App() {
 
   const [showSideBar, setShowSideBar] = useState(false);
   const [copiedURL, setCopiedURL] = useState(null);
+  const [showVolume, setShowVolume] = useState(false);
+  const [editingSwing, setEditingSwing] = useState(false);
+  const cancelSwingEditRef = useRef(false);
+  const previousSwingRef = useRef(swing || 0);
+  const swingInputRef = useRef(null);
+  const volumeControlRef = useRef(null);
+  const [viewportWidth, setViewportWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 390);
   const [, _update] = useState(false);
   const forceRender = () => _update(x => !x);
 
-  // single shared audio context
   const audioContext = useRef(new AudioContext());
 
   const canSwing = subDivs % 2 === 0;
+  const swingActive = playSubDivs && canSwing && swingEnabled;
+  const visualizerWidth = Math.max(272, Math.min(450, viewportWidth - 30));
+  const visualizerHeight = 94;
 
   const clicker = useClicker({
     audioContext: audioContext.current,
@@ -76,7 +86,7 @@ function App() {
     bpm: bpm.current,
     beats,
     subDivs: playSubDivs ? subDivs : 1,
-    swing: playSubDivs && canSwing ? swing : 0,
+    swing: swingActive ? swing : 0,
     workerUrl: '/dist/worker.min.js',
   });
 
@@ -92,6 +102,38 @@ function App() {
     setStarted(s => !s);
   }, []);
 
+  const setSwingEnabledWithRestore = useCallback(
+    val => {
+      if (!val) {
+        previousSwingRef.current = swing;
+        setSwingEnabled(false);
+        setSwing(0);
+        sendEvent('set_swing_enabled', 'App', false, 0);
+        return;
+      }
+
+      setSwingEnabled(true);
+      setSwing(previousSwingRef.current || 0);
+      sendEvent('set_swing_enabled', 'App', true, 1);
+    },
+    [swing],
+  );
+
+  const setPlaySubDivsWithTracking = useCallback(val => {
+    setPlaySubDivs(val);
+    sendEvent('set_play_subdivs', 'App', val, val ? 1 : 0);
+  }, []);
+
+  const commitSwingInput = useCallback(
+    rawValue => {
+      const next = validSwing(float(rawValue), swing);
+      setSwing(next);
+      setEditingSwing(false);
+      sendOneEvent('update_swing', '', next, next);
+    },
+    [swing],
+  );
+
   useEffect(() => {
     if (clicker) clicker.setVolume(muted ? 0 : volume);
   }, [volume, muted]);
@@ -100,16 +142,15 @@ function App() {
     if (window.location.search.indexOf('?reset') === 0) window.location.replace(`/`);
   }, []);
 
-  // update metronome on the fly when parameters change
   useEffect(() => {
     m.update({
       subDivs: playSubDivs ? subDivs : 1,
-      swing: playSubDivs && canSwing ? swing : 0,
+      swing: swingActive ? swing : 0,
       beats,
       bpm: bpm.current,
     });
     forceRender();
-  }, [playSubDivs, subDivs, swing, beats, m.started]);
+  }, [playSubDivs, subDivs, swing, swingEnabled, canSwing, beats, m.started]);
 
   const updateBPM = React.useCallback(val => {
     bpm.current = val;
@@ -122,9 +163,7 @@ function App() {
     clicker.setSounds(SOUND_PACKS[soundPack || 'defaults']);
   }, [soundPack]);
 
-  // keyboard handlers
   useKeypress(' ', e => {
-    // space: play/stop
     e.preventDefault();
     e.stopPropagation();
     toggle();
@@ -134,22 +173,6 @@ function App() {
     setShowSideBar(false);
   });
 
-  // click anywhere to close sidebar
-  useEffect(() => {
-    function handleWindowClick(e) {
-      if (!e.target.closest('aside') && !e.target.closest('svg')) {
-        setShowSideBar(false);
-      }
-    }
-
-    window.addEventListener('click', handleWindowClick);
-
-    return () => {
-      window.removeEventListener('click', handleWindowClick);
-    };
-  }, []);
-
-  // start/stop
   useEffect(() => {
     if (!started) {
       m?.stop();
@@ -170,10 +193,47 @@ function App() {
     }
   }, [showSideBar]);
 
+  useEffect(() => {
+    const onResize = () => {
+      setViewportWidth(window.innerWidth);
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  useEffect(() => {
+    if (!showVolume) return;
+
+    const onPointerDown = e => {
+      if (volumeControlRef.current && !volumeControlRef.current.contains(e.target)) {
+        setShowVolume(false);
+      }
+    };
+
+    window.addEventListener('pointerdown', onPointerDown);
+    return () => window.removeEventListener('pointerdown', onPointerDown);
+  }, [showVolume]);
+
+  useEffect(() => {
+    if (!playSubDivs || !swingEnabled) {
+      setEditingSwing(false);
+    }
+  }, [playSubDivs, swingEnabled]);
+
+  useEffect(() => {
+    if (editingSwing && swingInputRef.current) {
+      cancelSwingEditRef.current = false;
+      swingInputRef.current.value = formatSwing(swing);
+      swingInputRef.current.focus();
+      swingInputRef.current.select();
+    }
+  }, [editingSwing, swing]);
+
   const copyConfigurationURL = useCallback(() => {
     const q = { bpm: bpm.current, beats, playSubDivs };
     if (playSubDivs) {
       q.swing = swing;
+      q.swingEnabled = swingEnabled;
       q.subDivs = subDivs;
     }
     if (soundPack !== 'defaults') {
@@ -189,30 +249,48 @@ function App() {
         setCopiedURL(url);
       },
     });
-  }, [bpm.current, beats, playSubDivs, soundPack]);
+  }, [bpm.current, beats, playSubDivs, swing, swingEnabled, subDivs, soundPack]);
 
   return (
-    <Layout>
+    <main className="mx-auto flex min-h-dvh w-full max-w-[480px] flex-col items-center bg-white pb-2 text-slate-900 shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
       <NavBar>
-        {showSideBar ? (
-          <CloseIcon showSideBar={showSideBar} onClick={() => setShowSideBar(false)} />
-        ) : (
-          <SettingsIcon showSideBar={showSideBar} onClick={() => setShowSideBar(true)} />
-        )}
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="absolute right-2 top-1 h-9 w-9"
+          onClick={() => setShowSideBar(true)}
+        >
+          <Settings className="h-6 w-6" />
+          <span className="sr-only">Open settings</span>
+        </Button>
       </NavBar>
 
-      {showSideBar && (
-        <SideBar show={showSideBar}>
-          <ul>
-            <li>
-              <VolumeSliderSide>
-                <VolumeIcon
-                  muted={muted}
+      <Sheet open={showSideBar} onOpenChange={setShowSideBar}>
+        <SheetContent
+          side="right"
+          className="w-[320px] border-l border-slate-300 bg-slate-50 px-5 pt-12 text-[15px] sm:w-[320px]"
+        >
+          <SheetHeader>
+            <SheetTitle className="text-[1.1rem]">Settings</SheetTitle>
+          </SheetHeader>
+
+          <div className="mt-6 space-y-6">
+            <div className="space-y-2">
+              <p className="font-medium">Volume</p>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label={muted ? 'Unmute' : 'Mute'}
                   onClick={() => {
                     setMuted(val => !val);
                     sendOneEvent(`set_mute_${muted ? 'off' : 'on'}`);
                   }}
-                />
+                >
+                  {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+                </Button>
                 <Range
                   min={0}
                   max={100}
@@ -223,30 +301,32 @@ function App() {
                     sendOneEvent('set_volume', '', val, int(val));
                   }}
                 />
-              </VolumeSliderSide>
-            </li>
+              </div>
+            </div>
 
-            <li>
-              <SoundPack>
-                <label>Sounds:</label>{' '}
-                <select
-                  value={soundPack}
-                  onChange={e => {
-                    setSoundPack(e.target.value);
-                    sendEvent('set_sound_pack', 'App', e.target.value);
-                  }}
-                >
-                  {Object.keys(SOUND_PACKS).map((key, idx) => (
-                    <option key={`sp-${idx + 1}`} value={key}>
-                      {SOUND_PACKS[key]?.name}
-                    </option>
-                  ))}
-                </select>
-              </SoundPack>
-            </li>
+            <div className="space-y-2">
+              <label className="font-medium">Sounds</label>
+              <select
+                className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 outline-none"
+                value={soundPack}
+                onChange={e => {
+                  setSoundPack(e.target.value);
+                  sendEvent('set_sound_pack', 'App', e.target.value);
+                }}
+              >
+                {Object.keys(SOUND_PACKS).map((key, idx) => (
+                  <option key={`sp-${idx + 1}`} value={key}>
+                    {SOUND_PACKS[key]?.name}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-            <li>
-              <ButtonAsLink
+            <div className="flex flex-col items-start gap-2">
+              <Button
+                type="button"
+                variant="link"
+                className="h-auto p-0 text-[15px]"
                 onClick={e => {
                   e.preventDefault();
                   sendEvent('reset');
@@ -254,11 +334,12 @@ function App() {
                 }}
               >
                 Reset all settings
-              </ButtonAsLink>
-            </li>
+              </Button>
 
-            <li>
-              <ButtonAsLink
+              <Button
+                type="button"
+                variant="link"
+                className="h-auto p-0 text-[15px]"
                 onClick={e => {
                   e.preventDefault();
                   copyConfigurationURL();
@@ -266,31 +347,27 @@ function App() {
                 }}
               >
                 Copy configuration URL
-              </ButtonAsLink>
+              </Button>
 
               {copiedURL && (
-                <div>
-                  <small>
-                    Copied{' '}
-                    <a href={copiedURL} target="_blank" rel="noreferrer">
-                      configuration URL
-                    </a>{' '}
-                    to clipboard.
-                  </small>
-                </div>
+                <p className="text-[13px] text-slate-600">
+                  Copied{' '}
+                  <a className="underline" href={copiedURL} target="_blank" rel="noreferrer">
+                    configuration URL
+                  </a>{' '}
+                  to clipboard.
+                </p>
               )}
-            </li>
+            </div>
 
-            <li>
-              <Divider />
-            </li>
+            <Separator />
 
-            <li>
-              <Link to="/about">About</Link>
-            </li>
-
-            <li>
+            <div className="space-y-1.5 text-[15px]">
+              <Link className="underline" to="/about">
+                About
+              </Link>
               <a
+                className="block underline"
                 href="https://github.com/dkellerman/bipium"
                 target="_blank"
                 rel="noreferrer"
@@ -298,117 +375,204 @@ function App() {
               >
                 Code
               </a>
-            </li>
+              {buildSha && <p className="text-xs text-slate-500">Build: {buildSha.substring(1, 5)}</p>}
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
 
-            {process.env.REACT_APP_VERCEL_GIT_COMMIT_SHA && (
-              <li>
-                <small>
-                  Build: {(process.env.REACT_APP_VERCEL_GIT_COMMIT_SHA || '').substring(1, 5)}
-                </small>
-              </li>
-            )}
-          </ul>
-        </SideBar>
-      )}
+      <Card className={cn(panelClass, 'border-0 bg-transparent shadow-none')}>
+        <CardContent className="p-0">
+          <BPMArea
+            clicker={clicker}
+            className="space-y-1 p-2.5 pb-0"
+            onChange={val => {
+              updateBPM(val);
+              sendEvent('set_bpm', 'App', val, float(val));
+            }}
+          />
 
-      <BPMArea
-        clicker={clicker}
-        onChange={val => {
-          updateBPM(val);
-          sendEvent('set_bpm', 'App', val, float(val));
-        }}
-      />
+          <div className="flex w-full items-center justify-center gap-2 p-2">
+            <div className="flex items-center gap-2">
+              <label className="text-[1rem] leading-none">Beats:</label>
+              <select
+                className="h-11 min-w-16 rounded-md border border-slate-300 bg-white px-2 text-[1.35rem] leading-none outline-none"
+                value={beats}
+                onChange={e => {
+                  const val = int(e.target.value);
+                  setBeats(val);
+                  sendEvent('set_beats', 'App', val, val);
+                }}
+              >
+                {new Array(12).fill(0).map((_, idx) => (
+                  <option key={`beats-${idx + 1}`} value={idx + 1}>
+                    {idx + 1}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <StepButtons val={beats} setter={setBeats} min={1} max={12} event="set_beats" />
+          </div>
 
-      <BeatsField>
-        <label>Beats:</label>{' '}
-        <select
-          value={beats}
-          onChange={e => {
-            const val = int(e.target.value);
-            setBeats(val);
-            sendEvent('set_beats', 'App', val, val);
-          }}
-        >
-          {new Array(12).fill(0).map((_, idx) => (
-            <option key={`beats-${idx + 1}`} value={idx + 1}>
-              {idx + 1}
-            </option>
-          ))}
-        </select>
-        <StepButtons val={beats} setter={setBeats} min={1} max={12} event="set_beats" />
-      </BeatsField>
-
-      <PlaySubDivsField>
-        <input
-          type="checkbox"
-          checked={playSubDivs}
-          onChange={e => {
-            const val = e.target.checked;
-            setPlaySubDivs(val);
-            sendEvent('set_play_subdivs', 'App', val, val ? 1 : 0);
-          }}
-        />
-        <label>Play{playSubDivs ? ':' : ' sub divs'}</label>
-
-        {playSubDivs && (
-          <>
-            <select
-              value={subDivs}
-              onChange={e => {
-                const val = int(e.target.value);
-                setSubDivs(val);
-                sendEvent('set_subdivs', 'App', val, val);
+          <div className="space-y-4 px-2 pt-2 pb-0">
+            <div
+              role="button"
+              tabIndex={0}
+              className="flex cursor-pointer items-center justify-center gap-2 rounded-md px-1"
+              onClick={() => setPlaySubDivsWithTracking(!playSubDivs)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setPlaySubDivsWithTracking(!playSubDivs);
+                }
               }}
             >
-              <option value="8">32nd notes</option>
-              <option value="7">Septuplets</option>
-              <option value="6">Sextuplets</option>
-              <option value="5">Quintuplets</option>
-              <option value="4">16th notes</option>
-              <option value="3">Triplets</option>
-              <option value="2">8th notes</option>
-              <option value="1">Quarter notes</option>
-            </select>
-            <StepButtons val={subDivs} setter={setSubDivs} min={1} max={8} event="set_subdivs" />
+              <div className="flex items-center gap-2">
+                <div onClick={e => e.stopPropagation()}>
+                  <Switch checked={playSubDivs} onCheckedChange={val => setPlaySubDivsWithTracking(val)} />
+                </div>
+                <label className="cursor-pointer text-[1.15rem] leading-none">Play sub divs</label>
+                {playSubDivs && (
+                  <div className="ml-4 flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
+                    <Switch checked={swingEnabled} onCheckedChange={val => setSwingEnabledWithRestore(val)} />
+                    <span className="text-[1.15rem] leading-none">Swing</span>
+                  </div>
+                )}
+              </div>
+            </div>
 
-            <SwingField disabled={!canSwing}>
-              <label>
-                <span>Swing:</span> <span>{canSwing ? swing : 0}%</span>
-              </label>{' '}
-              <Range
-                min={0}
-                max={99}
-                step={1}
-                value={canSwing ? swing : 0}
-                onDrag={val => {
-                  setSwing(int(val));
-                  sendOneEvent('update_swing', '', val, int(val));
-                }}
-                disabled={!canSwing}
-                ticks={[0, 33, 50]}
-              />
-              <StepButtons
-                val={swing}
-                setter={setSwing}
-                min={0}
-                max={99}
-                disabled={!canSwing}
-                event="set_swing"
-              />
-            </SwingField>
-          </>
-        )}
-      </PlaySubDivsField>
+            {playSubDivs && (
+              <>
+                <div className="flex w-full items-center gap-2">
+                  <select
+                    className="h-11 min-w-0 flex-1 rounded-md border border-slate-300 bg-white px-3 text-[1.05rem] outline-none"
+                    value={subDivs}
+                    onChange={e => {
+                      const val = int(e.target.value);
+                      setSubDivs(val);
+                      sendEvent('set_subdivs', 'App', val, val);
+                    }}
+                  >
+                    <option value="8">32nd notes</option>
+                    <option value="7">Septuplets</option>
+                    <option value="6">Sextuplets</option>
+                    <option value="5">Quintuplets</option>
+                    <option value="4">16th notes</option>
+                    <option value="3">Triplets</option>
+                    <option value="2">8th notes</option>
+                    <option value="1">Quarter notes</option>
+                  </select>
+                  <StepButtons val={subDivs} setter={setSubDivs} min={1} max={8} event="set_subdivs" />
+                </div>
+
+                <div className="pt-1">
+                  <div className="space-y-2">
+                    {swingEnabled && (
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-[1.1rem] leading-none text-slate-500">
+                          <span>Swing:</span>
+                          <div className="flex items-center gap-1.5">
+                            {editingSwing ? (
+                              <span className="inline-flex items-center gap-0.5 border-b border-dotted border-slate-500 pb-px leading-none text-slate-600">
+                                <input
+                                  ref={swingInputRef}
+                                  type="number"
+                                  min={0}
+                                  max={100}
+                                  step="0.1"
+                                  defaultValue={formatSwing(swing)}
+                                  className="w-[3.5rem] bg-transparent text-right leading-none outline-none"
+                                  onBlur={e => {
+                                    if (cancelSwingEditRef.current) {
+                                      cancelSwingEditRef.current = false;
+                                      return;
+                                    }
+                                    commitSwingInput(e.target.value);
+                                  }}
+                                  onKeyDown={e => {
+                                    if (e.key === 'Enter') {
+                                      e.preventDefault();
+                                      e.currentTarget.blur();
+                                    }
+                                    if (e.key === 'Escape') {
+                                      cancelSwingEditRef.current = true;
+                                      setEditingSwing(false);
+                                    }
+                                  }}
+                                />
+                                <span>%</span>
+                              </span>
+                            ) : (
+                              <button
+                                type="button"
+                                className="border-b border-dotted border-slate-500 pb-px leading-none text-slate-600"
+                                onClick={() => setEditingSwing(true)}
+                              >
+                                {formatSwing(swing)}%
+                              </button>
+                            )}
+                            {!editingSwing && Number(swing) > 0 && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-5 w-5 rounded-full p-0 text-slate-500 hover:text-slate-700"
+                                aria-label="Reset swing to 0"
+                                onClick={() => {
+                                  setSwing(0);
+                                  sendOneEvent('update_swing', '', 0, 0);
+                                }}
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                        <StepButtons val={swing} setter={setSwing} min={0} max={100} conv={float} event="set_swing" />
+                      </div>
+                    )}
+                    {swingEnabled && (
+                      <>
+                        <div className="w-full pl-4 pr-0">
+                          <Range
+                            min={0}
+                            max={100}
+                            step={1}
+                            value={swing}
+                            onDrag={val => {
+                              const next = validSwing(float(val), swing);
+                              setSwing(next);
+                              sendOneEvent('update_swing', '', next, next);
+                            }}
+                            disabled={false}
+                            ticks={[0, 33, 50]}
+                          />
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {visualizers.map((id, idx) => (
-        <VisualizerField key={`v-${idx}`}>
-          <DefaultVisualizer id={id} metronome={m} />
-        </VisualizerField>
+        <Card className="-mt-px w-[calc(100%-1rem)]" key={`v-${idx}`}>
+          <CardContent className="p-1.5">
+            <div className="flex w-full justify-center leading-none">
+              <DefaultVisualizer id={id} metronome={m} width={visualizerWidth} height={visualizerHeight} />
+            </div>
+          </CardContent>
+        </Card>
       ))}
 
-      <div>
+      <div className="mt-2">
         {!started ? (
-          <StartButton
+          <Button
+            type="button"
+            className="h-[3.2rem] bg-emerald-700 px-10 text-[1.6rem] text-white hover:bg-emerald-800"
             onClick={e => {
               e.preventDefault();
               start();
@@ -416,9 +580,11 @@ function App() {
             }}
           >
             Start
-          </StartButton>
+          </Button>
         ) : (
-          <StopButton
+          <Button
+            type="button"
+            className="h-11 bg-red-700 px-7 text-[1.6rem] text-white hover:bg-red-800"
             onClick={e => {
               e.preventDefault();
               stop();
@@ -426,35 +592,75 @@ function App() {
             }}
           >
             Stop
-          </StopButton>
+          </Button>
         )}
       </div>
 
-      <VolumeSliderMain>
-        <VolumeIcon
-          muted={muted}
-          onClick={() => {
-            setMuted(val => !val);
-            sendOneEvent(`mute_${muted ? 'off' : 'on'}`);
-          }}
-        />
+      <div className="mt-2 flex w-full justify-center">
+        <div
+          ref={volumeControlRef}
+          className="relative h-12 w-[352px] max-w-[calc(100%-2.25rem)]"
+          onMouseEnter={() => setShowVolume(true)}
+          onMouseLeave={() => setShowVolume(false)}
+        >
+          <div
+            className={cn(
+              'pointer-events-none absolute left-1/2 top-1/2 w-full -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-full border border-slate-300 bg-white px-3 shadow-sm transition-all duration-200',
+              showVolume ? 'pointer-events-auto scale-x-100 opacity-100' : 'scale-x-0 opacity-0',
+            )}
+            style={{ transformOrigin: 'center center' }}
+          >
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 shrink-0 rounded-full"
+                aria-label={muted ? 'Unmute' : 'Mute'}
+                onClick={() => {
+                  setMuted(val => !val);
+                  sendOneEvent(`mute_${muted ? 'off' : 'on'}`);
+                }}
+              >
+                {muted ? <VolumeX className="h-[18px] w-[18px]" /> : <Volume2 className="h-[18px] w-[18px]" />}
+              </Button>
+              <div className="min-w-0 flex-1">
+                <Range
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={volume}
+                  onDrag={val => {
+                    setVolume(int(val));
+                    sendOneEvent('set_volume', '', val, int(val));
+                  }}
+                />
+              </div>
+            </div>
+          </div>
 
-        <Range
-          min={0}
-          max={100}
-          step={1}
-          value={volume}
-          onDrag={val => {
-            setVolume(int(val));
-            sendOneEvent('set_volume', '', val, int(val));
-          }}
-        />
-      </VolumeSliderMain>
-    </Layout>
+          {!showVolume && (
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="absolute left-1/2 top-1/2 h-11 w-11 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white p-2 shadow-md"
+              aria-label="Show volume controls"
+              onFocus={() => setShowVolume(true)}
+              onClick={() => {
+                setShowVolume(true);
+              }}
+            >
+              {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+            </Button>
+          )}
+        </div>
+      </div>
+    </main>
   );
 }
 
-const BPMArea = ({ clicker, onChange }) => {
+const BPMArea = ({ clicker, onChange, className }) => {
   const [bpm, setBpm] = useSetting('bpm', bpmDefault, float);
   const [editingBPM, setEditingBPM] = useState(false);
   const { bpm: tappedBPM, handleTap } = useTapBPM(bpm);
@@ -469,7 +675,6 @@ const BPMArea = ({ clicker, onChange }) => {
   }, [bpm]);
 
   useKeypress('t', () => {
-    // t: tap
     handleTap();
     clicker?.click();
     sendOneEvent('tap');
@@ -484,60 +689,73 @@ const BPMArea = ({ clicker, onChange }) => {
   }, [editingBPM]);
 
   return (
-    <BPMField editing={editingBPM}>
-      <TapButton
-        onClick={e => handleTap(e)}
-        onMouseDown={() => {
-          clicker.click();
-          sendOneEvent('tap');
-        }}
-      >
-        <span>T</span>ap
-      </TapButton>
+    <div className={className}>
+        <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-1">
+          <Button
+            type="button"
+            variant="outline"
+            className="h-[4.85rem] w-[4.85rem] rounded-full p-0 text-[1.55rem]"
+            onClick={e => handleTap(e)}
+            onMouseDown={() => {
+              clicker.click();
+              sendOneEvent('tap');
+            }}
+          >
+            Tap
+          </Button>
 
-      <input
-        ref={bpmRef}
-        type="number"
-        min={bpmMin}
-        max={bpmMax}
-        defaultValue={bpm}
-        size={5}
-        onBlur={e => {
-          setBpm(validBpm(float(e.target.value) || bpm));
-          setEditingBPM(false);
-        }}
-        onKeyDown={e => {
-          if (e.key === 'Enter') {
-            setBpm(validBpm(float(e.target.value) || bpm));
-            setEditingBPM(false);
-          }
-        }}
-      />
-      <label
-        onClick={() => {
-          setEditingBPM(true);
-          sendEvent('edit_bpm');
-        }}
-      >
-        {bpm} BPM
-      </label>
+          <div className="flex justify-center">
+            {editingBPM ? (
+              <input
+                ref={bpmRef}
+                type="number"
+                min={bpmMin}
+                max={bpmMax}
+                defaultValue={bpm}
+                size={5}
+                className="h-10 w-[8.75rem] border-b border-dotted border-slate-500 bg-transparent px-1 text-center text-[2.1rem] leading-none outline-none"
+                onBlur={e => {
+                  setBpm(validBpm(float(e.target.value) || bpm));
+                  setEditingBPM(false);
+                }}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    setBpm(validBpm(float(e.target.value) || bpm));
+                    setEditingBPM(false);
+                  }
+                }}
+              />
+            ) : (
+              <button
+                type="button"
+                className="whitespace-nowrap border-b border-dotted border-slate-500 text-[2.1rem] leading-none"
+                onClick={() => {
+                  setEditingBPM(true);
+                  sendEvent('edit_bpm');
+                }}
+              >
+                {bpm} BPM
+              </button>
+            )}
+          </div>
 
-      <StepButtons val={bpm} setter={setBpm} min={20} max={300} conv={float} />
+          <StepButtons val={bpm} setter={setBpm} min={20} max={300} conv={float} />
+        </div>
 
-      <div>
-        <Range
-          min={bpmMin}
-          max={bpmMax}
-          step={1}
-          value={bpm}
-          onDrag={val => {
-            setBpm(validBpm(val));
-          }}
-          labelRotation={-60}
-          ticks={[50, 80, 100, 120, 140, 160, 180, 200, 220, 240, bpmMax]}
-        />
-      </div>
-    </BPMField>
+        <div className="-mb-1 px-5">
+          <Range
+            min={bpmMin}
+            max={bpmMax}
+            step={1}
+            value={bpm}
+            onDrag={val => {
+              setBpm(validBpm(val));
+            }}
+            labelRotation={-60}
+            ticks={[50, 80, 100, 120, 140, 160, 180, 200, 220, 240, bpmMax]}
+          />
+        </div>
+    </div>
   );
 };
 
@@ -550,28 +768,37 @@ const StepButtons = ({
   conv = int,
   disabled = false,
   event = null,
+  className,
 }) => {
   return (
-    <>
-      <StepButton
-        disabled={disabled || val === max}
+    <div className={cn('flex items-center gap-1', className)}>
+      <Button
+        type="button"
+        variant="outline"
+        size="icon"
+        className="h-12 w-12 p-2 text-[1.9rem]"
+        disabled={disabled || Number(val) >= Number(max)}
         onClick={() => {
-          setter(x => (x < max ? conv(x) + step : x));
+          setter(x => (x < max ? Math.min(Number(max), conv(x) + step) : x));
           if (event) sendEvent(event, 'App', 'step_up');
         }}
       >
         +
-      </StepButton>
-      <StepButton
-        disabled={disabled || val === min}
+      </Button>
+      <Button
+        type="button"
+        variant="outline"
+        size="icon"
+        className="h-12 w-12 p-2 text-[1.9rem]"
+        disabled={disabled || Number(val) <= Number(min)}
         onClick={() => {
-          setter(x => (x > min ? conv(x) - step : x));
+          setter(x => (x > min ? Math.max(Number(min), conv(x) - step) : x));
           if (event) sendEvent(event, 'App', 'step_down');
         }}
       >
         -
-      </StepButton>
-    </>
+      </Button>
+    </div>
   );
 };
 

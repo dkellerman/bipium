@@ -1,6 +1,7 @@
 import ReactMarkdown from 'react-markdown';
 import { Link } from 'react-router-dom';
-import { AboutPage } from './App.styles';
+import { buttonVariants } from './components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from './components/ui/card';
 
 const ABOUT = `
 ## About Bipium
@@ -27,9 +28,56 @@ __To use__: click start.
 
 export default function About() {
   return (
-    <AboutPage>
-      <Link to="/">Back to app</Link>
-      <ReactMarkdown children={ABOUT}></ReactMarkdown>
-    </AboutPage>
+    <main className="mx-auto flex min-h-dvh w-full max-w-[480px] flex-col gap-3 bg-white px-3 py-4 text-slate-900 shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
+      <div>
+        <Link className={buttonVariants({ variant: 'outline' })} to="/">
+          Back to app
+        </Link>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>About</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ReactMarkdown
+            components={{
+              h2: ({ children, ...props }) => (
+                <h2 className="mt-4 text-xl font-semibold first:mt-0" {...props}>
+                  {children}
+                </h2>
+              ),
+              p: ({ children, ...props }) => (
+                <p className="mt-2 text-base leading-relaxed text-slate-700" {...props}>
+                  {children}
+                </p>
+              ),
+              ul: ({ children, ...props }) => (
+                <ul className="mt-2 list-disc space-y-1 pl-6" {...props}>
+                  {children}
+                </ul>
+              ),
+              li: ({ children, ...props }) => (
+                <li className="text-slate-700" {...props}>
+                  {children}
+                </li>
+              ),
+              a: ({ children, ...props }) => (
+                <a className="underline underline-offset-2" {...props}>
+                  {children}
+                </a>
+              ),
+              strong: ({ children, ...props }) => (
+                <strong className="font-semibold text-slate-900" {...props}>
+                  {children}
+                </strong>
+              ),
+            }}
+          >
+            {ABOUT}
+          </ReactMarkdown>
+        </CardContent>
+      </Card>
+    </main>
   );
 }
