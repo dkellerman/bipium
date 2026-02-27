@@ -13,7 +13,14 @@ export function useSetting<T>(
   storage: StorageLike = sessionStorage as StorageLike,
 ): UseSettingReturn<T> {
   const sget = (key: string) => (storage ? storage.getItem(key) : null);
-  const initialValue = 'reset' in q ? defVal : q[id] || sget(id) || defVal;
+  const queryValue = q[id];
+  const storageValue = sget(id);
+  const initialValue =
+    'reset' in q
+      ? defVal
+      : queryValue === ''
+        ? storageValue ?? defVal
+        : queryValue ?? storageValue ?? defVal;
   const [val, setVal] = useState<T>(transform(initialValue));
 
   useEffect(() => {

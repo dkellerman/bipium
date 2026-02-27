@@ -91,7 +91,7 @@ function App() {
   const [beats, setBeats] = useSetting('beats', 4, int);
   const [subDivs, setSubDivs] = useSetting('subDivs', 1, int);
   const [swing, setSwing] = useSetting('swing', 0, float);
-  const [swingEnabled, setSwingEnabled] = useSetting('swingEnabled', true, bool);
+  const [swingEnabled, setSwingEnabled] = useSetting('swingEnabled', false, bool);
   const [playSubDivs, setPlaySubDivs] = useSetting('playSubDivs', true, bool);
   const [volume, setVolume] = useSetting('volume', 35, int, localStorage);
   const [muted, setMuted] = useState(false);
