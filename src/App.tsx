@@ -121,7 +121,7 @@ function App() {
   const canSwing = subDivs % 2 === 0;
   const swingActive = playSubDivs && canSwing && swingEnabled;
   const visualizerWidth = Math.max(272, Math.min(450, viewportWidth - 30));
-  const visualizerHeight = 94;
+  const visualizerHeight = 100;
 
   const clicker = useClicker({
     audioContext: audioContext.current,

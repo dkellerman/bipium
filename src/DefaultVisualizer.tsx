@@ -50,8 +50,8 @@ export function DefaultVisualizer({
   const centerTextAt = (textNode: any, centerX: number, centerY: number) => {
     if (!textNode?.getLocalBounds) return;
     const bounds = textNode.getLocalBounds();
-    textNode.x = centerX - (bounds.x + bounds.width / 2);
-    textNode.y = centerY - (bounds.y + bounds.height / 2);
+    textNode.x = Math.round(centerX - (bounds.x + bounds.width / 2));
+    textNode.y = Math.round(centerY - (bounds.y + bounds.height / 2));
   };
 
   useEffect(() => {
@@ -64,6 +64,14 @@ export function DefaultVisualizer({
   useEffect(() => {
     countRef.current?.anchor?.set?.(0);
     descRef.current?.anchor?.set?.(0);
+    if (countRef.current) {
+      countRef.current.resolution = 1;
+      countRef.current.roundPixels = true;
+    }
+    if (descRef.current) {
+      descRef.current.resolution = 1;
+      descRef.current.roundPixels = true;
+    }
     centerTextAt(countRef.current, width / 2, height / 2 - 10);
     centerTextAt(descRef.current, width / 2, height - 20);
   }, [width, height]);
@@ -157,7 +165,14 @@ export function DefaultVisualizer({
   return (
     <>
       {mAny && (
-        <Application width={width} height={height} antialias autoDensity>
+        <Application
+          width={width}
+          height={height}
+          antialias={false}
+          autoDensity
+          resolution={1}
+          roundPixels
+        >
           <pixiGraphics ref={gridRef} draw={() => {}} />
 
           <pixiGraphics
