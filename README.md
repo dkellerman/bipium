@@ -16,10 +16,10 @@ A metronome web app. https://bipium.com
 - All parameters configurable via URL, you can copy a link to the clipboard
 
 ## Tech
-- React, Javascript, CSS (styled-components)
+- React, Javascript, Tailwind CSS 4 (with shadcn-style UI components)
 - PIXI.js for visualizer, to allow GPU rendering
 - Metronome implementation inspired by https://github.com/cwilso/metronome
-- create-react-app for UI, deployed to Vercel
+- Vite for app and core distribution builds, deployed to Vercel
 - microsecond time syncing via AudioContext
 
 The `src/core` directory contains an app-independent metronome implementation with no library dependencies.

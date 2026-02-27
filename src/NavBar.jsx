@@ -1,14 +1,17 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Nav } from './App.styles';
 
 export const NavBar = ({ children }) => (
-  <Nav>
-    <h3>
-      <Link to="/">
-        <span className="bipium">Bipium</span>
+  <nav className="relative w-full border-b border-slate-200 bg-gradient-to-b from-[#edf3f9] to-[#dfe9f4] px-4 py-1.5 shadow-sm">
+    <h1 className="m-0 text-center text-[1.55rem] font-medium leading-none tracking-tight text-emerald-700 sm:text-[1.65rem]">
+      <Link className="no-underline" to="/">
+        <span className="text-emerald-800">B</span>
+        <span className="text-emerald-700">i</span>
+        <span className="text-emerald-800">p</span>
+        <span className="text-emerald-700">iu</span>
+        <span className="text-emerald-800">m</span>
       </Link>
-    </h3>
+    </h1>
     {children}
-  </Nav>
+  </nav>
 );

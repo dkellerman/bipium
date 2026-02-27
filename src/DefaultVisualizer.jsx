@@ -10,7 +10,7 @@ import {
   correctNoteColor,
   incorrectNoteColor,
   descriptionFont,
-} from './App.styles';
+} from './visualizerTheme';
 
 const touchEnabled = 'ontouchstart' in window;
 
@@ -71,25 +71,21 @@ export function DefaultVisualizer({
     };
   }, []);
 
-  // main method for per-frame updates
   const draw = useCallback(() => {
     if (!m.started) return;
 
     v.current.update();
 
-    // update now line
     if (showNow) {
       nowLineRef.current.x = v.current.progress * width;
     }
 
-    // update count
     if (showCount) {
       countRef.current.text = v.current.count.join('-');
     } else {
       countRef.current.text = '';
     }
 
-    // show timing info for user clicks
     if (showClicks && v.current.qType) {
       const t = v.current.qType;
       if (t === 'early') {
@@ -104,7 +100,6 @@ export function DefaultVisualizer({
       }
     }
 
-    // reloop
     requestAnimationFrame(draw);
   }, [m.started, m.barTime, m.bpm]);
 
@@ -144,13 +139,7 @@ export function DefaultVisualizer({
             style={{ ...countFont, fontSize: Math.round(height * 0.7) }}
           />
 
-          <Text
-            ref={descRef}
-            x={width / 2}
-            y={height - 20}
-            anchor={0.5}
-            style={descriptionFont}
-          />
+          <Text ref={descRef} x={width / 2} y={height - 20} anchor={0.5} style={descriptionFont} />
         </Stage>
       )}
     </>
