@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import qs from 'query-string';
 import copyToClipboard from 'copy-to-clipboard';
-import useKeypress from 'react-use-keypress';
 import { Link } from 'react-router-dom';
 import localStorage from 'local-storage-fallback';
 import { AudioContext } from 'standardized-audio-context';
@@ -163,7 +162,7 @@ function App() {
       }
 
       setSwingEnabled(true);
-      setSwing(previousSwingRef.current || 0);
+      setSwing(previousSwingRef.current > 0 ? previousSwingRef.current : 33);
       sendEvent('set_swing_enabled', 'App', true, 1);
     },
     [swing],
@@ -213,15 +212,27 @@ function App() {
     clicker.setSounds(SOUND_PACKS[soundPack || 'defaults']);
   }, [soundPack]);
 
-  useKeypress(' ', e => {
-    e.preventDefault();
-    e.stopPropagation();
-    toggle();
-  });
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === ' ') {
+        e.preventDefault();
+        e.stopPropagation();
+        toggle();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [toggle]);
 
-  useKeypress('Escape', () => {
-    setShowSideBar(false);
-  });
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowSideBar(false);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   useEffect(() => {
     if (!started) {
@@ -270,10 +281,10 @@ function App() {
   }, [showVolume]);
 
   useEffect(() => {
-    if (!playSubDivs || !swingEnabled) {
+    if (!playSubDivs || !swingEnabled || !canSwing) {
       setEditingSwing(false);
     }
-  }, [playSubDivs, swingEnabled]);
+  }, [playSubDivs, swingEnabled, canSwing]);
 
   useEffect(() => {
     if (!hasUrlParams) return;
@@ -302,7 +313,7 @@ function App() {
   const copyConfigurationURL = useCallback(() => {
     const q: ConfigurationQuery = { bpm: bpm.current, beats, playSubDivs };
     if (playSubDivs) {
-      q.swing = swing;
+      q.swing = swingActive ? swing : 0;
       q.subDivs = subDivs;
     }
     if (soundPack !== 'defaults') {
@@ -318,7 +329,7 @@ function App() {
         setCopiedURL(url);
       },
     });
-  }, [bpm.current, beats, playSubDivs, swing, subDivs, soundPack]);
+  }, [bpm.current, beats, playSubDivs, swing, swingActive, subDivs, soundPack]);
 
   return (
     <main
@@ -390,7 +401,10 @@ function App() {
               >
                 {Object.keys(SOUND_PACKS).map((key, idx) => (
                   <option key={`sp-${idx + 1}`} value={key}>
-                    {SOUND_PACKS[key]?.name}
+                    {typeof SOUND_PACKS[key]?.name === 'string' ||
+                    typeof SOUND_PACKS[key]?.name === 'number'
+                      ? SOUND_PACKS[key]?.name
+                      : key}
                   </option>
                 ))}
               </select>
@@ -564,13 +578,15 @@ function App() {
                     {swingEnabled && (
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 text-[1.1rem] leading-none text-slate-500">
-                          <span>Swing:</span>
-                          <div className="flex items-center gap-1.5">
-                            {editingSwing ? (
-                              <span
-                                className={cn(
-                                  'inline-flex items-center gap-0.5 border-b border-dotted border-slate-500 pb-px',
-                                  'leading-none text-slate-600',
+	                          <span>Swing:</span>
+	                          <div className="flex items-center gap-1.5">
+	                            {!canSwing ? (
+	                              <span className="text-slate-500">even sub divs only</span>
+	                            ) : editingSwing ? (
+	                              <span
+	                                className={cn(
+	                                  'inline-flex items-center gap-0.5 border-b border-dotted border-slate-500 pb-px',
+	                                  'leading-none text-slate-600',
                                 )}
                               >
                                 <input
@@ -605,22 +621,23 @@ function App() {
                               <button
                                 type="button"
                                 className="border-b border-dotted border-slate-500 pb-px leading-none text-slate-600"
+                                disabled={!canSwing}
                                 onClick={() => setEditingSwing(true)}
                               >
-                                {formatSwing(swing)}%
-                              </button>
-                            )}
-                            {!editingSwing && Number(swing) > 0 && (
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="h-5 w-5 rounded-full p-0 text-slate-500 hover:text-slate-700"
-                                aria-label="Reset swing to 0"
-                                onClick={() => {
-                                  setSwing(0);
-                                  sendOneEvent('update_swing', '', 0, 0);
-                                }}
+	                                {formatSwing(swing)}%
+	                              </button>
+	                            )}
+	                            {canSwing && !editingSwing && Number(swing) > 0 && (
+	                              <Button
+	                                type="button"
+	                                variant="ghost"
+	                                size="icon"
+	                                className="h-5 w-5 rounded-full p-0 text-slate-500 hover:text-slate-700"
+	                                aria-label="Reset swing to 0"
+	                                onClick={() => {
+	                                  setSwing(0);
+	                                  sendOneEvent('update_swing', '', 0, 0);
+	                                }}
                               >
                                 <X className="h-3 w-3" />
                               </Button>
@@ -633,6 +650,7 @@ function App() {
                           min={0}
                           max={100}
                           conv={float}
+                          disabled={!canSwing}
                           event="set_swing"
                         />
                       </div>
@@ -650,7 +668,7 @@ function App() {
                               setSwing(next);
                               sendOneEvent('update_swing', '', next, next);
                             }}
-                            disabled={false}
+                            disabled={!canSwing}
                             ticks={[0, 33, 50]}
                           />
                         </div>
@@ -665,7 +683,13 @@ function App() {
       </Card>
 
       {visualizers.map((id, idx) => (
-        <Card className="-mt-px w-[calc(100%-1rem)]" key={`v-${idx}`}>
+        <Card
+          className={cn(
+            'w-[calc(100%-1rem)]',
+            idx === 0 ? (playSubDivs ? '-mt-px' : 'mt-2') : '-mt-px',
+          )}
+          key={`v-${idx}`}
+        >
           <CardContent className="p-1.5">
             <div className="flex w-full justify-center leading-none">
               <DefaultVisualizer
@@ -794,11 +818,17 @@ const BPMArea = ({ clicker, onChange, className }: BPMAreaProps) => {
     onChange?.(bpm);
   }, [bpm]);
 
-  useKeypress('t', () => {
-    handleTap();
-    clicker?.click();
-    sendOneEvent('tap');
-  });
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() === 't') {
+        handleTap();
+        clicker?.click();
+        sendOneEvent('tap');
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [handleTap, clicker]);
 
   useEffect(() => {
     if (editingBPM && bpmRef.current) {

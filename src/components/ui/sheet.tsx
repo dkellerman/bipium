@@ -18,7 +18,9 @@ interface SheetProps extends WithChildrenProps {
 }
 
 interface SheetCloseProps {
-  children: React.ReactElement;
+  children: React.ReactElement<{
+    onClick?: (event: React.MouseEvent<HTMLElement>) => void;
+  }>;
 }
 
 interface SheetContentProps extends WithChildrenProps {
