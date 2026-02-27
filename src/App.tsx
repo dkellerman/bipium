@@ -707,7 +707,7 @@ function App() {
         {!started ? (
           <Button
             type="button"
-            className="h-[3.2rem] bg-emerald-700 px-10 text-[1.6rem] text-white hover:bg-emerald-800"
+            className="h-[3.4rem] bg-emerald-700 px-10 text-[1.6rem] text-white hover:bg-emerald-800"
             onClick={e => {
               e.preventDefault();
               start();
@@ -719,7 +719,7 @@ function App() {
         ) : (
           <Button
             type="button"
-            className="h-[3.2rem] bg-red-700 px-10 text-[1.6rem] text-white hover:bg-red-800"
+            className="h-[3.4rem] bg-red-700 px-10 text-[1.6rem] text-white hover:bg-red-800"
             onClick={e => {
               e.preventDefault();
               stop();
@@ -786,7 +786,7 @@ function App() {
               size="icon"
               className={cn(
                 'absolute left-1/2 top-1/2 h-11 w-11 -translate-x-1/2 -translate-y-1/2 rounded-full',
-                'bg-white p-2 shadow-md',
+                'bg-white p-[0.55rem] shadow-md',
               )}
               aria-label="Show volume controls"
               onMouseEnter={() => setShowVolume(true)}
@@ -907,6 +907,7 @@ const BPMArea = ({ clicker, onChange, className }: BPMAreaProps) => {
             setBpm(validBpm(val));
           }}
           labelRotation={-60}
+          tickClassName="text-[17px] sm:text-[18px]"
           ticks={[50, 80, 100, 120, 140, 160, 180, 200, 220, 240, bpmMax]}
         />
       </div>
@@ -931,7 +932,7 @@ const StepButtons = ({
         type="button"
         variant="outline"
         size="icon"
-        className="h-12 w-12 p-2 text-[1.9rem]"
+        className="h-12 w-12 p-[0.55rem] text-[1.9rem]"
         disabled={disabled || Number(val) >= Number(max)}
         onClick={() => {
           setter(x => (x < max ? Math.min(Number(max), conv(x) + step) : x));
@@ -944,7 +945,7 @@ const StepButtons = ({
         type="button"
         variant="outline"
         size="icon"
-        className="h-12 w-12 p-2 text-[1.9rem]"
+        className="h-12 w-12 p-[0.55rem] text-[1.9rem]"
         disabled={disabled || Number(val) <= Number(min)}
         onClick={() => {
           setter(x => (x > min ? Math.max(Number(min), conv(x) - step) : x));

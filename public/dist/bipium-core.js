@@ -9,6 +9,9 @@
       var runtime2 = (function(exports$1) {
         var Op = Object.prototype;
         var hasOwn = Op.hasOwnProperty;
+        var defineProperty = Object.defineProperty || function(obj, key, desc) {
+          obj[key] = desc.value;
+        };
         var undefined$1;
         var $Symbol = typeof Symbol === "function" ? Symbol : {};
         var iteratorSymbol = $Symbol.iterator || "@@iterator";
@@ -34,7 +37,7 @@
           var protoGenerator = outerFn && outerFn.prototype instanceof Generator ? outerFn : Generator;
           var generator = Object.create(protoGenerator.prototype);
           var context = new Context(tryLocsList || []);
-          generator._invoke = makeInvokeMethod(innerFn, self, context);
+          defineProperty(generator, "_invoke", { value: makeInvokeMethod(innerFn, self, context) });
           return generator;
         }
         exports$1.wrap = wrap;
@@ -67,8 +70,12 @@
         }
         var Gp = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(IteratorPrototype);
         GeneratorFunction.prototype = GeneratorFunctionPrototype;
-        define(Gp, "constructor", GeneratorFunctionPrototype);
-        define(GeneratorFunctionPrototype, "constructor", GeneratorFunction);
+        defineProperty(Gp, "constructor", { value: GeneratorFunctionPrototype, configurable: true });
+        defineProperty(
+          GeneratorFunctionPrototype,
+          "constructor",
+          { value: GeneratorFunction, configurable: true }
+        );
         GeneratorFunction.displayName = define(
           GeneratorFunctionPrototype,
           toStringTagSymbol,
@@ -149,7 +156,7 @@
               callInvokeWithMethodAndArg
             ) : callInvokeWithMethodAndArg();
           }
-          this._invoke = enqueue;
+          defineProperty(this, "_invoke", { value: enqueue });
         }
         defineIteratorMethods(AsyncIterator.prototype);
         define(AsyncIterator.prototype, asyncIteratorSymbol, function() {
@@ -220,21 +227,22 @@
           };
         }
         function maybeInvokeDelegate(delegate, context) {
-          var method = delegate.iterator[context.method];
+          var methodName = context.method;
+          var method = delegate.iterator[methodName];
           if (method === undefined$1) {
             context.delegate = null;
-            if (context.method === "throw") {
-              if (delegate.iterator["return"]) {
-                context.method = "return";
-                context.arg = undefined$1;
-                maybeInvokeDelegate(delegate, context);
-                if (context.method === "throw") {
-                  return ContinueSentinel;
-                }
+            if (methodName === "throw" && delegate.iterator["return"]) {
+              context.method = "return";
+              context.arg = undefined$1;
+              maybeInvokeDelegate(delegate, context);
+              if (context.method === "throw") {
+                return ContinueSentinel;
               }
+            }
+            if (methodName !== "return") {
               context.method = "throw";
               context.arg = new TypeError(
-                "The iterator does not provide a 'throw' method"
+                "The iterator does not provide a '" + methodName + "' method"
               );
             }
             return ContinueSentinel;
@@ -296,7 +304,8 @@
           tryLocsList.forEach(pushTryEntry, this);
           this.reset(true);
         }
-        exports$1.keys = function(object) {
+        exports$1.keys = function(val) {
+          var object = Object(val);
           var keys = [];
           for (var key in object) {
             keys.push(key);
@@ -316,7 +325,7 @@
           };
         };
         function values(iterable) {
-          if (iterable) {
+          if (iterable != null) {
             var iteratorMethod = iterable[iteratorSymbol];
             if (iteratorMethod) {
               return iteratorMethod.call(iterable);
@@ -340,7 +349,7 @@
               return next.next = next;
             }
           }
-          return { next: doneResult };
+          throw new TypeError(typeof iterable + " is not iterable");
         }
         exports$1.values = values;
         function doneResult() {

@@ -5,6 +5,7 @@ import type { RangeProps } from './types';
 export const Range = ({
   ticks: customTicks = [],
   labelRotation = 0,
+  tickClassName,
   disabled = false,
   min,
   max,
@@ -54,6 +55,7 @@ export const Range = ({
                 className={cn(
                   'absolute top-0 h-10 px-0.5 text-[16px] leading-none text-slate-600',
                   'hover:text-slate-800 disabled:cursor-not-allowed sm:text-[17px]',
+                  tickClassName,
                 )}
                 style={{ left, transform: `translateX(${xOffset})` }}
                 onClick={() => callback?.(Number(tick))}

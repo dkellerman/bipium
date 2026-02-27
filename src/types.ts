@@ -37,6 +37,7 @@ export type RangeValueChange = (value: number) => void;
 export interface RangeProps {
   ticks?: Array<number | string>;
   labelRotation?: number;
+  tickClassName?: string;
   disabled?: boolean;
   min: NumberLike;
   max: NumberLike;
