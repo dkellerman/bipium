@@ -315,7 +315,7 @@ export default function ApiPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Bipium API</CardTitle>
+          <CardTitle>Bipium Browser API</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-slate-700">
           <p>

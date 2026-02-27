@@ -3,7 +3,11 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Bipium Metronome Example</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/sakura.css/css/sakura.css"
+    />
+    <title>Basic metronome embedded example</title>
     <script src="./dist/bipium-core.js"></script>
 
     <script>
@@ -31,20 +35,31 @@
 
   <body>
     <div id="root">
-      <h2>Bipium Basic Metronome Example</h2>
+      <h2>Basic metronome embedded example</h2>
 
-      <label>BPM:</label>
-      <input
-        type="number"
-        value="80"
-        min="20"
-        max="300"
-        step="1"
-        onchange="m.update({ bpm: parseFloat(event.target.value) || 80 })"
-      />
+      <p style="display: flex; align-items: center; gap: 0.5rem">
+        <label for="bpm-input" style="margin: 0">BPM:</label>
+        <input
+          id="bpm-input"
+          type="number"
+          value="80"
+          min="20"
+          max="300"
+          step="1"
+          style="width: 4.5em; margin: 0; border: 0; box-shadow: none"
+          onchange="m.update({ bpm: parseFloat(event.target.value) || 80 })"
+        />
+      </p>
 
-      <input type="checkbox" onchange="m.update({ subDivs: event.target.checked ? 4 : 1 })" />
-      <label>Play sub divisions</label>
+      <label for="subdiv-toggle" style="display: inline-flex; align-items: center; gap: 0.5rem">
+        <input
+          id="subdiv-toggle"
+          type="checkbox"
+          style="margin: 0"
+          onchange="m.update({ subDivs: event.target.checked ? 4 : 1 })"
+        />
+        Play sub divisions
+      </label>
 
       <p>
         <button onclick="m.start(); viz.start();">Start</button>
@@ -56,6 +71,15 @@
         <div id="progress" style="background: green; width: 0; height: 10px"></div>
         <div id="count" style="text-align: center; font-size: 40px; background: white"></div>
       </div>
+
+      <p style="margin-top: 2rem; font-size: 0.75em">
+        <a
+          href="https://github.com/dkellerman/bipium/blob/master/public/example.html"
+          target="_blank"
+          rel="noreferrer"
+          >View source</a
+        >
+      </p>
     </div>
   </body>
 </html>

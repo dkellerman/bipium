@@ -759,7 +759,7 @@ function App() {
                               sendOneEvent('update_swing', '', next, next);
                             }}
                             disabled={!canSwing}
-                            ticks={[0, 33, 50]}
+                            ticks={[0, 15, 33, 50]}
                           />
                         </div>
                       </>
