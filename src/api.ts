@@ -1,11 +1,6 @@
 import qs from 'query-string';
 import { z } from 'zod';
-import type {
-  ApiConfig,
-  ApiSchemaJson,
-  RuntimeApi,
-  ValidationResult,
-} from './types';
+import type { ApiConfig, ApiSchemaJson, RuntimeApi, ValidationResult } from './types';
 
 export const API_VERSION = 1;
 export const BIPIUM_API_VERSION = API_VERSION;
@@ -61,12 +56,7 @@ function parseNumberLike(value: unknown): number | undefined {
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
-function numberFieldSchema(
-  fieldName: keyof ApiConfig,
-  min: number,
-  max: number,
-  integer = false,
-) {
+function numberFieldSchema(fieldName: keyof ApiConfig, min: number, max: number, integer = false) {
   return z
     .preprocess(value => parseNumberLike(value) ?? value, z.number())
     .refine(value => (integer ? Number.isInteger(value) : true), {

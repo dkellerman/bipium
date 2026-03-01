@@ -29,7 +29,11 @@ export type SoundPacks = Record<string, SoundPack>;
 
 export interface TapBPMResult {
   bpm: number;
+  confidence: number;
   handleTap: () => void;
+  reset: () => void;
+  lastTapAt: number | null;
+  lastInterval: number | null;
 }
 
 export interface GtagPayload {
@@ -64,9 +68,7 @@ export interface ApiSchemaJson {
   configPatch: unknown;
 }
 
-export type ValidationResult =
-  | { ok: true; value: ApiConfig }
-  | { ok: false; error: string };
+export type ValidationResult = { ok: true; value: ApiConfig } | { ok: false; error: string };
 
 export interface RuntimeApi {
   version: number;

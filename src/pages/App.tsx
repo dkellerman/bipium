@@ -357,7 +357,7 @@ function App() {
   const appContextValue = useMemo<AppContextValue>(
     () => ({
       buildSha,
-      bpm: bpm.current,
+      bpm: bpmState,
       beats,
       subDivs,
       playSubDivs,
@@ -389,6 +389,7 @@ function App() {
     }),
     [
       buildSha,
+      bpmState,
       beats,
       subDivs,
       playSubDivs,

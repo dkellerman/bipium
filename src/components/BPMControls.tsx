@@ -21,10 +21,19 @@ const validBpm = (value: number) => {
 };
 
 export function BPMControls() {
-  const { bpm, updateBPM, clicker } = useApp();
+  const { bpm, updateBPM, clicker, started, setStarted } = useApp();
   const [editingBPM, setEditingBPM] = useState(false);
-  const { bpm: tappedBPM, handleTap } = useTapBPM(bpm);
+  const {
+    bpm: tappedBPM,
+    confidence: tapConfidence,
+    handleTap,
+    reset: resetTap,
+    lastTapAt,
+    lastInterval,
+  } = useTapBPM(bpm);
   const bpmRef = useRef<HTMLInputElement | null>(null);
+  const tapStartThreshold = 0.8;
+  const tapStartTimeoutRef = useRef<number | null>(null);
 
   const setBpm = (value: number) => {
     updateBPM(validBpm(float(value)));
@@ -33,6 +42,31 @@ export function BPMControls() {
   useEffect(() => {
     setBpm(validBpm(float(tappedBPM) || bpm));
   }, [tappedBPM]);
+
+  useEffect(() => {
+    if (!started && tapConfidence >= tapStartThreshold) {
+      const interval = lastInterval ?? 0;
+      const tapAt = lastTapAt ?? 0;
+      const now = Date.now();
+      const delay = interval > 0 ? Math.max(0, interval - (now - tapAt)) : 0;
+      if (tapStartTimeoutRef.current) {
+        window.clearTimeout(tapStartTimeoutRef.current);
+      }
+      tapStartTimeoutRef.current = window.setTimeout(() => {
+        setStarted(true);
+        sendEvent('tap_auto_start', 'BPMControls', tapConfidence, 1);
+        resetTap();
+        tapStartTimeoutRef.current = null;
+      }, delay);
+    }
+  }, [started, tapConfidence, setStarted, resetTap, lastInterval, lastTapAt]);
+
+  useEffect(() => {
+    if (started && tapStartTimeoutRef.current) {
+      window.clearTimeout(tapStartTimeoutRef.current);
+      tapStartTimeoutRef.current = null;
+    }
+  }, [started]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {

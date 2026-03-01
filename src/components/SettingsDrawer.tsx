@@ -113,7 +113,9 @@ export function SettingsDrawer() {
             <Link className="block underline" to="/api">
               API
             </Link>
-            {buildSha && <p className="text-xs text-slate-500">Build: {buildSha.substring(1, 5)}</p>}
+            {buildSha && (
+              <p className="text-xs text-slate-500">Build: {buildSha.substring(1, 5)}</p>
+            )}
           </div>
         </div>
       </SheetContent>

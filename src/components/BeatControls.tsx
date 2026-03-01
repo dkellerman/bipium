@@ -34,12 +34,8 @@ const formatSwing = (value: number) => {
 };
 
 function PlaySubDivsRow() {
-  const {
-    playSubDivs,
-    setPlaySubDivsWithTracking,
-    swingEnabled,
-    setSwingEnabledWithRestore,
-  } = useApp();
+  const { playSubDivs, setPlaySubDivsWithTracking, swingEnabled, setSwingEnabledWithRestore } =
+    useApp();
 
   return (
     <div
@@ -56,11 +52,17 @@ function PlaySubDivsRow() {
     >
       <div className="flex items-center gap-2">
         <div onClick={event => event.stopPropagation()}>
-          <Switch checked={playSubDivs} onCheckedChange={value => setPlaySubDivsWithTracking(value)} />
+          <Switch
+            checked={playSubDivs}
+            onCheckedChange={value => setPlaySubDivsWithTracking(value)}
+          />
         </div>
         <label className="cursor-pointer text-lg leading-none">Play sub divs</label>
         {playSubDivs && (
-          <div className="ml-4 flex items-center gap-1.5" onClick={event => event.stopPropagation()}>
+          <div
+            className="ml-4 flex items-center gap-1.5"
+            onClick={event => event.stopPropagation()}
+          >
             <Switch
               checked={swingEnabled}
               onCheckedChange={value => setSwingEnabledWithRestore(value)}

@@ -59,7 +59,11 @@ export function VolumeControl({ compact = false }: VolumeControlProps) {
 
     const onPointerDown = (event: PointerEvent) => {
       const targetNode = event.target as Node | null;
-      if (volumeControlRef.current && targetNode && !volumeControlRef.current.contains(targetNode)) {
+      if (
+        volumeControlRef.current &&
+        targetNode &&
+        !volumeControlRef.current.contains(targetNode)
+      ) {
         setShowVolume(false);
       }
     };
