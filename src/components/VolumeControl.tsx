@@ -120,7 +120,7 @@ export function VolumeControl({ compact = false }: VolumeControlProps) {
             size="icon"
             className={cn(
               'absolute left-1/2 top-1/2 size-11 -translate-x-1/2 -translate-y-1/2',
-              'rounded-full bg-white p-[8.8px] shadow-md',
+              'rounded-full bg-white p-2 shadow-md',
             )}
             aria-label="Show volume controls"
             onMouseEnter={() => setShowVolume(true)}

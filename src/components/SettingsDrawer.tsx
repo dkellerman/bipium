@@ -27,7 +27,7 @@ export function SettingsDrawer() {
         }
       >
         <SheetHeader>
-          <SheetTitle className="text-[17.6px]">Settings</SheetTitle>
+          <SheetTitle className="text-lg">Settings</SheetTitle>
         </SheetHeader>
 
         <div className="mt-6 space-y-6">

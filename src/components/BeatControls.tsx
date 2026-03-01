@@ -58,14 +58,14 @@ function PlaySubDivsRow() {
         <div onClick={event => event.stopPropagation()}>
           <Switch checked={playSubDivs} onCheckedChange={value => setPlaySubDivsWithTracking(value)} />
         </div>
-        <label className="cursor-pointer text-[18.4px] leading-none">Play sub divs</label>
+        <label className="cursor-pointer text-lg leading-none">Play sub divs</label>
         {playSubDivs && (
           <div className="ml-4 flex items-center gap-1.5" onClick={event => event.stopPropagation()}>
             <Switch
               checked={swingEnabled}
               onCheckedChange={value => setSwingEnabledWithRestore(value)}
             />
-            <span className="text-[18.4px] leading-none">Swing</span>
+            <span className="text-lg leading-none">Swing</span>
           </div>
         )}
       </div>
@@ -83,7 +83,7 @@ function BeatsRow() {
         <select
           className={cn(
             'h-11 min-w-16 rounded-md border border-slate-300 bg-white px-2',
-            'text-[21.6px] leading-none outline-none',
+            'text-xl leading-none outline-none',
           )}
           value={beats}
           onChange={event => {
@@ -127,7 +127,7 @@ function SubDivsRow() {
       <select
         className={cn(
           'h-11 min-w-0 flex-1 rounded-md border border-slate-300 bg-white px-3',
-          'text-[16.8px] outline-none',
+          'text-base outline-none',
         )}
         value={subDivs}
         onChange={event => {
@@ -201,7 +201,7 @@ function SwingControls() {
     <div className="pt-1">
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-[17.6px] leading-none text-slate-500">
+          <div className="flex items-center gap-2 text-lg leading-none text-slate-500">
             <span>Swing:</span>
             <div className="flex items-center gap-1.5">
               {!canSwing ? (

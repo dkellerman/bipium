@@ -426,6 +426,8 @@ function App() {
             variant="ghost"
             size="icon"
             className="absolute right-2 top-1 size-9"
+            title="Open settings"
+            aria-label="Open settings"
             onClick={() => setShowSideBar(true)}
           >
             <Settings className="size-6" />
@@ -444,7 +446,10 @@ function App() {
 
         {visualizers.map((id, index) => (
           <Card
-            className={cn('w-[calc(100%-16px)]', index === 0 ? (playSubDivs ? '-mt-px' : 'mt-2') : '-mt-px')}
+            className={cn(
+              'w-[calc(100%-16px)]',
+              index === 0 ? (playSubDivs && swingEnabled ? '-mt-px' : 'mt-2') : '-mt-px',
+            )}
             key={`v-${index}`}
           >
             <CardContent className="p-1.5">
@@ -465,8 +470,8 @@ function App() {
             <Button
               type="button"
               className={cn(
-                'h-[60.8px] bg-emerald-700 px-10 text-[25.6px] text-white',
-                'hover:bg-emerald-800 sm:h-[54.4px]',
+                'h-15 bg-emerald-700 px-10 text-2xl text-white',
+                'hover:bg-emerald-800 sm:h-14',
               )}
               onClick={event => {
                 event.preventDefault();
@@ -480,8 +485,8 @@ function App() {
             <Button
               type="button"
               className={cn(
-                'h-[60.8px] bg-red-700 px-10 text-[25.6px] text-white',
-                'hover:bg-red-800 sm:h-[54.4px]',
+                'h-15 bg-red-700 px-10 text-2xl text-white',
+                'hover:bg-red-800 sm:h-14',
               )}
               onClick={event => {
                 event.preventDefault();

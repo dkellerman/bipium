@@ -12,8 +12,8 @@ export const NavBar = ({ children }: WithChildrenProps) => (
   >
     <h1
       className={cn(
-        'm-0 text-center text-[24.8px] font-medium leading-none tracking-tight text-emerald-800',
-        'sm:text-[26.4px]',
+        'm-0 text-center text-2xl font-medium leading-none tracking-tight text-emerald-800',
+        'sm:text-3xl',
       )}
     >
       <Link className="no-underline" to="/">

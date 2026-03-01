@@ -61,7 +61,7 @@ export function BPMControls() {
         <Button
           type="button"
           variant="outline"
-          className="size-[77.6px] rounded-full p-0 text-[24.8px]"
+          className="size-20 rounded-full p-0 text-2xl"
           onClick={() => handleTap()}
           onMouseDown={() => {
             clicker.click();
@@ -82,7 +82,7 @@ export function BPMControls() {
               size={5}
               className={cn(
                 'h-10 w-[140px] border-b border-dotted border-slate-500 bg-transparent px-1',
-                'text-center text-[33.6px] leading-none outline-none',
+                'text-center text-4xl leading-none outline-none',
               )}
               onBlur={event => {
                 const target = event.target as HTMLInputElement;
@@ -102,7 +102,7 @@ export function BPMControls() {
               type="button"
               className={cn(
                 'whitespace-nowrap border-b border-dotted border-slate-500',
-                'text-[33.6px] leading-none',
+                'text-4xl leading-none',
               )}
               onClick={() => {
                 setEditingBPM(true);

@@ -20,7 +20,7 @@ export function StepButtons({
         type="button"
         variant="outline"
         size="icon"
-        className={cn('size-[53.6px] p-[11.2px] text-[30.4px]', 'sm:size-12 sm:p-[8.8px]')}
+        className={cn('size-14 p-3 text-3xl', 'sm:size-12 sm:p-2')}
         disabled={disableIncrement}
         onClick={onIncrement}
       >
@@ -30,7 +30,7 @@ export function StepButtons({
         type="button"
         variant="outline"
         size="icon"
-        className={cn('size-[53.6px] p-[11.2px] text-[30.4px]', 'sm:size-12 sm:p-[8.8px]')}
+        className={cn('size-14 p-3 text-3xl', 'sm:size-12 sm:p-2')}
         disabled={disableDecrement}
         onClick={onDecrement}
       >
