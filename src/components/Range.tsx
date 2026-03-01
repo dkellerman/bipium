@@ -1,6 +1,20 @@
-import { Slider } from './components/ui/slider';
-import { cn } from './lib/utils';
-import type { RangeProps } from './types';
+import { Slider } from '@/components/ui/slider';
+import { cn } from '@/lib/utils';
+
+type RangeValueChange = (value: number) => void;
+
+interface RangeProps {
+  ticks?: number[];
+  labelRotation?: number;
+  tickClassName?: string;
+  disabled?: boolean;
+  min: number;
+  max: number;
+  step: number;
+  value: number;
+  onChange?: RangeValueChange;
+  onDrag?: RangeValueChange;
+}
 
 export const Range = ({
   ticks: customTicks = [],
@@ -14,10 +28,6 @@ export const Range = ({
   onChange,
   onDrag,
 }: RangeProps) => {
-  const minNum = Number(min);
-  const maxNum = Number(max);
-  const stepNum = Number(step);
-  const currentValue = Number.isFinite(Number(value)) ? Number(value) : minNum;
   const callback = onDrag || onChange;
   const hasTicks = customTicks.length > 0;
   const compactTicks = labelRotation === 0;
@@ -31,10 +41,10 @@ export const Range = ({
       )}
     >
       <Slider
-        min={minNum}
-        max={maxNum}
-        step={stepNum}
-        value={[currentValue]}
+        min={min}
+        max={max}
+        step={step}
+        value={[value]}
         disabled={disabled}
         onValueChange={vals => callback?.(vals[0])}
       />
@@ -42,7 +52,7 @@ export const Range = ({
       {hasTicks && (
         <div className={cn('relative select-none', compactTicks ? '-mt-3 h-6' : '-mt-5 h-10')}>
           {customTicks.map((tick, idx) => {
-            const left = `${((Number(tick) - minNum) / (maxNum - minNum)) * 100}%`;
+            const left = `${((tick - min) / (max - min)) * 100}%`;
             const isFirst = idx === 0;
             const isLast = idx === customTicks.length - 1;
             const xOffset = isFirst ? '-25%' : isLast ? '-100%' : '-50%';
@@ -58,7 +68,7 @@ export const Range = ({
                   tickClassName,
                 )}
                 style={{ left, transform: `translateX(${xOffset})` }}
-                onClick={() => callback?.(Number(tick))}
+                onClick={() => callback?.(tick)}
               >
                 <span className="absolute left-1/2 -top-px h-[16px] w-px -translate-x-1/2 bg-slate-500" />
                 <span

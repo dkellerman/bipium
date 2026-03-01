@@ -1,9 +1,9 @@
 /// <reference types="vite/client" />
 
-import type { BipiumRuntimeApi } from './types';
+import type { RuntimeApi } from './types';
 
 declare global {
   interface Window {
-    bpm?: BipiumRuntimeApi;
+    bpm?: RuntimeApi;
   }
 }

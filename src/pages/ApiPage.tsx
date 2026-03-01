@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import copyToClipboard from 'copy-to-clipboard';
 import { Link } from 'react-router-dom';
-import { Button, buttonVariants } from './components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from './components/ui/card';
-import { cn } from './lib/utils';
-import { BIPIUM_API_DEFAULT_CONFIG, BIPIUM_API_DISCOVERY } from './api';
-import type { BipiumApiConfig, BipiumValidationResult } from './types';
-import { useApi } from './hooks/useApi';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
+import { API_DEFAULT_CONFIG, API_DISCOVERY } from '@/api';
+import type { ApiConfig, ValidationResult } from '@/types';
+import { useApi } from '@/hooks/useApi';
 
-const BASIC_SAMPLE: BipiumApiConfig = {
+const BASIC_SAMPLE: ApiConfig = {
   bpm: 100,
   beats: 4,
   subDivs: 1,
@@ -18,7 +18,7 @@ const BASIC_SAMPLE: BipiumApiConfig = {
   volume: 35,
 };
 
-const SWING_SAMPLE: BipiumApiConfig = {
+const SWING_SAMPLE: ApiConfig = {
   bpm: 118,
   beats: 4,
   subDivs: 2,
@@ -91,7 +91,7 @@ type Status = {
   text: string;
 };
 
-function stringifySample(config: BipiumApiConfig) {
+function stringifySample(config: ApiConfig) {
   return JSON.stringify(config, null, 2);
 }
 
@@ -99,7 +99,7 @@ function readPayload(payload: string): unknown {
   return JSON.parse(payload);
 }
 
-function validationError(validated: BipiumValidationResult) {
+function validationError(validated: ValidationResult) {
   return 'error' in validated ? validated.error : 'Invalid config.';
 }
 
@@ -110,7 +110,7 @@ export default function ApiPage() {
     text: 'Runtime is loading...',
   });
   const [liveStarted, setLiveStarted] = useState(false);
-  const [liveConfig, setLiveConfig] = useState<BipiumApiConfig>({ ...BIPIUM_API_DEFAULT_CONFIG });
+  const [liveConfig, setLiveConfig] = useState<ApiConfig>({ ...API_DEFAULT_CONFIG });
 
   const runtime = useApi(config => {
     setLiveConfig(config);
@@ -118,7 +118,7 @@ export default function ApiPage() {
       if (current.tone === 'error') return current;
       return {
         tone: 'ok',
-        text: `Live config updated: ${config.bpm} BPM, ${config.beats} beats, subDivs ${config.playSubDivs ? config.subDivs : 1}.`,
+        text: `Config ${config.bpm} BPM, ${config.beats} beats, sub ${config.playSubDivs ? config.subDivs : 1}.`,
       };
     });
   });
@@ -222,7 +222,7 @@ export default function ApiPage() {
       setLiveStarted(runtime.isStarted());
       setStatus({
         tone: 'ok',
-        text: `Started at ${config.bpm} BPM (${config.beats} beats, subDivs ${config.playSubDivs ? config.subDivs : 1}).`,
+        text: `Started ${config.bpm} BPM, ${config.beats} beats, sub ${config.playSubDivs ? config.subDivs : 1}.`,
       });
     } catch (error) {
       setStatus({
@@ -322,9 +322,8 @@ export default function ApiPage() {
             Canonical runtime entrypoint: <code>window.bpm</code>
           </p>
           <p>
-            Discovery docs: <code>{BIPIUM_API_DISCOVERY.ui}</code>,{' '}
-            <code>{BIPIUM_API_DISCOVERY.markdown}</code>, <code>{BIPIUM_API_DISCOVERY.llms}</code>,{' '}
-            <code>{BIPIUM_API_DISCOVERY.agents}</code>
+            Discovery docs: <code>{API_DISCOVERY.ui}</code>, <code>{API_DISCOVERY.markdown}</code>,{' '}
+            <code>{API_DISCOVERY.llms}</code>, <code>{API_DISCOVERY.agents}</code>
           </p>
           <ol className="list-decimal space-y-1 pl-5">
             <li>Build config in JSON.</li>

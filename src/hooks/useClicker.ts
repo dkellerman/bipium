@@ -1,6 +1,6 @@
 import { useRef } from 'react';
-import { Clicker, DEFAULT_SOUNDS } from '../core';
-import type { ClickerHookOptions, SoundPacks } from '../types';
+import { Clicker, DEFAULT_SOUNDS } from '@/core';
+import type { ClickerHookOptions, SoundPacks } from '@/types';
 
 export const SOUND_PACKS: SoundPacks = {
   defaults: {

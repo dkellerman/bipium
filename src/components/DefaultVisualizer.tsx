@@ -2,8 +2,19 @@
 import React, { useRef, useEffect, useCallback } from 'react';
 import { Application, extend } from '@pixi/react';
 import { Graphics, Text as PixiText } from 'pixi.js';
-import { Visualizer } from './core';
-import type { DefaultVisualizerProps } from './types';
+import { Visualizer } from '@/core';
+import type { Metronome } from '@/core';
+
+interface DefaultVisualizerProps {
+  id?: string;
+  metronome: Metronome;
+  width?: number;
+  height?: number;
+  showGrid?: boolean;
+  showNow?: boolean;
+  showCount?: boolean;
+  showClicks?: boolean;
+}
 
 const divColor = 0xbbbbbb;
 const subDivColor = 0x666666;

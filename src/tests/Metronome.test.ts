@@ -1,8 +1,8 @@
 import { act } from 'react-dom/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { Metronome, Visualizer, Clicker, DEFAULT_SOUNDS } from '../core';
+import { Metronome, Visualizer, Clicker, DEFAULT_SOUNDS } from '@/core';
 import { AudioContext } from 'standardized-audio-context-mock';
-import type { Click } from '../core/types';
+import type { Click } from '@/core/types';
 
 let now = 0.0;
 let lookahead = 0.025;

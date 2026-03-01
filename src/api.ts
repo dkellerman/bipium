@@ -1,22 +1,24 @@
 import qs from 'query-string';
 import { z } from 'zod';
 import type {
-  BipiumApiConfig,
-  BipiumApiSchemaJson,
-  BipiumRuntimeApi,
-  BipiumValidationResult,
+  ApiConfig,
+  ApiSchemaJson,
+  RuntimeApi,
+  ValidationResult,
 } from './types';
 
-export const BIPIUM_API_VERSION = 1;
+export const API_VERSION = 1;
+export const BIPIUM_API_VERSION = API_VERSION;
 
-export const BIPIUM_API_DISCOVERY = {
+export const API_DISCOVERY = {
   ui: '/api',
   markdown: '/api.md',
   llms: '/llms.txt',
   agents: '/agents.txt',
 } as const;
+export const BIPIUM_API_DISCOVERY = API_DISCOVERY;
 
-export const BIPIUM_API_DEFAULT_CONFIG: BipiumApiConfig = {
+export const API_DEFAULT_CONFIG: ApiConfig = {
   bpm: 80,
   beats: 4,
   subDivs: 1,
@@ -25,6 +27,7 @@ export const BIPIUM_API_DEFAULT_CONFIG: BipiumApiConfig = {
   soundPack: 'drumkit',
   volume: 35,
 };
+export const BIPIUM_API_DEFAULT_CONFIG = API_DEFAULT_CONFIG;
 
 function firstValue(value: unknown): unknown {
   if (Array.isArray(value)) {
@@ -59,7 +62,7 @@ function parseNumberLike(value: unknown): number | undefined {
 }
 
 function numberFieldSchema(
-  fieldName: keyof BipiumApiConfig,
+  fieldName: keyof ApiConfig,
   min: number,
   max: number,
   integer = false,
@@ -98,7 +101,7 @@ function formatZodError(error: z.ZodError) {
   return `${firstIssue.path.join('.')}: ${firstIssue.message}`;
 }
 
-export function createBipiumSchemas(knownSoundPacks: Set<string>) {
+export function createSchemas(knownSoundPacks: Set<string>) {
   const config = z
     .object({
       bpm: numberFieldSchema('bpm', 20, 320),
@@ -113,7 +116,7 @@ export function createBipiumSchemas(knownSoundPacks: Set<string>) {
 
   const configPatch = config.partial().strict();
 
-  const schemaJson: BipiumApiSchemaJson = {
+  const schemaJson: ApiSchemaJson = {
     config: z.toJSONSchema(config),
     configPatch: z.toJSONSchema(configPatch),
   };
@@ -124,12 +127,13 @@ export function createBipiumSchemas(knownSoundPacks: Set<string>) {
     schemaJson,
   };
 }
+export const createBipiumSchemas = createSchemas;
 
 export function mergeConfig(
-  base: BipiumApiConfig,
+  base: ApiConfig,
   patchInput: unknown,
-  schemas: ReturnType<typeof createBipiumSchemas>,
-): BipiumApiConfig {
+  schemas: ReturnType<typeof createSchemas>,
+): ApiConfig {
   const patchResult = schemas.configPatch.safeParse(patchInput);
   if (!patchResult.success) {
     throw new Error(formatZodError(patchResult.error));
@@ -141,14 +145,14 @@ export function mergeConfig(
     throw new Error(formatZodError(mergedResult.error));
   }
 
-  return mergedResult.data as BipiumApiConfig;
+  return mergedResult.data as ApiConfig;
 }
 
 export function validateConfig(
-  base: BipiumApiConfig,
+  base: ApiConfig,
   input: unknown,
-  schemas: ReturnType<typeof createBipiumSchemas>,
-): BipiumValidationResult {
+  schemas: ReturnType<typeof createSchemas>,
+): ValidationResult {
   try {
     return {
       ok: true,
@@ -163,10 +167,10 @@ export function validateConfig(
 }
 
 export function fromQuery(
-  base: BipiumApiConfig,
+  base: ApiConfig,
   query: string | undefined,
-  schemas: ReturnType<typeof createBipiumSchemas>,
-): BipiumApiConfig {
+  schemas: ReturnType<typeof createSchemas>,
+): ApiConfig {
   const raw = typeof query === 'string' ? query : window.location.search;
   const queryString = raw.includes('://') ? new URL(raw).search : raw;
   const parsed = qs.parse(queryString.startsWith('?') ? queryString : `?${queryString}`);
@@ -192,7 +196,7 @@ export function fromQuery(
   return mergeConfig(base, patch, schemas);
 }
 
-export function toQuery(config: BipiumApiConfig): string {
+export function toQuery(config: ApiConfig): string {
   const params: Record<string, string | number | boolean> = {
     bpm: Number(config.bpm),
     beats: Number(config.beats),
@@ -213,9 +217,9 @@ export function toQuery(config: BipiumApiConfig): string {
   return serialized ? `?${serialized}` : '';
 }
 
-export interface BipiumRuntimeControls {
-  getConfig: () => BipiumApiConfig;
-  applyConfig: (config: BipiumApiConfig) => void;
+export interface RuntimeControls {
+  getConfig: () => ApiConfig;
+  applyConfig: (config: ApiConfig) => void;
   startPlayback: () => void;
   stopPlayback: () => void;
   togglePlayback: () => boolean;
@@ -224,17 +228,18 @@ export interface BipiumRuntimeControls {
   now: () => number;
   getSoundPacks: () => string[];
 }
+export type BipiumRuntimeControls = RuntimeControls;
 
-export function createBipiumRuntimeApi(controls: BipiumRuntimeControls): BipiumRuntimeApi {
-  const schemas = createBipiumSchemas(new Set(controls.getSoundPacks()));
+export function createRuntimeApi(controls: RuntimeControls): RuntimeApi {
+  const schemas = createSchemas(new Set(controls.getSoundPacks()));
 
   const mergeWithCurrent = (input: unknown) => mergeConfig(controls.getConfig(), input, schemas);
 
   return {
-    version: BIPIUM_API_VERSION,
+    version: API_VERSION,
     entrypoint: 'window.bpm',
-    discovery: BIPIUM_API_DISCOVERY,
-    defaults: { ...BIPIUM_API_DEFAULT_CONFIG },
+    discovery: API_DISCOVERY,
+    defaults: { ...API_DEFAULT_CONFIG },
     schemas: {
       config: schemas.config,
       configPatch: schemas.configPatch,
@@ -244,7 +249,7 @@ export function createBipiumRuntimeApi(controls: BipiumRuntimeControls): BipiumR
       return schemas.schemaJson;
     },
     start(bpm, beats, subDivs, swing, soundPack, volume) {
-      const patch: Partial<BipiumApiConfig> = {};
+      const patch: Partial<ApiConfig> = {};
 
       if (bpm !== undefined) patch.bpm = bpm;
       if (beats !== undefined) patch.beats = beats;
@@ -310,3 +315,4 @@ export function createBipiumRuntimeApi(controls: BipiumRuntimeControls): BipiumR
     },
   };
 }
+export const createBipiumRuntimeApi = createRuntimeApi;

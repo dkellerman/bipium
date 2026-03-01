@@ -1,5 +1,5 @@
 import type { Dispatch, ReactNode, SetStateAction } from 'react';
-import type { Clicker, ClickerOptions, Metronome, MetronomeOptions, SoundPack } from './core';
+import type { Clicker, ClickerOptions, Metronome, MetronomeOptions, SoundPack } from '@/core';
 
 export type Nullable<T> = T | null | undefined;
 export type NumberLike = number | string;
@@ -32,32 +32,6 @@ export interface TapBPMResult {
   handleTap: () => void;
 }
 
-export type RangeValueChange = (value: number) => void;
-
-export interface RangeProps {
-  ticks?: Array<number | string>;
-  labelRotation?: number;
-  tickClassName?: string;
-  disabled?: boolean;
-  min: NumberLike;
-  max: NumberLike;
-  step: NumberLike;
-  value: NumberLike;
-  onChange?: RangeValueChange;
-  onDrag?: RangeValueChange;
-}
-
-export interface DefaultVisualizerProps {
-  id?: string;
-  metronome: Metronome;
-  width?: number;
-  height?: number;
-  showGrid?: boolean;
-  showNow?: boolean;
-  showCount?: boolean;
-  showClicks?: boolean;
-}
-
 export interface GtagPayload {
   event_category: string;
   event_label: string | number | boolean;
@@ -75,7 +49,7 @@ export type MetronomeInstance = Metronome;
 export type ClickerInstance = Clicker;
 export type MetronomeSettings = MetronomeOptions;
 
-export interface BipiumApiConfig {
+export interface ApiConfig {
   bpm: number;
   beats: number;
   subDivs: number;
@@ -85,16 +59,16 @@ export interface BipiumApiConfig {
   volume: number;
 }
 
-export interface BipiumApiSchemaJson {
+export interface ApiSchemaJson {
   config: unknown;
   configPatch: unknown;
 }
 
-export type BipiumValidationResult =
-  | { ok: true; value: BipiumApiConfig }
+export type ValidationResult =
+  | { ok: true; value: ApiConfig }
   | { ok: false; error: string };
 
-export interface BipiumRuntimeApi {
+export interface RuntimeApi {
   version: number;
   entrypoint: 'window.bpm';
   discovery: {
@@ -103,13 +77,13 @@ export interface BipiumRuntimeApi {
     llms: string;
     agents: string;
   };
-  defaults: BipiumApiConfig;
+  defaults: ApiConfig;
   schemas: {
     config: unknown;
     configPatch: unknown;
   };
-  schemaJson: BipiumApiSchemaJson;
-  getSchemaJson(): BipiumApiSchemaJson;
+  schemaJson: ApiSchemaJson;
+  getSchemaJson(): ApiSchemaJson;
   start(
     bpm?: number,
     beats?: number,
@@ -117,17 +91,22 @@ export interface BipiumRuntimeApi {
     swing?: number,
     soundPack?: string,
     volume?: number,
-  ): BipiumApiConfig;
+  ): ApiConfig;
   stop(): void;
   toggle(): boolean;
   isStarted(): boolean;
-  getConfig(): BipiumApiConfig;
-  setConfig(partial: Partial<BipiumApiConfig>): BipiumApiConfig;
-  validateConfig(input: unknown): BipiumValidationResult;
-  fromQuery(query?: string): BipiumApiConfig;
-  toQuery(config?: Partial<BipiumApiConfig>): string;
-  applyQuery(query?: string): BipiumApiConfig;
+  getConfig(): ApiConfig;
+  setConfig(partial: Partial<ApiConfig>): ApiConfig;
+  validateConfig(input: unknown): ValidationResult;
+  fromQuery(query?: string): ApiConfig;
+  toQuery(config?: Partial<ApiConfig>): string;
+  applyQuery(query?: string): ApiConfig;
   tap(): void;
   getSoundPacks(): string[];
   now(): number;
 }
+
+export type BipiumApiConfig = ApiConfig;
+export type BipiumApiSchemaJson = ApiSchemaJson;
+export type BipiumValidationResult = ValidationResult;
+export type BipiumRuntimeApi = RuntimeApi;

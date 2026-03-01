@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import type { TapBPMResult } from '../types';
+import type { TapBPMResult } from '@/types';
 
 export function useTapBPM(defVal: number): TapBPMResult {
   const [bpm, setBPM] = useState(defVal);

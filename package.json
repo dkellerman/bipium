@@ -10,7 +10,6 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "copy-to-clipboard": "^3.3.3",
-    "local-storage-fallback": "^5.0.0",
     "lucide-react": "^0.575.0",
     "pixi.js": "^8.16.0",
     "query-string": "^9.3.1",

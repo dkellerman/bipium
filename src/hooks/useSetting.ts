@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import sessionStorage from 'sessionstorage';
 import qs from 'query-string';
-import type { StorageLike, TransformFn, UseSettingReturn } from '../types';
+import type { StorageLike, TransformFn, UseSettingReturn } from '@/types';
 
 const q = qs.parse(window.location.search);
 const identityTransform = <T>(value: unknown) => value as T;

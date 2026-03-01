@@ -12,7 +12,7 @@ function coreBuildConfig(minified) {
       minify: minified ? 'esbuild' : false,
       sourcemap: false,
       lib: {
-        entry: resolve(__dirname, 'src/core/entries/browser-esm.ts'),
+        entry: resolve(__dirname, 'src/core/browser-esm.ts'),
         name: 'Bipium',
         formats: ['iife'],
       },
@@ -38,6 +38,11 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react(), tailwindcss()],
+    resolve: {
+      alias: {
+        '@': resolve(__dirname, 'src'),
+      },
+    },
     server: {
       port: 3000,
     },

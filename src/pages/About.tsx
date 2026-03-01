@@ -1,8 +1,8 @@
 import ReactMarkdown from 'react-markdown';
 import { Link } from 'react-router-dom';
-import { buttonVariants } from './components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from './components/ui/card';
-import { cn } from './lib/utils';
+import { buttonVariants } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 const ABOUT = `
 ## About Bipium

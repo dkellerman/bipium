@@ -1,28 +1,28 @@
 import { useEffect, useRef, useState } from 'react';
 import { AudioContext } from 'standardized-audio-context';
-import { Clicker, Metronome } from '../core';
-import { BIPIUM_API_DEFAULT_CONFIG, createBipiumRuntimeApi } from '../api';
-import type { BipiumApiConfig, BipiumRuntimeApi } from '../types';
+import { Clicker, Metronome } from '@/core';
+import { API_DEFAULT_CONFIG, createRuntimeApi } from '@/api';
+import type { ApiConfig, RuntimeApi } from '@/types';
 import { SOUND_PACKS } from './useClicker';
 
-function getEffectiveSwing(config: BipiumApiConfig) {
+function getEffectiveSwing(config: ApiConfig) {
   if (!config.playSubDivs) return 0;
   if (config.subDivs % 2 !== 0) return 0;
   return config.swing;
 }
 
-export function useApi(onConfigChange?: (config: BipiumApiConfig) => void) {
+export function useApi(onConfigChange?: (config: ApiConfig) => void) {
   const onConfigChangeRef = useRef(onConfigChange);
-  const [runtimeApi, setRuntimeApi] = useState<BipiumRuntimeApi | null>(null);
+  const [runtimeApi, setRuntimeApi] = useState<RuntimeApi | null>(null);
 
-  const configRef = useRef<BipiumApiConfig>({ ...BIPIUM_API_DEFAULT_CONFIG });
+  const configRef = useRef<ApiConfig>({ ...API_DEFAULT_CONFIG });
   const startedRef = useRef(false);
 
   const audioContextRef = useRef<any | null>(null);
   const clickerRef = useRef<Clicker | null>(null);
   const metronomeRef = useRef<Metronome | null>(null);
 
-  function applyConfig(next: BipiumApiConfig) {
+  function applyConfig(next: ApiConfig) {
     configRef.current = { ...next };
     const clicker = clickerRef.current;
     const metronome = metronomeRef.current;
@@ -66,7 +66,7 @@ export function useApi(onConfigChange?: (config: BipiumApiConfig) => void) {
     });
     metronomeRef.current = metronome;
 
-    const runtime = createBipiumRuntimeApi({
+    const runtime = createRuntimeApi({
       getConfig: () => ({ ...configRef.current }),
       applyConfig,
       startPlayback: () => {
