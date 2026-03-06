@@ -108,7 +108,7 @@ const SheetContent = ({ side = 'right', className, children }: SheetContentProps
         type="button"
         aria-label="Close settings"
         className={cn(
-          'fixed inset-0 z-50 cursor-default bg-black/45 transition-opacity duration-200',
+          'fixed inset-0 z-50 cursor-default bg-black/60 transition-opacity duration-200',
           visible ? 'opacity-100' : 'opacity-0',
         )}
         onClick={() => onOpenChange(false)}

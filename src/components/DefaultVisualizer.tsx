@@ -1,10 +1,11 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useRef, useEffect, useCallback } from 'react';
 import { Application, extend } from '@pixi/react';
-import { Graphics, Text as PixiText } from 'pixi.js';
+import { Text as PixiText } from 'pixi.js';
 import { Visualizer } from '@/core';
 import type { Metronome } from '@/core';
 import { isEditableEventTarget } from '@/lib/utils';
+import { PixiTimingOverlay } from './PixiNowLineOverlay';
 
 interface DefaultVisualizerProps {
   id?: string;
@@ -17,9 +18,6 @@ interface DefaultVisualizerProps {
   showClicks?: boolean;
 }
 
-const divColor = 0xbbbbbb;
-const subDivColor = 0x666666;
-const nowLineColor = 0x00ff00;
 const incorrectNoteColor = '#ff0000';
 const correctNoteColor = '#00ff00';
 
@@ -41,7 +39,7 @@ const DEFAULT_DESC_TEXT = touchEnabled
   ? 'Tap box on beat to play along'
   : 'Press Ctrl key on beat to tap along';
 
-extend({ Graphics, Text: PixiText });
+extend({ Text: PixiText });
 
 export function DefaultVisualizer({
   metronome: m,
@@ -55,14 +53,11 @@ export function DefaultVisualizer({
   const mAny = m as any;
   const v = useRef(new Visualizer({ metronome: mAny }));
   const frameRef = useRef<number | null>(null);
-  const nowLineRef = useRef<any>(null);
   const countRef = useRef<any>(null);
   const descRef = useRef<any>(null);
   const beats = m.opts.beats;
   const subDivs = m.opts.subDivs;
   const swing = m.opts.swing;
-  const barTime = m.barTime;
-  const gridTimes = React.useMemo(() => m.gridTimes, [m, beats, subDivs, swing, barTime]);
   const gridSignature = `${beats}:${subDivs}:${swing}:${width}:${height}`;
 
   const centerTextAt = (textNode: any, centerX: number, centerY: number) => {
@@ -118,16 +113,12 @@ export function DefaultVisualizer({
         frameRef.current = null;
         return;
       }
-      if (!nowLineRef.current || !countRef.current || !descRef.current) {
+      if (!countRef.current || !descRef.current) {
         frameRef.current = window.requestAnimationFrame(drawFrame);
         return;
       }
 
       v.current.update();
-
-      if (showNow) {
-        nowLineRef.current.x = v.current.progress * width;
-      }
 
       if (showCount) {
         countRef.current.text = v.current.count.join('-');
@@ -153,24 +144,18 @@ export function DefaultVisualizer({
 
       frameRef.current = window.requestAnimationFrame(drawFrame);
     },
-    [mAny.started, mAny.barTime, mAny.opts?.bpm, showClicks, showCount, showNow, width],
+    [mAny.started, mAny.barTime, mAny.opts?.bpm, showClicks, showCount, width],
   );
 
   useEffect(() => {
     cancelDraw();
     if (mAny.started) {
-      if (nowLineRef.current) {
-        nowLineRef.current.x = 0;
-      }
       if (descRef.current) {
-        descRef.current.text = DEFAULT_DESC_TEXT;
+        descRef.current.text = showClicks ? DEFAULT_DESC_TEXT : '';
       }
       v.current.start();
       frameRef.current = window.requestAnimationFrame(draw);
     } else {
-      if (nowLineRef.current) {
-        nowLineRef.current.x = 0;
-      }
       if (descRef.current) {
         descRef.current.text = '';
       }
@@ -179,62 +164,43 @@ export function DefaultVisualizer({
       }
       v.current.stop();
     }
-  }, [cancelDraw, draw, mAny.started, gridSignature]);
+  }, [cancelDraw, draw, mAny.started, gridSignature, showClicks]);
 
   useEffect(() => cancelDraw, [cancelDraw]);
-
-  const drawGrid = useCallback(
-    (g: any) => {
-      if (!g) return;
-      g.clear();
-      if (!showGrid) return;
-      if (!barTime) return;
-      gridTimes.forEach((t: number, i: number) => {
-        const x = (t / barTime) * width;
-        const isSubDiv = i % subDivs > 0;
-        g.setStrokeStyle({ width: 1, color: isSubDiv ? subDivColor : divColor });
-        g.moveTo(x, 0);
-        g.lineTo(x, height);
-        g.stroke();
-      });
-    },
-    [showGrid, width, height, barTime, subDivs, gridTimes],
-  );
 
   return (
     <>
       {mAny && (
-        <Application
-          key={gridSignature}
-          width={width}
-          height={height}
-          antialias={false}
-          autoDensity
-          resolution={1}
-          roundPixels
-        >
-          <pixiGraphics draw={drawGrid} />
-
-          <pixiGraphics
-            ref={nowLineRef}
-            draw={g => {
-              g.setStrokeStyle({ width: 1, color: nowLineColor, alpha: 1 });
-              g.moveTo(0, 0);
-              g.lineTo(0, height);
-              g.stroke();
-            }}
+        <div className="relative h-full w-full">
+          <PixiTimingOverlay
+            metronome={m}
+            width={width}
+            height={height}
+            showVerticalGrid={showGrid}
+            showNowLine={showNow}
           />
 
-          {React.createElement('pixiText' as any, {
-            ref: countRef,
-            style: { ...countFont, fontSize: Math.round(height * 0.7) },
-          })}
+          <Application
+            key={gridSignature}
+            width={width}
+            height={height}
+            antialias={false}
+            autoDensity
+            resolution={1}
+            roundPixels
+            backgroundAlpha={0}
+          >
+            {React.createElement('pixiText' as any, {
+              ref: countRef,
+              style: { ...countFont, fontSize: Math.round(height * 0.7) },
+            })}
 
-          {React.createElement('pixiText' as any, {
-            ref: descRef,
-            style: descriptionFont,
-          })}
-        </Application>
+            {React.createElement('pixiText' as any, {
+              ref: descRef,
+              style: descriptionFont,
+            })}
+          </Application>
+        </div>
       )}
     </>
   );

@@ -609,10 +609,7 @@ function App() {
           >
             <CardContent className="p-1.5">
               <div
-                className={cn(
-                  'relative flex w-full justify-center overflow-hidden rounded-sm leading-none',
-                  'bg-black',
-                )}
+                className={cn('relative flex w-full justify-center leading-none')}
                 style={{ width: visualizerWidth, height: visualizerHeight }}
               >
                 <Button
@@ -620,10 +617,10 @@ function App() {
                   variant="ghost"
                   size="icon"
                   className={cn(
-                    'absolute right-1 top-1 z-20 size-8 rounded-full border',
-                    'border-slate-700/80 bg-black/65 text-slate-200 backdrop-blur-sm',
-                    'hover:bg-black/80 hover:text-white',
-                    visualizerMode === 'drumLoop' && 'border-emerald-600/80 text-emerald-300',
+                    'absolute right-0 top-0 z-30 size-8 translate-x-1/4 -translate-y-1/4 rounded-full border shadow-md',
+                    'border-white/90 bg-white text-slate-900',
+                    'hover:bg-white hover:text-slate-950',
+                    visualizerMode === 'drumLoop' && 'border-emerald-500 text-emerald-700',
                   )}
                   title={
                     visualizerMode === 'drumLoop'
@@ -646,23 +643,24 @@ function App() {
                 >
                   <Drum className="size-5" />
                 </Button>
-                {visualizerMode === 'drumLoop' ? (
-                  <DrumLoopVisualizer
-                    metronome={metronome}
-                    pattern={drumPattern}
-                    subDivs={activeSubDivs}
-                    width={visualizerWidth}
-                    height={visualizerHeight}
-                    onToggleStep={toggleDrumLoopStep}
-                  />
-                ) : (
-                  <DefaultVisualizer
-                    id={id}
-                    metronome={metronome}
-                    width={visualizerWidth}
-                    height={visualizerHeight}
-                  />
-                )}
+                <div className="h-full w-full overflow-hidden rounded-sm bg-black">
+                  {visualizerMode === 'drumLoop' ? (
+                    <DrumLoopVisualizer
+                      metronome={metronome}
+                      pattern={drumPattern}
+                      width={visualizerWidth}
+                      height={visualizerHeight}
+                      onToggleStep={toggleDrumLoopStep}
+                    />
+                  ) : (
+                    <DefaultVisualizer
+                      id={id}
+                      metronome={metronome}
+                      width={visualizerWidth}
+                      height={visualizerHeight}
+                    />
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>

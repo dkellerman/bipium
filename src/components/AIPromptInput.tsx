@@ -22,7 +22,7 @@ export function AIPromptInput({
       <button
         type="button"
         aria-label="Close AI prompt modal"
-        className={cn('absolute inset-0 border-0 bg-white/70')}
+        className={cn('absolute inset-0 border-0 bg-black/70 backdrop-blur-[1px]')}
         onClick={onRequestClose}
       />
       <section
