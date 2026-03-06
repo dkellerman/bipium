@@ -1,4 +1,4 @@
-import { act } from 'react-dom/test-utils';
+import { act } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Metronome, Visualizer, Clicker, DEFAULT_SOUNDS } from '@/core';
 import { AudioContext } from 'standardized-audio-context-mock';

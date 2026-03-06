@@ -43,6 +43,9 @@ export default defineConfig(({ mode }) => {
         '@': resolve(__dirname, 'src'),
       },
     },
+    build: {
+      chunkSizeWarningLimit: 1200,
+    },
     server: {
       port: 3000,
     },
