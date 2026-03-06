@@ -59,7 +59,7 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,css,md}\" index.html package.json tsconfig.json vite.config.mjs",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css,md}\" index.html package.json tsconfig.json vite.config.mjs",
     "typecheck": "tsc --noEmit",
-    "lint": "npm run typecheck"
+    "lint": "pnpm run typecheck"
   },
   "browserslist": {
     "production": [
@@ -73,5 +73,5 @@
       "last 1 safari version"
     ]
   },
-  "packageManager": "yarn@1.22.1"
+  "packageManager": "pnpm@10.17.1"
 }
