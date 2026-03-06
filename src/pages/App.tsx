@@ -3,11 +3,12 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import qs from 'query-string';
 import copyToClipboard from 'copy-to-clipboard';
 import { AudioContext } from 'standardized-audio-context';
-import { Settings } from 'lucide-react';
+import { Drum, Settings } from 'lucide-react';
 import { API_DEFAULT_CONFIG, createRuntimeApi } from '@/api';
 import { BPMControls } from '@/components/BPMControls';
 import { BeatControls } from '@/components/BeatControls';
 import { DefaultVisualizer } from '@/components/DefaultVisualizer';
+import { DrumLoopVisualizer } from '@/components/DrumLoopVisualizer';
 import { NavBar } from '@/components/NavBar';
 import { SettingsDrawer } from '@/components/SettingsDrawer';
 import { VolumeControl } from '@/components/VolumeControl';
@@ -16,6 +17,14 @@ import { Card, CardContent } from '@/components/ui/card';
 import { AppProvider } from '@/context/AppContext';
 import type { AppContextValue } from '@/context/AppContext';
 import { SOUND_PACKS, useClicker, useMetronome, useSetting } from '@/hooks';
+import {
+  remapDrumLoopPattern,
+  resolveDrumLoopSounds,
+  seedDrumLoopPattern,
+  type DrumLoopLane,
+  type DrumLoopPattern,
+  type DrumLoopTiming,
+} from '@/lib/drumLoop';
 import { cn } from '@/lib/utils';
 import { sendEvent, sendFrameRate } from '@/tracking';
 import type { ApiConfig, BooleanInput, NumberInput } from '@/types';
@@ -56,6 +65,7 @@ const validSwing = (value: NumberInput, fallback = 0) => {
 };
 
 const buildSha = import.meta.env.VITE_VERCEL_GIT_COMMIT_SHA || '';
+type VisualizerMode = 'default' | 'drumLoop';
 
 function App() {
   const queryParams = qs.parse(window.location.search);
@@ -108,8 +118,22 @@ function App() {
 
   const canSwing = subDivs % 2 === 0;
   const swingActive = playSubDivs && canSwing && swingEnabled;
+  const activeSubDivs = playSubDivs ? subDivs : 1;
+  const loopTiming = useMemo<DrumLoopTiming>(
+    () => ({
+      beats,
+      subDivs: activeSubDivs,
+      swing: swingActive ? swing : 0,
+    }),
+    [beats, activeSubDivs, swingActive, swing],
+  );
+  const [visualizerMode, setVisualizerMode] = useState<VisualizerMode>('default');
+  const [drumPattern, setDrumPattern] = useState<DrumLoopPattern>(() =>
+    seedDrumLoopPattern(loopTiming),
+  );
+  const [drumPatternDirty, setDrumPatternDirty] = useState(false);
   const visualizerWidth = Math.max(272, Math.min(450, viewportWidth - 30));
-  const visualizerHeight = 100;
+  const visualizerHeight = 124;
 
   const clicker = useClicker({
     audioContext: audioContext.current,
@@ -122,10 +146,14 @@ function App() {
     clicker,
     bpm: bpm.current,
     beats,
-    subDivs: playSubDivs ? subDivs : 1,
-    swing: swingActive ? swing : 0,
+    subDivs: activeSubDivs,
+    swing: loopTiming.swing,
     workerUrl: '/dist/worker.min.js',
   });
+  const drumPatternRef = useRef(drumPattern);
+  const loopTimingRef = useRef(loopTiming);
+
+  drumPatternRef.current = drumPattern;
 
   const start = useCallback(() => {
     setStarted(true);
@@ -137,6 +165,18 @@ function App() {
 
   const toggle = useCallback(() => {
     setStarted(value => !value);
+  }, []);
+
+  const toggleDrumLoopStep = useCallback((lane: DrumLoopLane, stepIndex: number) => {
+    setDrumPattern(previous => {
+      const nextLane = [...previous[lane]];
+      nextLane[stepIndex] = !nextLane[stepIndex];
+      return {
+        ...previous,
+        [lane]: nextLane,
+      };
+    });
+    setDrumPatternDirty(true);
   }, []);
 
   const updateBPM = useCallback(
@@ -185,13 +225,30 @@ function App() {
 
   useEffect(() => {
     metronome.update({
-      subDivs: playSubDivs ? subDivs : 1,
-      swing: swingActive ? swing : 0,
+      subDivs: activeSubDivs,
+      swing: loopTiming.swing,
       beats,
       bpm: bpm.current,
     });
     forceRender();
-  }, [playSubDivs, subDivs, swing, swingEnabled, canSwing, beats, metronome.started]);
+  }, [activeSubDivs, loopTiming.swing, beats, metronome.started]);
+
+  useEffect(() => {
+    const previousTiming = loopTimingRef.current;
+    const timingChanged =
+      previousTiming.beats !== loopTiming.beats ||
+      previousTiming.subDivs !== loopTiming.subDivs ||
+      previousTiming.swing !== loopTiming.swing;
+
+    if (!timingChanged) return;
+
+    setDrumPattern(previous =>
+      drumPatternDirty
+        ? remapDrumLoopPattern(previous, previousTiming, loopTiming)
+        : seedDrumLoopPattern(loopTiming),
+    );
+    loopTimingRef.current = loopTiming;
+  }, [loopTiming, drumPatternDirty]);
 
   const getApiConfig = useCallback(
     (): ApiConfig => ({
@@ -259,8 +316,20 @@ function App() {
   }, [applyApiConfig, clicker, getApiConfig]);
 
   useEffect(() => {
-    clicker.setSounds(SOUND_PACKS[soundPack || 'defaults']);
-  }, [soundPack]);
+    const nextSoundPack = visualizerMode === 'drumLoop' ? 'drumkit' : soundPack || 'defaults';
+    clicker.setSounds(SOUND_PACKS[nextSoundPack]);
+  }, [soundPack, visualizerMode]);
+
+  useEffect(() => {
+    if (visualizerMode !== 'drumLoop') {
+      clicker.setResolveScheduledSounds(undefined);
+      return;
+    }
+
+    clicker.setResolveScheduledSounds(click =>
+      resolveDrumLoopSounds(click, drumPatternRef.current, clicker.sounds),
+    );
+  }, [clicker, visualizerMode]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -454,13 +523,61 @@ function App() {
             key={`v-${index}`}
           >
             <CardContent className="p-1.5">
-              <div className="flex w-full justify-center leading-none">
-                <DefaultVisualizer
-                  id={id}
-                  metronome={metronome}
-                  width={visualizerWidth}
-                  height={visualizerHeight}
-                />
+              <div
+                className={cn(
+                  'relative flex w-full justify-center overflow-hidden rounded-sm leading-none',
+                  'bg-black',
+                )}
+                style={{ width: visualizerWidth, height: visualizerHeight }}
+              >
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className={cn(
+                    'absolute right-1 top-1 z-20 size-8 rounded-full border',
+                    'border-slate-700/80 bg-black/65 text-slate-200 backdrop-blur-sm',
+                    'hover:bg-black/80 hover:text-white',
+                    visualizerMode === 'drumLoop' && 'border-emerald-600/80 text-emerald-300',
+                  )}
+                  title={
+                    visualizerMode === 'drumLoop'
+                      ? 'Switch to standard visualizer'
+                      : 'Switch to drum loop mode'
+                  }
+                  aria-label={
+                    visualizerMode === 'drumLoop'
+                      ? 'Switch to standard visualizer'
+                      : 'Switch to drum loop mode'
+                  }
+                  onClick={() => {
+                    setVisualizerMode(current => (current === 'drumLoop' ? 'default' : 'drumLoop'));
+                    sendEvent(
+                      'toggle_visualizer_mode',
+                      'App',
+                      visualizerMode === 'drumLoop' ? 'default' : 'drumLoop',
+                    );
+                  }}
+                >
+                  <Drum className="size-5" />
+                </Button>
+                {visualizerMode === 'drumLoop' ? (
+                  <DrumLoopVisualizer
+                    metronome={metronome}
+                    pattern={drumPattern}
+                    subDivs={activeSubDivs}
+                    width={visualizerWidth}
+                    height={visualizerHeight}
+                    onToggleStep={toggleDrumLoopStep}
+                  />
+                ) : (
+                  <DefaultVisualizer
+                    id={id}
+                    metronome={metronome}
+                    width={visualizerWidth}
+                    height={visualizerHeight}
+                  />
+                )}
               </div>
             </CardContent>
           </Card>

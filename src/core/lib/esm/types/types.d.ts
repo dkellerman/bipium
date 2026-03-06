@@ -7,8 +7,9 @@ export declare type SoundPack = {
 export declare type AudioNode =
   | InstanceType<typeof OscillatorNode>
   | InstanceType<typeof AudioBufferSourceNode>;
+export declare type ScheduledAudio = AudioNode | AudioNode[];
 export declare type Click = {
-  obj?: AudioNode;
+  obj?: ScheduledAudio;
   bar: number;
   beat: number;
   beats: number;

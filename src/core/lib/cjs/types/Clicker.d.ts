@@ -1,9 +1,10 @@
-import { AudioNode, Click, Sound, SoundPack } from './types';
+import { AudioNode, Click, FinalSoundSpec, ScheduledAudio, Sound, SoundPack } from './types';
 export declare const DEFAULT_SOUNDS: SoundPack;
 export interface ClickerOptions {
   audioContext: InstanceType<typeof AudioContext>;
   volume?: number;
   sounds?: SoundPack;
+  resolveScheduledSounds?: (click: Click, sounds: SoundPack) => FinalSoundSpec[] | null | undefined;
 }
 export declare class Clicker {
   audioContext: InstanceType<typeof AudioContext>;
@@ -11,10 +12,14 @@ export declare class Clicker {
   loading: boolean;
   gainNode: InstanceType<typeof GainNode>;
   sounds: SoundPack;
-  constructor({ audioContext, volume, sounds }: ClickerOptions);
+  resolveScheduledSounds?: ClickerOptions['resolveScheduledSounds'];
+  constructor({ audioContext, volume, sounds, resolveScheduledSounds }: ClickerOptions);
   setSounds(sounds: SoundPack): Promise<void>;
   fetchSounds(sounds: SoundPack): Promise<SoundPack>;
   setVolume(volume: number): void;
+  setResolveScheduledSounds(
+    resolveScheduledSounds?: ClickerOptions['resolveScheduledSounds'],
+  ): void;
   scheduleClickSound({
     time,
     subDiv,
@@ -25,7 +30,7 @@ export declare class Clicker {
     subDiv: number;
     beat: number;
     beats: number;
-  }): AudioNode | undefined;
+  } & Click): ScheduledAudio | undefined;
   removeClickSound(click: Click): void;
   playSoundAt(sound: Sound, time: number, clickLength: number, relativeVolume?: number): AudioNode;
   click(t?: number): AudioNode;

@@ -7,13 +7,14 @@ export const DEFAULT_SOUNDS = {
 };
 ;
 export class Clicker {
-    constructor({ audioContext, volume = 100, sounds = DEFAULT_SOUNDS }) {
+    constructor({ audioContext, volume = 100, sounds = DEFAULT_SOUNDS, resolveScheduledSounds, }) {
         this.sounds = {};
         this.audioContext = audioContext;
         this.volume = volume;
         this.loading = false;
         this.gainNode = this.audioContext.createGain();
         this.gainNode.connect(this.audioContext.destination);
+        this.resolveScheduledSounds = resolveScheduledSounds;
         this.setSounds(sounds);
     }
     async setSounds(sounds) {
@@ -43,10 +44,23 @@ export class Clicker {
     setVolume(volume) {
         this.volume = volume;
     }
-    scheduleClickSound({ time, subDiv, beat, beats }) {
+    setResolveScheduledSounds(resolveScheduledSounds) {
+        this.resolveScheduledSounds = resolveScheduledSounds;
+    }
+    scheduleClickSound({ time, subDiv, beat, beats, ...click }) {
         // console.log('sch click', beat, subDiv, this.volume);
         if (this.loading)
             return;
+        const resolved = this.resolveScheduledSounds?.({
+            time,
+            subDiv,
+            beat,
+            beats,
+            ...click,
+        }, this.sounds);
+        if (resolved) {
+            return resolved.map(([soundObj, relativeVolume, clickLength]) => this.playSoundAt(soundObj, time, clickLength, relativeVolume));
+        }
         let sound;
         const sounds = this.sounds;
         if (beat === 1 && subDiv === 1) {
@@ -65,7 +79,14 @@ export class Clicker {
         return this.playSoundAt(soundObj, time, clickLength, relativeVolume);
     }
     removeClickSound(click) {
-        click?.obj?.stop(0);
+        const nodes = click?.obj;
+        if (!nodes)
+            return;
+        if (Array.isArray(nodes)) {
+            nodes.forEach(node => node.stop(0));
+            return;
+        }
+        nodes.stop(0);
     }
     playSoundAt(sound, time, clickLength, relativeVolume = 1.0) {
         if (this.audioContext?.state === 'suspended')

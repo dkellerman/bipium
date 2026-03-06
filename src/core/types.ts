@@ -12,8 +12,10 @@ export type AudioNode =
   | InstanceType<typeof OscillatorNode>
   | InstanceType<typeof AudioBufferSourceNode>;
 
+export type ScheduledAudio = AudioNode | AudioNode[];
+
 export type Click = {
-  obj?: AudioNode;
+  obj?: ScheduledAudio;
   bar: number;
   beat: number;
   beats: number;

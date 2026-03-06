@@ -1,4 +1,4 @@
-import { AudioNode, Click, FinalSoundSpec, Sound, SoundPack } from './types';
+import { AudioNode, Click, FinalSoundSpec, ScheduledAudio, Sound, SoundPack } from './types';
 
 export const DEFAULT_SOUNDS: SoundPack = {
   name: 'Beeps',
@@ -12,6 +12,7 @@ export interface ClickerOptions {
   audioContext: InstanceType<typeof AudioContext>;
   volume?: number;
   sounds?: SoundPack;
+  resolveScheduledSounds?: (click: Click, sounds: SoundPack) => FinalSoundSpec[] | null | undefined;
 }
 
 export class Clicker {
@@ -20,13 +21,20 @@ export class Clicker {
   loading: boolean;
   gainNode: InstanceType<typeof GainNode>;
   sounds: SoundPack = {};
+  resolveScheduledSounds?: ClickerOptions['resolveScheduledSounds'];
 
-  constructor({ audioContext, volume = 100, sounds = DEFAULT_SOUNDS }: ClickerOptions) {
+  constructor({
+    audioContext,
+    volume = 100,
+    sounds = DEFAULT_SOUNDS,
+    resolveScheduledSounds,
+  }: ClickerOptions) {
     this.audioContext = audioContext;
     this.volume = volume;
     this.loading = false;
     this.gainNode = this.audioContext.createGain();
     this.gainNode.connect(this.audioContext.destination);
+    this.resolveScheduledSounds = resolveScheduledSounds;
     this.setSounds(sounds);
   }
 
@@ -59,19 +67,40 @@ export class Clicker {
     this.volume = volume;
   }
 
+  setResolveScheduledSounds(resolveScheduledSounds?: ClickerOptions['resolveScheduledSounds']) {
+    this.resolveScheduledSounds = resolveScheduledSounds;
+  }
+
   scheduleClickSound({
     time,
     subDiv,
     beat,
     beats,
+    ...click
   }: {
     time: number;
     subDiv: number;
     beat: number;
     beats: number;
-  }) {
+  } & Click) {
     // console.log('sch click', beat, subDiv, this.volume);
     if (this.loading) return;
+
+    const resolved = this.resolveScheduledSounds?.(
+      {
+        time,
+        subDiv,
+        beat,
+        beats,
+        ...click,
+      },
+      this.sounds,
+    );
+    if (resolved) {
+      return resolved.map(([soundObj, relativeVolume, clickLength]) =>
+        this.playSoundAt(soundObj, time, clickLength, relativeVolume),
+      );
+    }
 
     let sound;
     const sounds = this.sounds;
@@ -90,7 +119,15 @@ export class Clicker {
   }
 
   removeClickSound(click: Click) {
-    click?.obj?.stop(0);
+    const nodes = click?.obj;
+    if (!nodes) return;
+
+    if (Array.isArray(nodes)) {
+      nodes.forEach(node => node.stop(0));
+      return;
+    }
+
+    nodes.stop(0);
   }
 
   playSoundAt(
