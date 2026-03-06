@@ -14,6 +14,9 @@ export function SettingsDrawer() {
     setShowSideBar,
     soundPack,
     setSoundPack,
+    loopMode,
+    loopRepeats,
+    setLoopRepeats,
     copiedURL,
     copyConfigurationURL,
   } = useApp();
@@ -56,6 +59,49 @@ export function SettingsDrawer() {
               ))}
             </select>
           </div>
+
+          {loopMode && (
+            <div className="space-y-2">
+              <p className="font-medium">Loop Length</p>
+              <select
+                className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 outline-none"
+                value={loopRepeats > 0 ? 'finite' : 'forever'}
+                onChange={event => {
+                  const next = event.target.value === 'forever' ? 0 : Math.max(1, loopRepeats || 1);
+                  setLoopRepeats(next);
+                  sendEvent('set_loop_repeats_mode', 'App', event.target.value);
+                }}
+              >
+                <option value="forever">Loop forever</option>
+                <option value="finite">Loop n times</option>
+              </select>
+
+              {loopRepeats > 0 && (
+                <input
+                  type="number"
+                  min={1}
+                  max={128}
+                  step={1}
+                  className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 outline-none"
+                  value={loopRepeats}
+                  onChange={event => {
+                    const next = Math.max(
+                      1,
+                      Math.min(128, Number.parseInt(event.target.value, 10) || 1),
+                    );
+                    setLoopRepeats(next);
+                    sendEvent('set_loop_repeats', 'App', next, next);
+                  }}
+                />
+              )}
+
+              <p className="text-[13px] text-slate-600">
+                {loopRepeats > 0
+                  ? `Playback stops after ${loopRepeats} full loop${loopRepeats === 1 ? '' : 's'}.`
+                  : 'Playback repeats until you stop it.'}
+              </p>
+            </div>
+          )}
 
           <div className="flex flex-col items-start gap-2">
             <Button

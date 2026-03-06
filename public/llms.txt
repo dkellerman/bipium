@@ -18,11 +18,30 @@ Machine-readable guidance for autonomous agents.
 - `beats`: 1..12
 - `subDivs`: 1..8
 - `swing`: 0..100
+- Prefer `swing: 0` unless swing/shuffle is explicitly requested or the groove strongly implies it
+- Around `33` is basic swing
+- Around `50` is a heavy shuffle
+- Values above `50` should be extremely rare
+- "A little swing" usually means below `33`
 - `volume`: 0..100
 - `soundPack`: use one of `window.bpm.getSoundPacks()`
+- `soundUrls`: optional per-sound URL overrides for `bar`, `beat`, `half`, `subDiv`, and `user`
+- `loopMode`: boolean
+- `loopRepeats`: integer, `0` means loop forever
+- `loopPattern`: object with `kick`, `hat`, `snare` boolean arrays sized to the active grid
+
+## Loop Controls
+- Use `window.bpm.setLoopMode(true|false)` to switch drum loop mode.
+- Use `window.bpm.setLoopRepeats(n)` to stop after `n` loops, or `0` for forever.
+- Use `window.bpm.setSoundUrls({ beat: "...", bar: "..." })` to override individual audio files.
+- Use `window.bpm.setLoopPattern(pattern)` to apply a full loop pattern.
+- Use `window.bpm.resetLoopPattern()` to reseed the default pattern for the current timing.
+- Use `window.bpm.getLoopPattern()` to inspect the current pattern.
 
 ## URL Support
 Bipium configs are URL-compatible. Use `window.bpm.toQuery(config)` for export and `window.bpm.applyQuery(query)` for import.
+Loop patterns round-trip through `loopMode`, `loopRepeats`, `loopKick`, `loopHat`, and `loopSnare`.
+Sound overrides round-trip through `soundBarUrl`, `soundBeatUrl`, `soundHalfUrl`, `soundSubDivUrl`, and `soundUserUrl`.
 
 ## Schema Introspection
 - `window.bpm.schemas`

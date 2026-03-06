@@ -4,7 +4,7 @@ import { Range } from './Range';
 import { StepButtons } from './StepButtons';
 import { useTapBPM } from '@/hooks';
 import { useApp } from '@/context/AppContext';
-import { cn } from '@/lib/utils';
+import { cn, isEditableEventTarget } from '@/lib/utils';
 import { sendEvent, sendOneEvent } from '@/tracking';
 import type { NumberInput } from '@/types';
 
@@ -70,6 +70,7 @@ export function BPMControls() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      if (isEditableEventTarget(event.target)) return;
       if (event.key.toLowerCase() === 't') {
         handleTap();
         clicker?.click();

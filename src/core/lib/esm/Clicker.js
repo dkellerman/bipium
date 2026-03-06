@@ -1,11 +1,10 @@
 export const DEFAULT_SOUNDS = {
-    name: 'Defaults',
+    name: 'Beeps',
     bar: 880.0,
     beat: 440.0,
     subDiv: 220.0,
     user: 660.0,
 };
-;
 export class Clicker {
     constructor({ audioContext, volume = 100, sounds = DEFAULT_SOUNDS, resolveScheduledSounds, }) {
         this.sounds = {};

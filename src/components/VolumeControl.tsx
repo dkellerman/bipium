@@ -9,6 +9,7 @@ import type { NumberInput } from '@/types';
 
 interface VolumeControlProps {
   compact?: boolean;
+  inline?: boolean;
 }
 
 const int = (value: NumberInput) => {
@@ -16,7 +17,7 @@ const int = (value: NumberInput) => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
-export function VolumeControl({ compact = false }: VolumeControlProps) {
+export function VolumeControl({ compact = false, inline = false }: VolumeControlProps) {
   const { muted, setMuted, volume, setVolume } = useApp();
   const VolumeIcon = muted ? VolumeX : Volume2;
 
@@ -71,6 +72,66 @@ export function VolumeControl({ compact = false }: VolumeControlProps) {
     window.addEventListener('pointerdown', onPointerDown);
     return () => window.removeEventListener('pointerdown', onPointerDown);
   }, [showVolume]);
+
+  if (inline) {
+    return (
+      <div
+        ref={volumeControlRef}
+        className="relative h-11 w-11"
+        onMouseLeave={() => setShowVolume(false)}
+      >
+        {showVolume ? (
+          <div
+            className={cn(
+              'absolute bottom-full left-1/2 z-20 mb-3 w-[220px] -translate-x-1/2 overflow-hidden rounded-full',
+              'border border-slate-300 bg-white px-3 py-1 shadow-sm',
+            )}
+          >
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="size-9 shrink-0 rounded-full"
+                aria-label={muted ? 'Unmute' : 'Mute'}
+                onClick={() => {
+                  setMuted(value => !value);
+                  sendOneEvent(`mute_${muted ? 'off' : 'on'}`);
+                }}
+              >
+                <VolumeIcon className="size-5" />
+              </Button>
+              <div className="min-w-0 flex-1">
+                <Range
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={volume}
+                  onDrag={value => {
+                    setVolume(int(value));
+                    sendOneEvent('set_volume', '', value, int(value));
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          className={cn('size-11 rounded-full bg-white p-2 shadow-md')}
+          aria-label={showVolume ? 'Hide volume controls' : 'Show volume controls'}
+          onMouseEnter={() => setShowVolume(true)}
+          onFocus={() => setShowVolume(true)}
+          onClick={() => setShowVolume(value => !value)}
+        >
+          <VolumeIcon className="size-5" />
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="mt-2 flex w-full justify-center">

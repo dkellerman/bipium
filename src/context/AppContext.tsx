@@ -13,6 +13,8 @@ export interface AppContextValue {
   volume: number;
   muted: boolean;
   soundPack: string;
+  loopMode: boolean;
+  loopRepeats: number;
   started: boolean;
   showSideBar: boolean;
   copiedURL: string | null;
@@ -28,6 +30,7 @@ export interface AppContextValue {
   setVolume: StateSetter<number>;
   setMuted: StateSetter<boolean>;
   setSoundPack: StateSetter<string>;
+  setLoopRepeats: StateSetter<number>;
   setShowSideBar: StateSetter<boolean>;
   setPlaySubDivsWithTracking: (value: boolean) => void;
   setSwingEnabledWithRestore: (value: boolean) => void;

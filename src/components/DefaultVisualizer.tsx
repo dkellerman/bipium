@@ -4,6 +4,7 @@ import { Application, extend } from '@pixi/react';
 import { Graphics, Text as PixiText } from 'pixi.js';
 import { Visualizer } from '@/core';
 import type { Metronome } from '@/core';
+import { isEditableEventTarget } from '@/lib/utils';
 
 interface DefaultVisualizerProps {
   id?: string;
@@ -53,9 +54,16 @@ export function DefaultVisualizer({
 }: DefaultVisualizerProps) {
   const mAny = m as any;
   const v = useRef(new Visualizer({ metronome: mAny }));
+  const frameRef = useRef<number | null>(null);
   const nowLineRef = useRef<any>(null);
   const countRef = useRef<any>(null);
   const descRef = useRef<any>(null);
+  const beats = m.opts.beats;
+  const subDivs = m.opts.subDivs;
+  const swing = m.opts.swing;
+  const barTime = m.barTime;
+  const gridTimes = React.useMemo(() => m.gridTimes, [m, beats, subDivs, swing, barTime]);
+  const gridSignature = `${beats}:${subDivs}:${swing}:${width}:${height}`;
 
   const centerTextAt = (textNode: any, centerX: number, centerY: number) => {
     if (!textNode?.getLocalBounds) return;
@@ -79,26 +87,18 @@ export function DefaultVisualizer({
     centerTextAt(descRef.current, width / 2, height - 20);
   }, [width, height]);
 
-  useEffect(() => {
-    if (!nowLineRef.current || !descRef.current || !countRef.current) return;
-
-    if (mAny.started) {
-      nowLineRef.current.x = 0;
-      descRef.current.text = DEFAULT_DESC_TEXT;
-      v.current.start();
-      requestAnimationFrame(draw);
-    } else {
-      nowLineRef.current.x = 0;
-      descRef.current.text = '';
-      countRef.current.text = '';
-      v.current.stop();
+  const cancelDraw = useCallback(() => {
+    if (frameRef.current !== null) {
+      window.cancelAnimationFrame(frameRef.current);
+      frameRef.current = null;
     }
-  }, [mAny.started]);
+  }, []);
 
   useEffect(() => {
     const handleUserClick = (event: any) => {
       if (!mAny.started) return;
       if (event.type === 'touchstart' && event.target?.nodeName !== 'CANVAS') return;
+      if (event.type === 'keydown' && isEditableEventTarget(event.target)) return;
       if (event.type === 'keydown' && event.key !== 'Control') return;
       v.current.userClicks.push(mAny.now);
       mAny.opts?.clicker?.click();
@@ -112,66 +112,100 @@ export function DefaultVisualizer({
     };
   }, []);
 
-  const draw = useCallback(() => {
-    if (!mAny.started) return;
-    if (!nowLineRef.current || !countRef.current || !descRef.current) {
-      requestAnimationFrame(draw);
-      return;
-    }
-
-    v.current.update();
-
-    if (showNow) {
-      nowLineRef.current.x = v.current.progress * width;
-    }
-
-    if (showCount) {
-      countRef.current.text = v.current.count.join('-');
-    } else {
-      countRef.current.text = '';
-    }
-    centerTextAt(countRef.current, width / 2, height / 2 - 10);
-
-    if (showClicks && v.current.qType) {
-      const t = v.current.qType;
-      if (t === 'early') {
-        descRef.current.text = 'Early';
-        descRef.current.style.fill = incorrectNoteColor;
-      } else if (t === 'late') {
-        descRef.current.text = 'Late';
-        descRef.current.style.fill = incorrectNoteColor;
-      } else if (t === 'ontime') {
-        descRef.current.text = 'On time!';
-        descRef.current.style.fill = correctNoteColor;
+  const draw = useCallback(
+    function drawFrame() {
+      if (!mAny.started) {
+        frameRef.current = null;
+        return;
       }
-    }
-    centerTextAt(descRef.current, width / 2, height - 20);
+      if (!nowLineRef.current || !countRef.current || !descRef.current) {
+        frameRef.current = window.requestAnimationFrame(drawFrame);
+        return;
+      }
 
-    requestAnimationFrame(draw);
-  }, [mAny.started, mAny.barTime, mAny.opts?.bpm]);
+      v.current.update();
+
+      if (showNow) {
+        nowLineRef.current.x = v.current.progress * width;
+      }
+
+      if (showCount) {
+        countRef.current.text = v.current.count.join('-');
+      } else {
+        countRef.current.text = '';
+      }
+      centerTextAt(countRef.current, width / 2, height / 2 - 10);
+
+      if (showClicks && v.current.qType) {
+        const t = v.current.qType;
+        if (t === 'early') {
+          descRef.current.text = 'Early';
+          descRef.current.style.fill = incorrectNoteColor;
+        } else if (t === 'late') {
+          descRef.current.text = 'Late';
+          descRef.current.style.fill = incorrectNoteColor;
+        } else if (t === 'ontime') {
+          descRef.current.text = 'On time!';
+          descRef.current.style.fill = correctNoteColor;
+        }
+      }
+      centerTextAt(descRef.current, width / 2, height - 20);
+
+      frameRef.current = window.requestAnimationFrame(drawFrame);
+    },
+    [mAny.started, mAny.barTime, mAny.opts?.bpm, showClicks, showCount, showNow, width],
+  );
+
+  useEffect(() => {
+    cancelDraw();
+    if (mAny.started) {
+      if (nowLineRef.current) {
+        nowLineRef.current.x = 0;
+      }
+      if (descRef.current) {
+        descRef.current.text = DEFAULT_DESC_TEXT;
+      }
+      v.current.start();
+      frameRef.current = window.requestAnimationFrame(draw);
+    } else {
+      if (nowLineRef.current) {
+        nowLineRef.current.x = 0;
+      }
+      if (descRef.current) {
+        descRef.current.text = '';
+      }
+      if (countRef.current) {
+        countRef.current.text = '';
+      }
+      v.current.stop();
+    }
+  }, [cancelDraw, draw, mAny.started, gridSignature]);
+
+  useEffect(() => cancelDraw, [cancelDraw]);
 
   const drawGrid = useCallback(
     (g: any) => {
       if (!g) return;
       g.clear();
       if (!showGrid) return;
-      if (!mAny.barTime) return;
-      mAny.gridTimes?.forEach((t: number, i: number) => {
-        const x = (t / mAny.barTime) * width;
-        const isSubDiv = i % (mAny.opts?.subDivs || 1) > 0;
+      if (!barTime) return;
+      gridTimes.forEach((t: number, i: number) => {
+        const x = (t / barTime) * width;
+        const isSubDiv = i % subDivs > 0;
         g.setStrokeStyle({ width: 1, color: isSubDiv ? subDivColor : divColor });
         g.moveTo(x, 0);
         g.lineTo(x, height);
         g.stroke();
       });
     },
-    [showGrid, width, height, mAny.barTime, mAny.opts?.subDivs, mAny.gridTimes],
+    [showGrid, width, height, barTime, subDivs, gridTimes],
   );
 
   return (
     <>
       {mAny && (
         <Application
+          key={gridSignature}
           width={width}
           height={height}
           antialias={false}

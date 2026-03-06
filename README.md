@@ -3,19 +3,25 @@
 A metronome web app. https://bipium.com
 
 ## Features
+
 - BPM slider, or type it in (allows fractional beats)
 - Play sub-divisions if desired
 - Swing!
 - Tap tempo
 - Tap along, shows feedback for early/late clicks
 - Visualization vaguely imitates a piano roll
+- Drum loop mode with editable kick / hat / snare steps
+- Loop playback can run forever or stop after a chosen number of cycles
 - Mobile-first layout
 - Configurable sounds
 - Set volume
 - Values are stored in the session for stickiness through refreshes
 - All parameters configurable via URL, you can copy a link to the clipboard
+- Browser runtime API at `window.bpm`, including loop mode and loop pattern controls
+- Runtime API can override individual `bar` / `beat` / `half` / `subDiv` / `user` sounds by URL
 
 ## Tech
+
 - React, Typescript, Tailwind, Shadcn
 - PIXI.js for visualizer, to allow GPU rendering
 - Metronome implementation inspired by https://github.com/cwilso/metronome
@@ -25,4 +31,5 @@ A metronome web app. https://bipium.com
 The `src/core` directory contains an app-independent metronome implementation with no library dependencies.
 
 ## Example code
+
 - See example of reusing the Metronome code in `public/example.html`

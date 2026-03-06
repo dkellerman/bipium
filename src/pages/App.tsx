@@ -3,8 +3,9 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import qs from 'query-string';
 import copyToClipboard from 'copy-to-clipboard';
 import { AudioContext } from 'standardized-audio-context';
-import { Drum, Settings } from 'lucide-react';
-import { API_DEFAULT_CONFIG, createRuntimeApi } from '@/api';
+import { Drum, Settings, Sparkles } from 'lucide-react';
+import { API_DEFAULT_CONFIG, createRuntimeApi, createSchemas, fromQuery, toQuery } from '@/api';
+import { AIPromptInput } from '@/components/AIPromptInput';
 import { BPMControls } from '@/components/BPMControls';
 import { BeatControls } from '@/components/BeatControls';
 import { DefaultVisualizer } from '@/components/DefaultVisualizer';
@@ -16,27 +17,25 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { AppProvider } from '@/context/AppContext';
 import type { AppContextValue } from '@/context/AppContext';
-import { SOUND_PACKS, useClicker, useMetronome, useSetting } from '@/hooks';
 import {
+  buildConfiguredSoundPack,
+  SOUND_PACKS,
+  useClicker,
+  useMetronome,
+  usePromptToApiConfig,
+  useSetting,
+} from '@/hooks';
+import {
+  seedDrumLoopPattern,
   remapDrumLoopPattern,
   resolveDrumLoopSounds,
-  seedDrumLoopPattern,
   type DrumLoopLane,
   type DrumLoopPattern,
   type DrumLoopTiming,
 } from '@/lib/drumLoop';
-import { cn } from '@/lib/utils';
+import { cn, isEditableEventTarget } from '@/lib/utils';
 import { sendEvent, sendFrameRate } from '@/tracking';
 import type { ApiConfig, BooleanInput, NumberInput } from '@/types';
-
-interface ConfigurationQuery {
-  bpm: number;
-  beats: number;
-  playSubDivs: boolean;
-  swing?: number;
-  subDivs?: number;
-  soundPack?: string;
-}
 
 const int = (value: NumberInput) => {
   const parsed = Number.parseInt(String(value), 10);
@@ -67,6 +66,31 @@ const validSwing = (value: NumberInput, fallback = 0) => {
 const buildSha = import.meta.env.VITE_VERCEL_GIT_COMMIT_SHA || '';
 type VisualizerMode = 'default' | 'drumLoop';
 
+function cloneLoopPattern(pattern: DrumLoopPattern): DrumLoopPattern {
+  return {
+    kick: [...pattern.kick],
+    hat: [...pattern.hat],
+    snare: [...pattern.snare],
+  };
+}
+
+function getLoopTimingFromConfig(
+  config: Pick<ApiConfig, 'beats' | 'subDivs' | 'playSubDivs' | 'swing'>,
+) {
+  const activeSubDivs = config.playSubDivs ? config.subDivs : 1;
+  const swing = config.playSubDivs && config.subDivs % 2 === 0 ? config.swing : 0;
+
+  return {
+    beats: config.beats,
+    subDivs: activeSubDivs,
+    swing,
+  } satisfies DrumLoopTiming;
+}
+
+function isSeedLoopPattern(pattern: DrumLoopPattern, timing: DrumLoopTiming) {
+  return JSON.stringify(pattern) === JSON.stringify(seedDrumLoopPattern(timing));
+}
+
 function App() {
   const queryParams = qs.parse(window.location.search);
   const hasUrlParams = Object.keys(queryParams).length > 0;
@@ -84,6 +108,7 @@ function App() {
   const [muted, setMuted] = useState(false);
   const [started, setStarted] = useState(false);
   const [soundPack, setSoundPack] = useSetting('soundPack', 'drumkit', String);
+  const [loopRepeats, setLoopRepeats] = useSetting('loopRepeats', 0, int);
   const [visualizers] = useSetting<string[]>('visualizers', ['default'], value => {
     if (Array.isArray(value)) return value.map(String);
     return String(value).split(',');
@@ -91,6 +116,8 @@ function App() {
 
   const [showSideBar, setShowSideBar] = useState(false);
   const [copiedURL, setCopiedURL] = useState<string | null>(null);
+  const [showAIPrompt, setShowAIPrompt] = useState(false);
+  const [aiPlaybackActive, setAiPlaybackActive] = useState(false);
   const [viewportWidth, setViewportWidth] = useState(
     typeof window !== 'undefined' ? window.innerWidth : 390,
   );
@@ -105,7 +132,9 @@ function App() {
   const swingRef = useRef(swing);
   const soundPackRef = useRef(soundPack);
   const volumeRef = useRef(volume);
+  const loopRepeatsRef = useRef(loopRepeats);
   const startedRef = useRef(started);
+  const soundUrlsRef = useRef(API_DEFAULT_CONFIG.soundUrls);
 
   bpm.current = validBpm(float(bpmState));
   beatsRef.current = beats;
@@ -114,6 +143,7 @@ function App() {
   swingRef.current = swing;
   soundPackRef.current = soundPack;
   volumeRef.current = volume;
+  loopRepeatsRef.current = loopRepeats;
   startedRef.current = started;
 
   const canSwing = subDivs % 2 === 0;
@@ -128,6 +158,7 @@ function App() {
     [beats, activeSubDivs, swingActive, swing],
   );
   const [visualizerMode, setVisualizerMode] = useState<VisualizerMode>('default');
+  const [soundUrls, setSoundUrls] = useState(() => ({ ...API_DEFAULT_CONFIG.soundUrls }));
   const [drumPattern, setDrumPattern] = useState<DrumLoopPattern>(() =>
     seedDrumLoopPattern(loopTiming),
   );
@@ -138,7 +169,7 @@ function App() {
   const clicker = useClicker({
     audioContext: audioContext.current,
     volume,
-    sounds: SOUND_PACKS[soundPack],
+    sounds: buildConfiguredSoundPack(soundPack, soundUrls),
   });
 
   const metronome = useMetronome({
@@ -148,12 +179,29 @@ function App() {
     beats,
     subDivs: activeSubDivs,
     swing: loopTiming.swing,
+    maxBars: 0,
+    onStop: () => {
+      startedRef.current = false;
+      if (mountedRef.current) {
+        setStarted(false);
+      }
+    },
     workerUrl: '/dist/worker.min.js',
   });
   const drumPatternRef = useRef(drumPattern);
   const loopTimingRef = useRef(loopTiming);
+  const apiSchemasRef = useRef(createSchemas(new Set(Object.keys(SOUND_PACKS))));
+  const initialQueryAppliedRef = useRef(false);
+  const mountedRef = useRef(true);
 
   drumPatternRef.current = drumPattern;
+  soundUrlsRef.current = soundUrls;
+
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const start = useCallback(() => {
     setStarted(true);
@@ -162,6 +210,23 @@ function App() {
   const stop = useCallback(() => {
     setStarted(false);
   }, []);
+
+  const handlePromptPayloadReady = useCallback(() => {
+    setAiPlaybackActive(true);
+  }, []);
+
+  const handlePromptStatusChange = useCallback(() => {}, []);
+
+  const { llmGenerating, generateAndRunFromPrompt, cancelPromptGeneration } = usePromptToApiConfig({
+    onPayloadReady: handlePromptPayloadReady,
+    onStatusChange: handlePromptStatusChange,
+  });
+
+  const cancelAi = useCallback(() => {
+    cancelPromptGeneration();
+    setShowAIPrompt(false);
+    setAiPlaybackActive(false);
+  }, [cancelPromptGeneration]);
 
   const toggle = useCallback(() => {
     setStarted(value => !value);
@@ -229,9 +294,10 @@ function App() {
       swing: loopTiming.swing,
       beats,
       bpm: bpm.current,
+      maxBars: visualizerMode === 'drumLoop' ? Math.max(0, loopRepeats) : 0,
     });
     forceRender();
-  }, [activeSubDivs, loopTiming.swing, beats, metronome.started]);
+  }, [activeSubDivs, beats, loopRepeats, loopTiming.swing, visualizerMode, metronome.started]);
 
   useEffect(() => {
     const previousTiming = loopTimingRef.current;
@@ -259,8 +325,12 @@ function App() {
       swing: swingRef.current,
       soundPack: soundPackRef.current,
       volume: volumeRef.current,
+      soundUrls: { ...soundUrlsRef.current },
+      loopMode: visualizerMode === 'drumLoop',
+      loopRepeats: loopRepeatsRef.current,
+      loopPattern: cloneLoopPattern(drumPatternRef.current),
     }),
-    [],
+    [visualizerMode],
   );
 
   const applyApiConfig = useCallback(
@@ -268,8 +338,12 @@ function App() {
       const normalized: ApiConfig = {
         ...API_DEFAULT_CONFIG,
         ...next,
+        soundUrls: { ...API_DEFAULT_CONFIG.soundUrls, ...next.soundUrls },
+        loopPattern: cloneLoopPattern(next.loopPattern ?? API_DEFAULT_CONFIG.loopPattern),
       };
+      const nextLoopTiming = getLoopTimingFromConfig(normalized);
 
+      loopTimingRef.current = nextLoopTiming;
       updateBPM(normalized.bpm);
       setBeats(int(normalized.beats));
       setPlaySubDivs(Boolean(normalized.playSubDivs));
@@ -278,9 +352,14 @@ function App() {
       setSwingEnabled(normalized.swing > 0);
       previousSwingRef.current = normalized.swing > 0 ? normalized.swing : 0;
       setSoundPack(normalized.soundPack);
+      setSoundUrls({ ...normalized.soundUrls });
       setVolume(int(normalized.volume));
+      setVisualizerMode(normalized.loopMode ? 'drumLoop' : 'default');
+      setLoopRepeats(int(normalized.loopRepeats));
+      setDrumPattern(cloneLoopPattern(normalized.loopPattern));
+      setDrumPatternDirty(!isSeedLoopPattern(normalized.loopPattern, nextLoopTiming));
     },
-    [updateBPM],
+    [setLoopRepeats, updateBPM],
   );
 
   useEffect(() => {
@@ -316,9 +395,22 @@ function App() {
   }, [applyApiConfig, clicker, getApiConfig]);
 
   useEffect(() => {
-    const nextSoundPack = visualizerMode === 'drumLoop' ? 'drumkit' : soundPack || 'defaults';
-    clicker.setSounds(SOUND_PACKS[nextSoundPack]);
-  }, [soundPack, visualizerMode]);
+    if (initialQueryAppliedRef.current || !hasUrlParams) return;
+    initialQueryAppliedRef.current = true;
+
+    try {
+      const next = fromQuery(getApiConfig(), window.location.search, apiSchemasRef.current);
+      applyApiConfig(next);
+    } catch {
+      // Ignore invalid query params and keep the current local/session-backed state.
+    }
+  }, [applyApiConfig, getApiConfig, hasUrlParams]);
+
+  useEffect(() => {
+    clicker.setSounds(
+      buildConfiguredSoundPack(soundPack || 'defaults', soundUrls, visualizerMode === 'drumLoop'),
+    );
+  }, [clicker, soundPack, soundUrls, visualizerMode]);
 
   useEffect(() => {
     if (visualizerMode !== 'drumLoop') {
@@ -333,6 +425,7 @@ function App() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      if (isEditableEventTarget(event.target)) return;
       if (event.key === ' ') {
         event.preventDefault();
         event.stopPropagation();
@@ -346,6 +439,7 @@ function App() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      if (isEditableEventTarget(event.target)) return;
       if (event.key === 'Escape') {
         setShowSideBar(false);
       }
@@ -357,6 +451,7 @@ function App() {
 
   useEffect(() => {
     if (!started) {
+      setAiPlaybackActive(false);
       metronome.stop();
       sendFrameRate();
     } else {
@@ -397,31 +492,16 @@ function App() {
   }, []);
 
   const copyConfigurationURL = useCallback(() => {
-    const query: ConfigurationQuery = {
-      bpm: bpm.current,
-      beats,
-      playSubDivs,
-    };
-
-    if (playSubDivs) {
-      query.swing = swingActive ? swing : 0;
-      query.subDivs = subDivs;
-    }
-
-    if (soundPack !== 'defaults') {
-      query.soundPack = soundPack;
-    }
-
     const url = qs.stringifyUrl({
       url: `${window.location.protocol}//${window.location.host}`,
-      query: query as any,
+      query: qs.parse(toQuery(getApiConfig())),
     });
 
     copyToClipboard(url, {
       format: 'text/plain',
       onCopy: () => setCopiedURL(url),
     });
-  }, [beats, playSubDivs, swing, swingActive, subDivs, soundPack]);
+  }, [getApiConfig]);
 
   const appContextValue = useMemo<AppContextValue>(
     () => ({
@@ -435,6 +515,8 @@ function App() {
       volume,
       muted,
       soundPack,
+      loopMode: visualizerMode === 'drumLoop',
+      loopRepeats,
       started,
       showSideBar,
       copiedURL,
@@ -450,6 +532,7 @@ function App() {
       setVolume,
       setMuted,
       setSoundPack,
+      setLoopRepeats,
       setShowSideBar,
       setPlaySubDivsWithTracking,
       setSwingEnabledWithRestore,
@@ -467,6 +550,8 @@ function App() {
       volume,
       muted,
       soundPack,
+      visualizerMode,
+      loopRepeats,
       started,
       showSideBar,
       copiedURL,
@@ -608,6 +693,7 @@ function App() {
               )}
               onClick={event => {
                 event.preventDefault();
+                cancelAi();
                 stop();
                 sendEvent('stop');
               }}
@@ -617,7 +703,32 @@ function App() {
           )}
         </div>
 
-        <VolumeControl />
+        <div className="mt-2 flex items-center justify-center gap-3">
+          <VolumeControl inline />
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className={cn(
+              'size-11 rounded-full bg-white p-2 shadow-md',
+              (showAIPrompt || llmGenerating) && 'border-sky-300 text-sky-700 hover:bg-sky-50',
+            )}
+            title="AI prompt"
+            aria-label="AI prompt"
+            aria-pressed={showAIPrompt || llmGenerating}
+            onClick={() => setShowAIPrompt(current => !current)}
+          >
+            <Sparkles className="size-5" aria-hidden="true" />
+          </Button>
+        </div>
+
+        {showAIPrompt ? (
+          <AIPromptInput
+            isLoading={llmGenerating}
+            onSubmitPrompt={generateAndRunFromPrompt}
+            onRequestClose={cancelAi}
+          />
+        ) : null}
       </main>
     </AppProvider>
   );

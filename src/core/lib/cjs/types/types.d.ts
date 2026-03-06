@@ -1,14 +1,14 @@
-export declare type Sound = string | number | AudioBuffer;
-export declare type FinalSoundSpec = [Sound, number, number];
-export declare type SoundSpec = string | number | FinalSoundSpec;
-export declare type SoundPack = {
+export type Sound = string | number | AudioBuffer;
+export type FinalSoundSpec = [Sound, number, number];
+export type SoundSpec = string | number | FinalSoundSpec;
+export type SoundPack = {
   [key: string]: SoundSpec;
 };
-export declare type AudioNode =
+export type AudioNode =
   | InstanceType<typeof OscillatorNode>
   | InstanceType<typeof AudioBufferSourceNode>;
-export declare type ScheduledAudio = AudioNode | AudioNode[];
-export declare type Click = {
+export type ScheduledAudio = AudioNode | AudioNode[];
+export type Click = {
   obj?: ScheduledAudio;
   bar: number;
   beat: number;

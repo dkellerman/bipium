@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Visualizer = exports.DEFAULT_SOUNDS = exports.Clicker = exports.Metronome = exports.createMetronome = void 0;
+exports.Visualizer = exports.DEFAULT_SOUNDS = exports.Clicker = exports.Metronome = void 0;
+exports.createMetronome = createMetronome;
 const Metronome_1 = require("./Metronome");
 const Clicker_1 = require("./Clicker");
 // utility method for creating a default metronome/clicker setup
@@ -8,7 +9,6 @@ function createMetronome(mOpts, clickerOpts = {}, audioContext = new AudioContex
     const clicker = new Clicker_1.Clicker(Object.assign({ audioContext }, clickerOpts));
     return new Metronome_1.Metronome(Object.assign({ timerFn: () => audioContext.currentTime, clicker }, mOpts));
 }
-exports.createMetronome = createMetronome;
 var Metronome_2 = require("./Metronome");
 Object.defineProperty(exports, "Metronome", { enumerable: true, get: function () { return Metronome_2.Metronome; } });
 var Clicker_2 = require("./Clicker");

@@ -1,8 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import copyToClipboard from 'copy-to-clipboard';
+import { Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { AIPromptInput } from '@/components/AIPromptInput';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { usePromptToApiConfig } from '@/hooks/usePromptToApiConfig';
 import { cn } from '@/lib/utils';
 import { API_DEFAULT_CONFIG, API_DISCOVERY } from '@/api';
 import type { ApiConfig, ValidationResult } from '@/types';
@@ -16,6 +19,14 @@ const BASIC_SAMPLE: ApiConfig = {
   swing: 0,
   soundPack: 'drumkit',
   volume: 35,
+  soundUrls: {},
+  loopMode: false,
+  loopRepeats: 0,
+  loopPattern: {
+    kick: [true, false, false, false],
+    hat: [true, true, true, true],
+    snare: [false, false, true, false],
+  },
 };
 
 const SWING_SAMPLE: ApiConfig = {
@@ -26,6 +37,35 @@ const SWING_SAMPLE: ApiConfig = {
   swing: 28,
   soundPack: 'drumkit',
   volume: 38,
+  soundUrls: {},
+  loopMode: false,
+  loopRepeats: 0,
+  loopPattern: {
+    kick: [true, false, false, false, false, false, false, false],
+    hat: [true, true, true, true, true, true, true, true],
+    snare: [false, false, false, false, true, false, false, false],
+  },
+};
+
+const LOOP_SAMPLE: ApiConfig = {
+  bpm: 96,
+  beats: 4,
+  subDivs: 2,
+  playSubDivs: true,
+  swing: 0,
+  soundPack: 'defaults',
+  volume: 40,
+  soundUrls: {
+    beat: 'https://example.com/audio/beat.mp3',
+    user: '/audio/stick.mp3',
+  },
+  loopMode: true,
+  loopRepeats: 4,
+  loopPattern: {
+    kick: [true, false, false, false, false, false, true, false],
+    hat: [true, true, true, true, true, true, true, true],
+    snare: [false, false, false, false, true, false, false, false],
+  },
 };
 
 const METHOD_DOCS = [
@@ -43,16 +83,49 @@ const METHOD_DOCS = [
   },
   {
     method: 'window.bpm.start(bpm?, beats?, subDivs?, swing?, soundPack?, volume?)',
-    summary: 'Apply optional config parameters, validate, then start playback.',
+    summary: 'Apply optional timing/sound parameters, validate, then start playback.',
   },
   { method: 'window.bpm.stop()', summary: 'Stop playback.' },
   { method: 'window.bpm.toggle()', summary: 'Toggle started/stopped; returns new started state.' },
   { method: 'window.bpm.isStarted()', summary: 'Return whether metronome is currently started.' },
+  { method: 'window.bpm.isLoopMode()', summary: 'Return whether drum loop mode is active.' },
+  {
+    method: 'window.bpm.getLoopRepeats()',
+    summary: 'Return the current finite loop count; 0 means forever.',
+  },
+  {
+    method: 'window.bpm.getSoundUrls()',
+    summary: 'Return the current per-sound URL overrides.',
+  },
   {
     method: 'window.bpm.setConfig(partial)',
     summary: 'Validate and apply a partial config object.',
   },
   { method: 'window.bpm.getConfig()', summary: 'Return active full config object.' },
+  {
+    method: 'window.bpm.getLoopPattern()',
+    summary: 'Return the current drum loop pattern.',
+  },
+  {
+    method: 'window.bpm.setLoopMode(enabled)',
+    summary: 'Enable or disable drum loop mode.',
+  },
+  {
+    method: 'window.bpm.setLoopRepeats(repeats)',
+    summary: 'Set loop count; use 0 to loop forever.',
+  },
+  {
+    method: 'window.bpm.setSoundUrls(soundUrls)',
+    summary: 'Merge per-sound URL overrides into the active sound configuration.',
+  },
+  {
+    method: 'window.bpm.setLoopPattern(pattern)',
+    summary: 'Validate and apply a full drum loop pattern for the current grid.',
+  },
+  {
+    method: 'window.bpm.resetLoopPattern()',
+    summary: 'Reset the loop pattern to the seeded default for the current timing.',
+  },
   {
     method: 'window.bpm.validateConfig(input)',
     summary: 'Validate config-like input and return { ok, value|error }.',
@@ -83,7 +156,17 @@ const URL_PARAM_DOCS = [
   { key: 'subDivs', type: 'integer', range: '1..8', required: 'no' },
   { key: 'swing', type: 'number', range: '0..100', required: 'no' },
   { key: 'soundPack', type: 'string', range: 'defaults|drumkit', required: 'no' },
+  { key: 'soundBarUrl', type: 'string', range: 'non-empty URL/path', required: 'no' },
+  { key: 'soundBeatUrl', type: 'string', range: 'non-empty URL/path', required: 'no' },
+  { key: 'soundHalfUrl', type: 'string', range: 'non-empty URL/path', required: 'no' },
+  { key: 'soundSubDivUrl', type: 'string', range: 'non-empty URL/path', required: 'no' },
+  { key: 'soundUserUrl', type: 'string', range: 'non-empty URL/path', required: 'no' },
   { key: 'volume', type: 'number', range: '0..100', required: 'no' },
+  { key: 'loopMode', type: 'boolean', range: 'true/false', required: 'no' },
+  { key: 'loopRepeats', type: 'integer', range: '0..128 (0 = forever)', required: 'no' },
+  { key: 'loopKick', type: 'bitstring', range: 'one char per step', required: 'no' },
+  { key: 'loopHat', type: 'bitstring', range: 'one char per step', required: 'no' },
+  { key: 'loopSnare', type: 'bitstring', range: 'one char per step', required: 'no' },
 ] as const;
 
 type Status = {
@@ -111,6 +194,8 @@ export default function ApiPage() {
   });
   const [liveStarted, setLiveStarted] = useState(false);
   const [liveConfig, setLiveConfig] = useState<ApiConfig>({ ...API_DEFAULT_CONFIG });
+  const [showAIPrompt, setShowAIPrompt] = useState(false);
+  const [aiPlaybackActive, setAiPlaybackActive] = useState(false);
 
   const runtime = useApi(config => {
     setLiveConfig(config);
@@ -118,10 +203,31 @@ export default function ApiPage() {
       if (current.tone === 'error') return current;
       return {
         tone: 'ok',
-        text: `Config ${config.bpm} BPM, ${config.beats} beats, sub ${config.playSubDivs ? config.subDivs : 1}.`,
+        text: `${config.loopMode ? 'Loop' : 'Metronome'} config ${config.bpm} BPM, ${config.beats} beats, sub ${config.playSubDivs ? config.subDivs : 1}, ${config.loopRepeats > 0 ? `${config.loopRepeats} loops` : 'loops forever'}.`,
       };
     });
   });
+
+  const handlePromptPayloadReady = useCallback((prettyPayload: string) => {
+    setPayload(prettyPayload);
+    setAiPlaybackActive(true);
+  }, []);
+  const handlePromptStatusChange = useCallback((text: string) => {
+    setStatus({
+      tone: text.startsWith('LLM error') ? 'error' : 'ok',
+      text,
+    });
+  }, []);
+  const { llmGenerating, generateAndRunFromPrompt, cancelPromptGeneration } = usePromptToApiConfig({
+    onPayloadReady: handlePromptPayloadReady,
+    onStatusChange: handlePromptStatusChange,
+  });
+
+  const cancelAi = useCallback(() => {
+    cancelPromptGeneration();
+    setShowAIPrompt(false);
+    setAiPlaybackActive(false);
+  }, [cancelPromptGeneration]);
 
   const preview = useMemo(() => {
     if (!runtime) {
@@ -166,6 +272,20 @@ export default function ApiPage() {
       tone: 'ok',
       text: 'Runtime ready. Edit JSON and use Start/Stop.',
     });
+  }, [runtime]);
+
+  useEffect(() => {
+    if (!runtime) return;
+
+    const timer = window.setInterval(() => {
+      const started = runtime.isStarted();
+      setLiveStarted(started);
+      if (!started) {
+        setAiPlaybackActive(false);
+      }
+    }, 200);
+
+    return () => window.clearInterval(timer);
   }, [runtime]);
 
   function formatJson() {
@@ -222,7 +342,7 @@ export default function ApiPage() {
       setLiveStarted(runtime.isStarted());
       setStatus({
         tone: 'ok',
-        text: `Started ${config.bpm} BPM, ${config.beats} beats, sub ${config.playSubDivs ? config.subDivs : 1}.`,
+        text: `Started ${config.loopMode ? 'loop' : 'metronome'} at ${config.bpm} BPM, ${config.beats} beats, sub ${config.playSubDivs ? config.subDivs : 1}, ${config.loopRepeats > 0 ? `${config.loopRepeats} loops` : 'forever'}.`,
       });
     } catch (error) {
       setStatus({
@@ -239,6 +359,7 @@ export default function ApiPage() {
     }
 
     if (runtime.isStarted()) {
+      cancelAi();
       runtime.stop();
       setLiveStarted(false);
       setStatus({ tone: 'ok', text: 'Playback stopped.' });
@@ -255,6 +376,7 @@ export default function ApiPage() {
       runtime.setConfig(validated.value);
       runtime.start();
       setLiveStarted(true);
+      setAiPlaybackActive(false);
       setStatus({ tone: 'ok', text: 'Playback started.' });
     } catch (error) {
       setStatus({
@@ -416,8 +538,25 @@ export default function ApiPage() {
                 <code>window.bpm.applyQuery(query)</code>.
               </li>
               <li>
+                Loop mode is controlled by <code>loopMode</code>; the pattern lives in{' '}
+                <code>loopPattern</code> or the query params <code>loopKick</code>,{' '}
+                <code>loopHat</code>, and <code>loopSnare</code>.
+              </li>
+              <li>
+                Per-sound overrides live in <code>soundUrls</code>; query params use{' '}
+                <code>soundBarUrl</code>, <code>soundBeatUrl</code>, <code>soundHalfUrl</code>,{' '}
+                <code>soundSubDivUrl</code>, and <code>soundUserUrl</code>.
+              </li>
+              <li>
+                Use <code>loopRepeats</code> to stop after N full loops; <code>0</code> means loop
+                forever.
+              </li>
+              <li>
                 Swing is meaningful only when sub-divisions are enabled and the sub-div count is
                 even.
+              </li>
+              <li>
+                Loop playback always uses the drumkit voices, regardless of the selected sound pack.
               </li>
             </ol>
             <p className="mt-3 text-sm text-slate-700">
@@ -482,11 +621,31 @@ export default function ApiPage() {
             >
               Load Swing
             </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setPayload(stringifySample(LOOP_SAMPLE))}
+            >
+              Load Loop
+            </Button>
             <Button type="button" variant="outline" onClick={formatJson}>
               Format
             </Button>
             <Button type="button" variant="outline" onClick={validateJson}>
               Validate
+            </Button>
+            <Button
+              type="button"
+              variant={showAIPrompt || llmGenerating ? 'default' : 'outline'}
+              onClick={() => setShowAIPrompt(current => !current)}
+              aria-pressed={showAIPrompt || llmGenerating}
+              title="AI prompt"
+              aria-label="AI prompt"
+            >
+              <span className="inline-flex items-center gap-2">
+                <Sparkles className="size-4" aria-hidden="true" />
+                AI
+              </span>
             </Button>
             <Button type="button" onClick={toggleStartStopLive}>
               {liveStarted ? 'Stop' : 'Start'}
@@ -524,6 +683,14 @@ export default function ApiPage() {
           <p className={cn('text-sm', statusClass)}>{status.text}</p>
         </CardContent>
       </Card>
+
+      {showAIPrompt ? (
+        <AIPromptInput
+          isLoading={llmGenerating}
+          onSubmitPrompt={generateAndRunFromPrompt}
+          onRequestClose={cancelAi}
+        />
+      ) : null}
     </main>
   );
 }

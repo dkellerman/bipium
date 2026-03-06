@@ -32,15 +32,15 @@ describe('drum loop helpers', () => {
 
     expect(pattern.kick).toEqual([true, false, false, false]);
     expect(pattern.snare).toEqual([false, false, true, false]);
-    expect(pattern.hat).toEqual([false, true, false, true]);
+    expect(pattern.hat).toEqual([true, true, true, true]);
   });
 
-  it('seeds subdivided loop with hats on in-between steps', () => {
+  it('seeds subdivided loop with hats on every step', () => {
     const pattern = seedDrumLoopPattern({ beats: 4, subDivs: 2, swing: 0 });
 
     expect(pattern.kick[0]).toBe(true);
     expect(pattern.snare[4]).toBe(true);
-    expect(pattern.hat).toEqual([false, true, true, true, false, true, true, true]);
+    expect(pattern.hat).toEqual([true, true, true, true, true, true, true, true]);
   });
 
   it('places the snare on the midpoint downbeat for odd meters', () => {

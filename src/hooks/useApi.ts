@@ -2,13 +2,19 @@ import { useEffect, useRef, useState } from 'react';
 import { AudioContext } from 'standardized-audio-context';
 import { Clicker, Metronome } from '@/core';
 import { API_DEFAULT_CONFIG, createRuntimeApi } from '@/api';
+import { resolveDrumLoopSounds } from '@/lib/drumLoop';
 import type { ApiConfig, RuntimeApi } from '@/types';
-import { SOUND_PACKS } from './useClicker';
+import { buildConfiguredSoundPack } from './useClicker';
 
 function getEffectiveSwing(config: ApiConfig) {
   if (!config.playSubDivs) return 0;
   if (config.subDivs % 2 !== 0) return 0;
   return config.swing;
+}
+
+function getEffectiveLoopRepeats(config: ApiConfig) {
+  if (!config.loopMode) return 0;
+  return Math.max(0, config.loopRepeats);
 }
 
 export function useApi(onConfigChange?: (config: ApiConfig) => void) {
@@ -23,13 +29,31 @@ export function useApi(onConfigChange?: (config: ApiConfig) => void) {
   const metronomeRef = useRef<Metronome | null>(null);
 
   function applyConfig(next: ApiConfig) {
-    configRef.current = { ...next };
+    configRef.current = {
+      ...next,
+      soundUrls: { ...next.soundUrls },
+      loopPattern: {
+        kick: [...next.loopPattern.kick],
+        hat: [...next.loopPattern.hat],
+        snare: [...next.loopPattern.snare],
+      },
+    };
     const clicker = clickerRef.current;
     const metronome = metronomeRef.current;
 
     if (clicker) {
       clicker.setVolume(next.volume);
-      void clicker.setSounds(SOUND_PACKS[next.soundPack] ?? SOUND_PACKS.defaults);
+      void clicker.setSounds(
+        buildConfiguredSoundPack(next.soundPack, next.soundUrls, next.loopMode),
+      );
+
+      if (next.loopMode) {
+        clicker.setResolveScheduledSounds(click =>
+          resolveDrumLoopSounds(click, configRef.current.loopPattern, clicker.sounds),
+        );
+      } else {
+        clicker.setResolveScheduledSounds(undefined);
+      }
     }
 
     metronome?.update({
@@ -37,9 +61,18 @@ export function useApi(onConfigChange?: (config: ApiConfig) => void) {
       beats: next.beats,
       subDivs: next.playSubDivs ? next.subDivs : 1,
       swing: getEffectiveSwing(next),
+      maxBars: getEffectiveLoopRepeats(next),
     });
 
-    onConfigChangeRef.current?.({ ...next });
+    onConfigChangeRef.current?.({
+      ...next,
+      soundUrls: { ...next.soundUrls },
+      loopPattern: {
+        kick: [...next.loopPattern.kick],
+        hat: [...next.loopPattern.hat],
+        snare: [...next.loopPattern.snare],
+      },
+    });
   }
 
   useEffect(() => {
@@ -52,7 +85,11 @@ export function useApi(onConfigChange?: (config: ApiConfig) => void) {
     const clicker = new Clicker({
       audioContext: audioContext as any,
       volume: configRef.current.volume,
-      sounds: SOUND_PACKS[configRef.current.soundPack] ?? SOUND_PACKS.defaults,
+      sounds: buildConfiguredSoundPack(
+        configRef.current.soundPack,
+        configRef.current.soundUrls,
+        configRef.current.loopMode,
+      ),
     });
     clickerRef.current = clicker;
     const metronome = new Metronome({
@@ -62,6 +99,10 @@ export function useApi(onConfigChange?: (config: ApiConfig) => void) {
       beats: configRef.current.beats,
       subDivs: configRef.current.playSubDivs ? configRef.current.subDivs : 1,
       swing: getEffectiveSwing(configRef.current),
+      maxBars: getEffectiveLoopRepeats(configRef.current),
+      onStop: () => {
+        startedRef.current = false;
+      },
       workerUrl: '/dist/worker.min.js',
     });
     metronomeRef.current = metronome;
@@ -97,7 +138,7 @@ export function useApi(onConfigChange?: (config: ApiConfig) => void) {
         clickerRef.current?.click();
       },
       now: () => audioContextRef.current?.currentTime ?? 0,
-      getSoundPacks: () => Object.keys(SOUND_PACKS),
+      getSoundPacks: () => ['defaults', 'drumkit'],
     });
 
     applyConfig(configRef.current);

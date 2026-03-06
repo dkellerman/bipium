@@ -1,4 +1,4 @@
-import { AudioNode, Click, FinalSoundSpec, ScheduledAudio, Sound, SoundPack } from './types';
+import { AudioNode, Click, FinalSoundSpec, Sound, SoundPack } from './types';
 export declare const DEFAULT_SOUNDS: SoundPack;
 export interface ClickerOptions {
   audioContext: InstanceType<typeof AudioContext>;
@@ -25,12 +25,13 @@ export declare class Clicker {
     subDiv,
     beat,
     beats,
+    ...click
   }: {
     time: number;
     subDiv: number;
     beat: number;
     beats: number;
-  } & Click): ScheduledAudio | undefined;
+  } & Click): AudioNode | AudioNode[] | undefined;
   removeClickSound(click: Click): void;
   playSoundAt(sound: Sound, time: number, clickLength: number, relativeVolume?: number): AudioNode;
   click(t?: number): AudioNode;

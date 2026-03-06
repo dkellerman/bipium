@@ -60,17 +60,15 @@ export function seedDrumLoopPattern(timing: DrumLoopTiming): DrumLoopPattern {
     const beat = Math.floor(stepIndex / timing.subDivs) + 1;
     const subDiv = (stepIndex % timing.subDivs) + 1;
 
+    pattern.hat[stepIndex] = true;
+
     if (beat === 1 && subDiv === 1) {
       pattern.kick[stepIndex] = true;
-      continue;
     }
 
     if (beat === midpointBeat && subDiv === 1) {
       pattern.snare[stepIndex] = true;
-      continue;
     }
-
-    pattern.hat[stepIndex] = true;
   }
 
   return pattern;

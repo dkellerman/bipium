@@ -7,6 +7,7 @@ export interface MetronomeOptions {
   beats?: number;
   subDivs?: number;
   swing?: number;
+  maxBars?: number;
   worker?: Worker;
   workerUrl?: string;
   onNextClick?: (click: Click) => void;
@@ -37,11 +38,13 @@ export declare class Metronome {
     beats,
     subDivs,
     swing,
+    maxBars,
   }: {
     bpm?: number;
     beats?: number;
     subDivs?: number;
     swing?: number;
+    maxBars?: number;
   }): void;
   scheduler(): void;
   scheduleClick(): void;

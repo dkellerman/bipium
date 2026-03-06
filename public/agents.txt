@@ -10,6 +10,21 @@ Preferred sequence:
 
 If you need a sharable link, call `window.bpm.toQuery(config)`.
 For schema inspection, use `window.bpm.schemaJson` or `window.bpm.getSchemaJson()`.
+Loop helpers:
+- `window.bpm.setLoopMode(true|false)`
+- `window.bpm.setLoopRepeats(n)` where `0` means forever
+- `window.bpm.setSoundUrls({ beat: "...", bar: "..." })`
+- `window.bpm.getSoundUrls()`
+- `window.bpm.setLoopPattern(pattern)`
+- `window.bpm.resetLoopPattern()`
+- `window.bpm.getLoopPattern()`
+
+Swing guidance:
+- Prefer `swing: 0` unless swing/shuffle is explicitly requested or the groove strongly implies it
+- Around `33` is basic swing
+- Around `50` is a heavy shuffle
+- Values above `50` should be extremely rare
+- "A little swing" usually means below `33`
 
 Reference docs:
 - `/api`

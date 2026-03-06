@@ -40,7 +40,7 @@ export class Visualizer {
         // get last click index based on the saved click's number of sub divs
         const lastClickIdx = m.getClickIndex(lastClick, savedClick?.subDivs);
         // update now line
-        if (lastClick && (lastClickIdx > savedClickIdx)) {
+        if (lastClick && lastClickIdx > savedClickIdx) {
             this.savedClick = lastClick;
             const lastClickBarIdx = m.getClickBarIndex(lastClick);
             this.progress = (1.0 / m.totalSubDivs) * lastClickBarIdx;
@@ -55,7 +55,6 @@ export class Visualizer {
             const perSecond = remProgress / remTime;
             const deltaP = deltaT * perSecond;
             this.progress = (curProgress + deltaP) % 1.0;
-            ;
         }
         this.lastTime = m.elapsed;
         // update count
@@ -75,7 +74,7 @@ export class Visualizer {
         const arr = Visualizer.frameRate;
         if (!arr?.length)
             return 0;
-        const mean = arr.reduce((a, b) => (a + b)) / arr.length;
+        const mean = arr.reduce((a, b) => a + b) / arr.length;
         const std = Math.sqrt(arr.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b) / arr.length);
         return {
             mean,

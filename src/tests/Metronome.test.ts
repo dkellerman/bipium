@@ -215,4 +215,27 @@ describe('metronome', () => {
 
     m.stop();
   });
+
+  it('can stop automatically after a fixed number of bars', async () => {
+    const m = new Metronome({
+      timerFn: () => now,
+      clicker: mockClicker,
+      bpm: 60,
+      subDivs: 1,
+      maxBars: 2,
+      startDelayTime: 0,
+      lookaheadInterval: lookahead,
+    });
+
+    m.start();
+    expect(m.started).toBe(true);
+
+    fwd(3.95);
+    expect(m.started).toBe(true);
+    expect(m.lastClick).toEqual(expect.objectContaining({ bar: 1, beat: 4 }));
+
+    fwd(4.0);
+    expect(m.started).toBe(false);
+    expect(m.lastClick).toEqual(expect.objectContaining({ bar: 2, beat: 4 }));
+  });
 });

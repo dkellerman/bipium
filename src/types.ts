@@ -1,5 +1,6 @@
 import type { Dispatch, ReactNode, SetStateAction } from 'react';
 import type { Clicker, ClickerOptions, Metronome, MetronomeOptions, SoundPack } from '@/core';
+import type { DrumLoopPattern } from '@/lib/drumLoop';
 
 export type Nullable<T> = T | null | undefined;
 export type NumberLike = number | string;
@@ -26,6 +27,8 @@ export interface ClickerHookOptions {
 }
 
 export type SoundPacks = Record<string, SoundPack>;
+export type ApiSoundSlot = 'bar' | 'beat' | 'half' | 'subDiv' | 'user';
+export type ApiSoundUrls = Partial<Record<ApiSoundSlot, string>>;
 
 export interface TapBPMResult {
   bpm: number;
@@ -61,6 +64,10 @@ export interface ApiConfig {
   swing: number;
   soundPack: string;
   volume: number;
+  loopMode: boolean;
+  loopRepeats: number;
+  soundUrls: ApiSoundUrls;
+  loopPattern: DrumLoopPattern;
 }
 
 export interface ApiSchemaJson {
@@ -97,8 +104,17 @@ export interface RuntimeApi {
   stop(): void;
   toggle(): boolean;
   isStarted(): boolean;
+  isLoopMode(): boolean;
+  getLoopRepeats(): number;
+  getSoundUrls(): ApiSoundUrls;
   getConfig(): ApiConfig;
   setConfig(partial: Partial<ApiConfig>): ApiConfig;
+  getLoopPattern(): DrumLoopPattern;
+  setLoopMode(enabled: boolean): ApiConfig;
+  setLoopRepeats(repeats: number): ApiConfig;
+  setSoundUrls(soundUrls: ApiSoundUrls): ApiConfig;
+  setLoopPattern(pattern: DrumLoopPattern): ApiConfig;
+  resetLoopPattern(): ApiConfig;
   validateConfig(input: unknown): ValidationResult;
   fromQuery(query?: string): ApiConfig;
   toQuery(config?: Partial<ApiConfig>): string;

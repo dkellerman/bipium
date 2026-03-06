@@ -8,16 +8,26 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __rest = (this && this.__rest) || function (s, e) {
+    var t = {};
+    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+        t[p] = s[p];
+    if (s != null && typeof Object.getOwnPropertySymbols === "function")
+        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
+                t[p[i]] = s[p[i]];
+        }
+    return t;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Clicker = exports.DEFAULT_SOUNDS = void 0;
 exports.DEFAULT_SOUNDS = {
-    name: 'Defaults',
+    name: 'Beeps',
     bar: 880.0,
     beat: 440.0,
     subDiv: 220.0,
     user: 660.0,
 };
-;
 class Clicker {
     constructor({ audioContext, volume = 100, sounds = exports.DEFAULT_SOUNDS, resolveScheduledSounds, }) {
         this.sounds = {};
@@ -63,17 +73,16 @@ class Clicker {
     setResolveScheduledSounds(resolveScheduledSounds) {
         this.resolveScheduledSounds = resolveScheduledSounds;
     }
-    scheduleClickSound({ time, subDiv, beat, beats, ...click }) {
+    scheduleClickSound(_a) {
+        var _b;
+        var { time, subDiv, beat, beats } = _a, click = __rest(_a, ["time", "subDiv", "beat", "beats"]);
         // console.log('sch click', beat, subDiv, this.volume);
         if (this.loading)
             return;
-        const resolved = this.resolveScheduledSounds?.({
-            time,
+        const resolved = (_b = this.resolveScheduledSounds) === null || _b === void 0 ? void 0 : _b.call(this, Object.assign({ time,
             subDiv,
             beat,
-            beats,
-            ...click,
-        }, this.sounds);
+            beats }, click), this.sounds);
         if (resolved) {
             return resolved.map(([soundObj, relativeVolume, clickLength]) => this.playSoundAt(soundObj, time, clickLength, relativeVolume));
         }

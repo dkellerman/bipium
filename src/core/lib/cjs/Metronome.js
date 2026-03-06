@@ -6,9 +6,10 @@ const defaultOptions = {
     beats: 4,
     subDivs: 1,
     swing: 0,
+    maxBars: 0,
     workerUrl: undefined,
     lookaheadInterval: 0.025,
-    scheduleAheadTime: .1,
+    scheduleAheadTime: 0.1,
     startDelayTime: 0.2,
 };
 class Metronome {
@@ -20,7 +21,14 @@ class Metronome {
         this.scheduledClicks = [];
         this.opts = Object.assign(Object.assign({}, defaultOptions), opts);
         this.started = false;
-        this.next = { bar: 0, beat: 0, beats: this.opts.beats, subDiv: 0, subDivs: this.opts.subDivs, time: 0 };
+        this.next = {
+            bar: 0,
+            beat: 0,
+            beats: this.opts.beats,
+            subDiv: 0,
+            subDivs: this.opts.subDivs,
+            time: 0,
+        };
         // prep the thread timer
         if (this.opts.workerUrl) {
             this.worker = new Worker(this.opts.workerUrl);
@@ -73,7 +81,7 @@ class Metronome {
         this.unscheduleClicks();
         (_b = (_a = this.opts).onStop) === null || _b === void 0 ? void 0 : _b.call(_a);
     }
-    update({ bpm, beats, subDivs, swing }) {
+    update({ bpm, beats, subDivs, swing, maxBars, }) {
         var _a, _b;
         this.unscheduleClicks();
         if (bpm !== undefined)
@@ -84,6 +92,8 @@ class Metronome {
             this.opts.subDivs = subDivs;
         if (swing !== undefined)
             this.opts.swing = swing;
+        if (maxBars !== undefined)
+            this.opts.maxBars = maxBars;
         // recalculate next scheduled beat if bar structure has changed
         if ((bpm !== undefined || beats !== undefined) && this.started && this.scheduledClicks.length) {
             if (this.lastClick)
@@ -101,11 +111,15 @@ class Metronome {
             return;
         // update the bar start time for quantization purposes
         const lc = this.lastClick;
-        if (lc && ((lc.bar || 0) > this.lastBar)) {
+        if (lc && (lc.bar || 0) > this.lastBar) {
             this.lastBar = lc.bar;
             this.barStart = lc.time;
         }
         while (this.next.time < this.now + this.opts.scheduleAheadTime) {
+            if (this.opts.maxBars > 0 && this.next.bar > this.opts.maxBars) {
+                this.stop();
+                return;
+            }
             this.scheduleClick();
             this.advance(); // updates this.next.time
         }

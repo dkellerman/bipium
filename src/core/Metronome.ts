@@ -8,6 +8,7 @@ export interface MetronomeOptions {
   beats?: number;
   subDivs?: number;
   swing?: number;
+  maxBars?: number;
   worker?: Worker;
   workerUrl?: string;
   onNextClick?: (click: Click) => void;
@@ -26,6 +27,7 @@ const defaultOptions: Partial<MetronomeOptions> = {
   beats: 4,
   subDivs: 1,
   swing: 0,
+  maxBars: 0,
   workerUrl: undefined,
   lookaheadInterval: 0.025,
   scheduleAheadTime: 0.1,
@@ -115,11 +117,13 @@ export class Metronome {
     beats,
     subDivs,
     swing,
+    maxBars,
   }: {
     bpm?: number;
     beats?: number;
     subDivs?: number;
     swing?: number;
+    maxBars?: number;
   }) {
     this.unscheduleClicks();
 
@@ -127,6 +131,7 @@ export class Metronome {
     if (beats !== undefined) this.opts.beats = beats;
     if (subDivs !== undefined) this.opts.subDivs = subDivs;
     if (swing !== undefined) this.opts.swing = swing;
+    if (maxBars !== undefined) this.opts.maxBars = maxBars;
 
     // recalculate next scheduled beat if bar structure has changed
     if ((bpm !== undefined || beats !== undefined) && this.started && this.scheduledClicks.length) {
@@ -152,6 +157,10 @@ export class Metronome {
     }
 
     while (this.next.time < this.now + this.opts.scheduleAheadTime) {
+      if (this.opts.maxBars > 0 && this.next.bar > this.opts.maxBars) {
+        this.stop();
+        return;
+      }
       this.scheduleClick();
       this.advance(); // updates this.next.time
     }
