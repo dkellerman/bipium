@@ -9,7 +9,7 @@ import { AIPromptInput } from '@/components/AIPromptInput';
 import { BPMControls } from '@/components/BPMControls';
 import { BeatControls } from '@/components/BeatControls';
 import { DefaultVisualizer } from '@/components/DefaultVisualizer';
-import { DrumLoopVisualizer } from '@/components/DrumLoopVisualizer';
+import { DrumLoopView } from '@/components/DrumLoopView';
 import { NavBar } from '@/components/NavBar';
 import { SettingsDrawer } from '@/components/SettingsDrawer';
 import { VolumeControl } from '@/components/VolumeControl';
@@ -91,6 +91,12 @@ function isSeedLoopPattern(pattern: DrumLoopPattern, timing: DrumLoopTiming) {
   return JSON.stringify(pattern) === JSON.stringify(seedDrumLoopPattern(timing));
 }
 
+function shouldUseLoopVisualizer(
+  config: Pick<ApiConfig, 'loopPattern' | 'beats' | 'subDivs' | 'playSubDivs' | 'swing'>,
+) {
+  return !isSeedLoopPattern(config.loopPattern, getLoopTimingFromConfig(config));
+}
+
 function App() {
   const queryParams = qs.parse(window.location.search);
   const hasUrlParams = Object.keys(queryParams).length > 0;
@@ -158,6 +164,7 @@ function App() {
     [beats, activeSubDivs, swingActive, swing],
   );
   const [visualizerMode, setVisualizerMode] = useState<VisualizerMode>('default');
+  const [renderedVisualizerMode, setRenderedVisualizerMode] = useState<VisualizerMode>('default');
   const [soundUrls, setSoundUrls] = useState(() => ({ ...API_DEFAULT_CONFIG.soundUrls }));
   const [drumPattern, setDrumPattern] = useState<DrumLoopPattern>(() =>
     seedDrumLoopPattern(loopTiming),
@@ -190,6 +197,7 @@ function App() {
   });
   const drumPatternRef = useRef(drumPattern);
   const loopTimingRef = useRef(loopTiming);
+  const pendingRenderedVisualizerModeRef = useRef<VisualizerMode | null>(null);
   const apiSchemasRef = useRef(createSchemas(new Set(Object.keys(SOUND_PACKS))));
   const initialQueryAppliedRef = useRef(false);
   const mountedRef = useRef(true);
@@ -296,6 +304,10 @@ function App() {
       bpm: bpm.current,
       maxBars: visualizerMode === 'drumLoop' ? Math.max(0, loopRepeats) : 0,
     });
+    if (pendingRenderedVisualizerModeRef.current) {
+      setRenderedVisualizerMode(pendingRenderedVisualizerModeRef.current);
+      pendingRenderedVisualizerModeRef.current = null;
+    }
     forceRender();
   }, [activeSubDivs, beats, loopRepeats, loopTiming.swing, visualizerMode, metronome.started]);
 
@@ -342,24 +354,67 @@ function App() {
         loopPattern: cloneLoopPattern(next.loopPattern ?? API_DEFAULT_CONFIG.loopPattern),
       };
       const nextLoopTiming = getLoopTimingFromConfig(normalized);
+      const nextVisualizerMode = shouldUseLoopVisualizer(normalized) ? 'drumLoop' : 'default';
+      const nextBpm = validBpm(float(normalized.bpm));
+      const nextBeats = int(normalized.beats);
+      const nextSubDivs = int(normalized.subDivs);
+      const nextPlaySubDivs = Boolean(normalized.playSubDivs);
+      const nextSwing = validSwing(normalized.swing, 0);
+      const nextVolume = int(normalized.volume);
+      const nextLoopRepeats = int(normalized.loopRepeats);
+      const nextPattern = cloneLoopPattern(normalized.loopPattern);
+      const nextSoundUrls = { ...normalized.soundUrls };
+
+      bpm.current = nextBpm;
+      beatsRef.current = nextBeats;
+      subDivsRef.current = nextSubDivs;
+      playSubDivsRef.current = nextPlaySubDivs;
+      swingRef.current = nextSwing;
+      soundPackRef.current = normalized.soundPack;
+      soundUrlsRef.current = nextSoundUrls;
+      volumeRef.current = nextVolume;
+      loopRepeatsRef.current = nextLoopRepeats;
+      drumPatternRef.current = nextPattern;
 
       loopTimingRef.current = nextLoopTiming;
-      updateBPM(normalized.bpm);
-      setBeats(int(normalized.beats));
-      setPlaySubDivs(Boolean(normalized.playSubDivs));
-      setSubDivs(int(normalized.subDivs));
-      setSwing(validSwing(normalized.swing, 0));
-      setSwingEnabled(normalized.swing > 0);
-      previousSwingRef.current = normalized.swing > 0 ? normalized.swing : 0;
+      pendingRenderedVisualizerModeRef.current = nextVisualizerMode;
+      clicker.setVolume(nextVolume);
+      void clicker.setSounds(
+        buildConfiguredSoundPack(
+          normalized.soundPack || 'defaults',
+          nextSoundUrls,
+          nextVisualizerMode === 'drumLoop',
+        ),
+      );
+      clicker.setResolveScheduledSounds(
+        nextVisualizerMode === 'drumLoop'
+          ? click => resolveDrumLoopSounds(click, drumPatternRef.current, clicker.sounds)
+          : undefined,
+      );
+      metronome.update({
+        bpm: nextBpm,
+        beats: nextBeats,
+        subDivs: nextLoopTiming.subDivs,
+        swing: nextLoopTiming.swing,
+        maxBars: nextVisualizerMode === 'drumLoop' ? Math.max(0, nextLoopRepeats) : 0,
+      });
+
+      setBpmState(nextBpm);
+      setBeats(nextBeats);
+      setPlaySubDivs(nextPlaySubDivs);
+      setSubDivs(nextSubDivs);
+      setSwing(nextSwing);
+      setSwingEnabled(nextSwing > 0);
+      previousSwingRef.current = nextSwing > 0 ? nextSwing : 0;
       setSoundPack(normalized.soundPack);
-      setSoundUrls({ ...normalized.soundUrls });
-      setVolume(int(normalized.volume));
-      setVisualizerMode(normalized.loopMode ? 'drumLoop' : 'default');
-      setLoopRepeats(int(normalized.loopRepeats));
-      setDrumPattern(cloneLoopPattern(normalized.loopPattern));
-      setDrumPatternDirty(!isSeedLoopPattern(normalized.loopPattern, nextLoopTiming));
+      setSoundUrls(nextSoundUrls);
+      setVolume(nextVolume);
+      setVisualizerMode(nextVisualizerMode);
+      setLoopRepeats(nextLoopRepeats);
+      setDrumPattern(nextPattern);
+      setDrumPatternDirty(!isSeedLoopPattern(nextPattern, nextLoopTiming));
     },
-    [setLoopRepeats, updateBPM],
+    [clicker, metronome, setBpmState, setLoopRepeats],
   );
 
   useEffect(() => {
@@ -614,26 +669,30 @@ function App() {
               >
                 <Button
                   type="button"
-                  variant="ghost"
+                  variant="outline"
                   size="icon"
                   className={cn(
                     'absolute right-0 top-0 z-30 size-8 translate-x-1/4 -translate-y-1/4 rounded-full border shadow-md',
-                    'border-white/90 bg-white text-slate-900',
-                    'hover:bg-white hover:text-slate-950',
-                    visualizerMode === 'drumLoop' && 'border-emerald-500 text-emerald-700',
+                    'border-emerald-500 bg-white text-black hover:bg-white hover:text-black',
+                    renderedVisualizerMode === 'drumLoop' &&
+                      'ring-2 ring-emerald-400/80 ring-offset-1 ring-offset-white',
                   )}
                   title={
-                    visualizerMode === 'drumLoop'
+                    renderedVisualizerMode === 'drumLoop'
                       ? 'Switch to standard visualizer'
                       : 'Switch to drum loop mode'
                   }
                   aria-label={
-                    visualizerMode === 'drumLoop'
+                    renderedVisualizerMode === 'drumLoop'
                       ? 'Switch to standard visualizer'
                       : 'Switch to drum loop mode'
                   }
                   onClick={() => {
-                    setVisualizerMode(current => (current === 'drumLoop' ? 'default' : 'drumLoop'));
+                    setVisualizerMode(current => {
+                      const nextMode = current === 'drumLoop' ? 'default' : 'drumLoop';
+                      pendingRenderedVisualizerModeRef.current = nextMode;
+                      return nextMode;
+                    });
                     sendEvent(
                       'toggle_visualizer_mode',
                       'App',
@@ -644,8 +703,8 @@ function App() {
                   <Drum className="size-5" />
                 </Button>
                 <div className="h-full w-full overflow-hidden rounded-sm bg-black">
-                  {visualizerMode === 'drumLoop' ? (
-                    <DrumLoopVisualizer
+                  {renderedVisualizerMode === 'drumLoop' ? (
+                    <DrumLoopView
                       metronome={metronome}
                       pattern={drumPattern}
                       width={visualizerWidth}
@@ -708,7 +767,7 @@ function App() {
             variant="outline"
             size="icon"
             className={cn(
-              'size-11 rounded-full bg-white p-2 shadow-md',
+              'relative z-10 size-11 rounded-full bg-white p-2 shadow-md',
               (showAIPrompt || llmGenerating) && 'border-sky-300 text-sky-700 hover:bg-sky-50',
             )}
             title="AI prompt"

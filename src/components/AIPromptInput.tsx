@@ -3,6 +3,18 @@ import { LoaderCircle, Play } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
+const PROMPT_EXAMPLES = [
+  'Make a tight 8th-note drum groove at 108 BPM with a kick on 1 and 3.',
+  'Create a mellow 4/4 metronome at 72 BPM with quarter notes only.',
+  'Give me a swung hi-hat groove at 96 BPM with a snare on beat 3.',
+  'Build a fast practice click at 140 BPM in 3/4 with subdivisions.',
+  'Create a boom-bap loop at 92 BPM with kick on 1 and the “and” of 3, snare on 2 and 4.',
+  'Make a sparse practice click at 60 BPM in 5/4 with no subdivisions.',
+  'Build a shuffle groove around 112 BPM with a light swing and steady hats.',
+  'Give me a driving rock loop at 128 BPM with straight 8th-note hats and a strong backbeat.',
+  'Make a minimal house-style groove at 124 BPM with four-on-the-floor kick and offbeat hats.',
+] as const;
+
 export interface AIPromptInputProps {
   isLoading?: boolean;
   onSubmitPrompt: (prompt: string) => Promise<boolean> | boolean;
@@ -77,8 +89,32 @@ export function AIPromptInput({
             autoFocus
             value={prompt}
             onChange={event => setPrompt(event.target.value)}
-            placeholder="Make a tight 8th-note drum groove at 108 BPM with a kick on 1 and 3."
+            placeholder="Enter a prompt..."
           />
+          <label className={cn('mt-2 block')}>
+            <select
+              className={cn(
+                'w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900',
+                'focus:outline-none focus:ring-1 focus:ring-sky-400',
+              )}
+              disabled={isLoading}
+              value=""
+              onChange={event => {
+                const nextPrompt = event.target.value;
+                if (!nextPrompt) return;
+                setPrompt(nextPrompt);
+              }}
+            >
+              <option value="" disabled>
+                or choose an example...
+              </option>
+              {PROMPT_EXAMPLES.map(example => (
+                <option key={example} value={example}>
+                  {example}
+                </option>
+              ))}
+            </select>
+          </label>
           <div className={cn('mt-3 flex justify-end gap-2 border-t border-slate-200 pt-3')}>
             <Button type="button" variant="outline" onClick={onRequestClose}>
               Close

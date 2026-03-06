@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
-import type { RuntimeApi } from '@/types';
+import { seedDrumLoopPattern } from '@/lib/drumLoop';
+import type { ApiConfig, RuntimeApi } from '@/types';
 
 type ResponsesApiOutput = {
   output?: Array<{
@@ -33,8 +34,12 @@ const CONFIG_SYSTEM_PROMPT = `
   You generate valid Bipium runtime config JSON only.
   Return exactly one JSON object and no markdown.
   Match the requested groove, timing, looping, sound choice, and any explicit sound URLs.
+  Prefer the drumkit sound pack for musical grooves and drum loops.
+  Do not choose beepy/default metronome sounds unless the user explicitly asks for beeps, clicks, or a plain practice metronome sound.
   Use soundUrls for individual audio-file overrides.
   Keep loopMode false unless the user explicitly requests a drum loop.
+  If the user does not explicitly want drum-loop playback, return the default seeded loopPattern for the requested timing instead of preserving or inventing a custom pattern.
+  Only return a custom loopPattern when the user clearly wants drum-loop playback.
   Use swing sparingly. Default to swing=0 unless the user explicitly asks for swing/shuffle or the requested groove strongly implies it.
   Treat swing around 33 as basic swing, around 50 as a very heavy shuffle, and almost never go above 50.
   If the user wants only a little swing, that usually means noticeably less than 33.
@@ -128,14 +133,55 @@ function buildUserPrompt(prompt: string, docsMarkdown: string, runtime: RuntimeA
     Requirements:
     - Return a full Bipium config JSON object matching the schema.
     - Prefer soundPack when built-in sounds are enough.
+    - Prefer soundPack="drumkit" for grooves and drum loops.
+    - Avoid soundPack="defaults" unless the user asks for beeps, clicks, or a plain metronome/practice tone.
     - Use soundUrls only for explicit per-sound file overrides.
     - Use loopMode=true only for drum loop playback.
+    - If this is not a drum-loop request, set loopMode=false and return the default seeded loopPattern for the requested beats/subDivs/playSubDivs/swing.
+    - Do not keep or mutate a previous custom loopPattern unless the request is explicitly asking for drum-loop playback.
     - loopRepeats=0 means forever.
     - loopPattern arrays must match the current step count implied by beats/subDivs/playSubDivs.
     - Use swing conservatively: 0 by default, around 33 for basic swing, around 50 for a full shuffle feel, and almost never above 50.
     - If the request only suggests a little swing, pick a value well below 33.
     - Do not include markdown or explanation.
   `.trim();
+}
+
+function shouldUseLoopMode(config: ApiConfig) {
+  const activeSubDivs = config.playSubDivs ? config.subDivs : 1;
+  const swing = config.playSubDivs && config.subDivs % 2 === 0 ? config.swing : 0;
+  const seededPattern = seedDrumLoopPattern({ beats: config.beats, subDivs: activeSubDivs, swing });
+
+  return JSON.stringify(config.loopPattern) !== JSON.stringify(seededPattern);
+}
+
+function normalizeLoopConfig(config: ApiConfig): ApiConfig {
+  const loopMode = shouldUseLoopMode(config);
+  if (loopMode) {
+    return {
+      ...config,
+      loopMode: true,
+    };
+  }
+
+  const activeSubDivs = config.playSubDivs ? config.subDivs : 1;
+  const swing = config.playSubDivs && config.subDivs % 2 === 0 ? config.swing : 0;
+
+  return {
+    ...config,
+    loopMode: false,
+    loopPattern: seedDrumLoopPattern({
+      beats: config.beats,
+      subDivs: activeSubDivs,
+      swing,
+    }),
+  };
+}
+
+function waitForAnimationFrame() {
+  return new Promise<void>(resolve => {
+    window.requestAnimationFrame(() => resolve());
+  });
 }
 
 export function usePromptToApiConfig({
@@ -170,10 +216,13 @@ export function usePromptToApiConfig({
         return false;
       }
 
-      const apiKey = (import.meta.env.VITE_OPENAI_KEY as string | undefined)?.trim() ?? '';
+      const apiKey =
+        (import.meta.env.VITE_OPENAI_KEY as string | undefined)?.trim() ||
+        (import.meta.env.OPENAI_API_KEY as string | undefined)?.trim() ||
+        '';
       if (!apiKey) {
-        console.warn('AI prompt aborted: missing VITE_OPENAI_KEY.');
-        onStatusChange('Missing VITE_OPENAI_KEY.');
+        console.warn('AI prompt aborted: missing VITE_OPENAI_KEY or OPENAI_API_KEY.');
+        onStatusChange('Missing VITE_OPENAI_KEY or OPENAI_API_KEY.');
         return false;
       }
 
@@ -210,8 +259,13 @@ export function usePromptToApiConfig({
           );
         }
 
-        const pretty = JSON.stringify(validation.value, null, 2);
-        runtime.setConfig(validation.value);
+        const normalizedConfig = normalizeLoopConfig(validation.value);
+        const pretty = JSON.stringify(normalizedConfig, null, 2);
+        runtime.stop();
+        runtime.setConfig(normalizedConfig);
+        await waitForAnimationFrame();
+        await waitForAnimationFrame();
+        if (requestId !== activeRequestIdRef.current) return false;
         runtime.start();
         onPayloadReady(pretty);
         onStatusChange('Started generated config.');

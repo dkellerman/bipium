@@ -77,14 +77,14 @@ export function VolumeControl({ compact = false, inline = false }: VolumeControl
     return (
       <div
         ref={volumeControlRef}
-        className="relative h-11 w-11"
+        className={cn('relative h-11 w-11', showVolume && 'z-40')}
         onMouseLeave={() => setShowVolume(false)}
       >
         {showVolume ? (
           <div
             className={cn(
-              'absolute bottom-full left-1/2 z-20 mb-3 w-[220px] -translate-x-1/2 overflow-hidden rounded-full',
-              'border border-slate-300 bg-white px-3 py-1 shadow-sm',
+              'absolute left-1/2 top-1/2 z-50 w-[220px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-full',
+              'border border-slate-300 bg-white px-3 py-1 shadow-md',
             )}
           >
             <div className="flex items-center gap-2">

@@ -38,6 +38,7 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react(), tailwindcss()],
+    envPrefix: ['VITE_', 'OPENAI_'],
     resolve: {
       alias: {
         '@': resolve(__dirname, 'src'),
