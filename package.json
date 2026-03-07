@@ -2,6 +2,7 @@
   "name": "@dkellerman/bipium",
   "version": "1.0.1",
   "private": true,
+  "type": "module",
   "author": "David Kellerman <david@silvermoon.org>",
   "license": "MIT",
   "homepage": "https://bipium.com",
