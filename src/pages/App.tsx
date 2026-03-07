@@ -26,6 +26,7 @@ import {
   useSetting,
 } from '@/hooks';
 import {
+  DRUM_LOOP_LANES,
   seedDrumLoopPattern,
   remapDrumLoopPattern,
   resolveDrumLoopSounds,
@@ -172,6 +173,13 @@ function App() {
   const [drumPatternDirty, setDrumPatternDirty] = useState(false);
   const visualizerWidth = Math.max(272, Math.min(450, viewportWidth - 30));
   const visualizerHeight = 124;
+  const drumLoopHorizontalLines = useMemo(
+    () =>
+      DRUM_LOOP_LANES.slice(1).map(
+        (_, index) => (visualizerHeight / DRUM_LOOP_LANES.length) * (index + 1),
+      ),
+    [visualizerHeight],
+  );
 
   const clicker = useClicker({
     audioContext: audioContext.current,
@@ -239,6 +247,13 @@ function App() {
   const toggle = useCallback(() => {
     setStarted(value => !value);
   }, []);
+
+  const toggleVisualizerMode = useCallback(() => {
+    const nextMode = visualizerMode === 'drumLoop' ? 'default' : 'drumLoop';
+    pendingRenderedVisualizerModeRef.current = nextMode;
+    setVisualizerMode(nextMode);
+    sendEvent('toggle_visualizer_mode', 'App', nextMode);
+  }, [visualizerMode]);
 
   const toggleDrumLoopStep = useCallback((lane: DrumLoopLane, stepIndex: number) => {
     setDrumPattern(previous => {
@@ -621,6 +636,7 @@ function App() {
       updateBPM,
     ],
   );
+  const isRenderedDrumLoop = renderedVisualizerMode === 'drumLoop';
 
   return (
     <AppProvider value={appContextValue}>
@@ -688,37 +704,24 @@ function App() {
                       : 'Switch to drum loop mode'
                   }
                   onClick={() => {
-                    setVisualizerMode(current => {
-                      const nextMode = current === 'drumLoop' ? 'default' : 'drumLoop';
-                      pendingRenderedVisualizerModeRef.current = nextMode;
-                      return nextMode;
-                    });
-                    sendEvent(
-                      'toggle_visualizer_mode',
-                      'App',
-                      visualizerMode === 'drumLoop' ? 'default' : 'drumLoop',
-                    );
+                    toggleVisualizerMode();
                   }}
                 >
                   <Drum className="size-5" />
                 </Button>
                 <div className="h-full w-full overflow-hidden rounded-sm bg-black">
-                  {renderedVisualizerMode === 'drumLoop' ? (
-                    <DrumLoopView
-                      metronome={metronome}
-                      pattern={drumPattern}
-                      width={visualizerWidth}
-                      height={visualizerHeight}
-                      onToggleStep={toggleDrumLoopStep}
-                    />
-                  ) : (
-                    <DefaultVisualizer
-                      id={id}
-                      metronome={metronome}
-                      width={visualizerWidth}
-                      height={visualizerHeight}
-                    />
-                  )}
+                  <DefaultVisualizer
+                    id={id}
+                    metronome={metronome}
+                    width={visualizerWidth}
+                    height={visualizerHeight}
+                    showCount={!isRenderedDrumLoop}
+                    showClicks={!isRenderedDrumLoop}
+                    horizontalLines={isRenderedDrumLoop ? drumLoopHorizontalLines : []}
+                    drumLoopPattern={isRenderedDrumLoop ? drumPattern : undefined}
+                    onToggleDrumStep={isRenderedDrumLoop ? toggleDrumLoopStep : undefined}
+                  />
+                  <DrumLoopView height={visualizerHeight} visible={isRenderedDrumLoop} />
                 </div>
               </div>
             </CardContent>

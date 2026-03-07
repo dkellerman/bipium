@@ -66,12 +66,27 @@ export function DefaultVisualizer({
   const nowLineRef = useRef<any>(null);
   const countRef = useRef<any>(null);
   const descRef = useRef<any>(null);
+  const renderStateRef = useRef({
+    showNow,
+    showCount,
+    showClicks,
+    width,
+    height,
+  });
   const beats = m.opts.beats;
   const subDivs = m.opts.subDivs;
   const swing = m.opts.swing;
   const barTime = m.barTime;
   const gridTimes = React.useMemo(() => m.gridTimes, [m, beats, subDivs, swing, barTime]);
   const gridSignature = `${beats}:${subDivs}:${swing}:${width}:${height}`;
+
+  renderStateRef.current = {
+    showNow,
+    showCount,
+    showClicks,
+    width,
+    height,
+  };
 
   const centerTextAt = (textNode: any, centerX: number, centerY: number) => {
     if (!textNode?.getLocalBounds) return;
@@ -133,18 +148,23 @@ export function DefaultVisualizer({
 
       v.current.update();
 
-      if (showNow) {
-        nowLineRef.current.x = v.current.progress * width;
-      }
+      const {
+        showNow: shouldShowNow,
+        showCount: shouldShowCount,
+        showClicks: shouldShowClicks,
+        width: currentWidth,
+        height: currentHeight,
+      } = renderStateRef.current;
 
-      if (showCount) {
-        countRef.current.text = v.current.count.join('-');
-      } else {
-        countRef.current.text = '';
-      }
-      centerTextAt(countRef.current, width / 2, height / 2 - 10);
+      nowLineRef.current.visible = shouldShowNow;
+      nowLineRef.current.x = v.current.progress * currentWidth;
 
-      if (showClicks && v.current.qType) {
+      countRef.current.text = shouldShowCount ? v.current.count.join('-') : '';
+      centerTextAt(countRef.current, currentWidth / 2, currentHeight / 2 - 10);
+
+      if (!shouldShowClicks) {
+        descRef.current.text = '';
+      } else if (v.current.qType) {
         const t = v.current.qType;
         if (t === 'early') {
           descRef.current.text = 'Early';
@@ -156,12 +176,15 @@ export function DefaultVisualizer({
           descRef.current.text = 'On time!';
           descRef.current.style.fill = correctNoteColor;
         }
+      } else {
+        descRef.current.text = DEFAULT_DESC_TEXT;
+        descRef.current.style.fill = descriptionFont.fill;
       }
-      centerTextAt(descRef.current, width / 2, height - 20);
+      centerTextAt(descRef.current, currentWidth / 2, currentHeight - 20);
 
       frameRef.current = window.requestAnimationFrame(drawFrame);
     },
-    [mAny.started, mAny.barTime, mAny.opts?.bpm, showClicks, showCount, showNow, width],
+    [mAny.started],
   );
 
   useEffect(() => {
@@ -187,7 +210,7 @@ export function DefaultVisualizer({
       }
       v.current.stop();
     }
-  }, [cancelDraw, draw, mAny.started, gridSignature, showClicks]);
+  }, [cancelDraw, draw, mAny.started, gridSignature]);
 
   useEffect(() => cancelDraw, [cancelDraw]);
 
