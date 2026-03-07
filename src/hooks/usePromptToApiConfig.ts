@@ -50,9 +50,29 @@ async function requestPayloadFromServer(params: {
   });
 
   if (!response.ok) {
-    const errorBody = (await response.json().catch(() => null)) as { error?: string } | null;
-    const message = errorBody?.error ?? `LLM request failed (${response.status}).`;
-    llmDebug('config: error body', { status: response.status, message });
+    const rawBody = await response.text();
+    let errorBody: { error?: string } | null = null;
+    if (rawBody) {
+      try {
+        errorBody = JSON.parse(rawBody) as { error?: string };
+      } catch {
+        errorBody = null;
+      }
+    }
+
+    const vercelError = response.headers.get('x-vercel-error');
+    const responseText = rawBody.trim();
+    const fallbackMessage = `LLM request failed (${response.status}${vercelError ? `: ${vercelError}` : ''}).`;
+    const message =
+      errorBody?.error ??
+      (responseText && !responseText.startsWith('<!doctype html') ? responseText : fallbackMessage);
+
+    llmDebug('config: error body', {
+      status: response.status,
+      vercelError,
+      message,
+      rawBody: responseText,
+    });
     throw new Error(message);
   }
 

@@ -1,5 +1,3 @@
-import { z } from 'zod';
-
 type ResponsesApiOutput = {
   output?: Array<{
     type?: string;
@@ -10,13 +8,15 @@ type ResponsesApiOutput = {
   }>;
 };
 
-const requestSchema = z.object({
-  prompt: z.string().trim().min(1).max(4000),
-  docsMarkdown: z.string().max(100000).default(''),
-  currentConfig: z.unknown(),
-  soundPacks: z.array(z.string().min(1)).max(32),
-  schema: z.unknown(),
-});
+type AiConfigRequestBody = {
+  prompt: string;
+  docsMarkdown: string;
+  currentConfig: unknown;
+  soundPacks: string[];
+  schema: Record<string, unknown>;
+};
+
+class RequestValidationError extends Error {}
 
 const CONFIG_SYSTEM_PROMPT = `
   You generate valid Bipium runtime config JSON only.
@@ -43,6 +43,86 @@ function extractOutputText(data: ResponsesApiOutput) {
     }
   }
   return null;
+}
+
+function createJsonResponse(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function validatePrompt(value: unknown) {
+  if (typeof value !== 'string') {
+    throw new RequestValidationError('prompt must be a string.');
+  }
+
+  const prompt = value.trim();
+  if (!prompt) {
+    throw new RequestValidationError('prompt must not be empty.');
+  }
+  if (prompt.length > 4000) {
+    throw new RequestValidationError('prompt must be at most 4000 characters.');
+  }
+
+  return prompt;
+}
+
+function validateDocsMarkdown(value: unknown) {
+  if (value === undefined) return '';
+  if (typeof value !== 'string') {
+    throw new RequestValidationError('docsMarkdown must be a string.');
+  }
+  if (value.length > 100000) {
+    throw new RequestValidationError('docsMarkdown must be at most 100000 characters.');
+  }
+  return value;
+}
+
+function validateSoundPacks(value: unknown) {
+  if (!Array.isArray(value)) {
+    throw new RequestValidationError('soundPacks must be an array.');
+  }
+  if (value.length > 32) {
+    throw new RequestValidationError('soundPacks must contain at most 32 items.');
+  }
+
+  return value.map((soundPack, index) => {
+    if (typeof soundPack !== 'string') {
+      throw new RequestValidationError(`soundPacks[${index}] must be a string.`);
+    }
+
+    const trimmed = soundPack.trim();
+    if (!trimmed) {
+      throw new RequestValidationError(`soundPacks[${index}] must not be empty.`);
+    }
+
+    return trimmed;
+  });
+}
+
+function parseRequestBody(payload: unknown): AiConfigRequestBody {
+  if (!isPlainObject(payload)) {
+    throw new RequestValidationError('Request body must be a JSON object.');
+  }
+
+  if (!isPlainObject(payload.schema)) {
+    throw new RequestValidationError('Invalid config schema payload.');
+  }
+
+  return {
+    prompt: validatePrompt(payload.prompt),
+    docsMarkdown: validateDocsMarkdown(payload.docsMarkdown),
+    currentConfig: payload.currentConfig,
+    soundPacks: validateSoundPacks(payload.soundPacks),
+    schema: payload.schema,
+  };
 }
 
 function buildUserPrompt(params: {
@@ -143,14 +223,17 @@ export async function POST(request: Request) {
   try {
     const apiKey = process.env.OPENAI_API_KEY?.trim() ?? '';
     if (!apiKey) {
-      return Response.json({ error: 'Missing OPENAI_API_KEY on the server.' }, { status: 500 });
+      return createJsonResponse({ error: 'Missing OPENAI_API_KEY on the server.' }, 500);
     }
 
-    const body = requestSchema.parse(await request.json());
-    if (!body.schema || typeof body.schema !== 'object' || Array.isArray(body.schema)) {
-      return Response.json({ error: 'Invalid config schema payload.' }, { status: 400 });
+    let requestJson: unknown;
+    try {
+      requestJson = await request.json();
+    } catch {
+      return createJsonResponse({ error: 'Request body must be valid JSON.' }, 400);
     }
 
+    const body = parseRequestBody(requestJson);
     const model = process.env.OPENAI_MODEL?.trim() || 'gpt-4.1';
     const parsed = await requestPayloadFromModel({
       apiKey,
@@ -163,16 +246,14 @@ export async function POST(request: Request) {
       signal: request.signal,
     });
 
-    return Response.json(parsed);
+    return createJsonResponse(parsed);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return Response.json(
-        { error: error.issues[0]?.message ?? 'Invalid request body.' },
-        { status: 400 },
-      );
+    if (error instanceof RequestValidationError) {
+      return createJsonResponse({ error: error.message }, 400);
     }
 
     const message = error instanceof Error ? error.message : 'Unknown server error.';
-    return Response.json({ error: message }, { status: 500 });
+    console.error('ai-config POST failed', error);
+    return createJsonResponse({ error: message }, 500);
   }
 }
