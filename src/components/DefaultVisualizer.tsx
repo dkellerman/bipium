@@ -2,9 +2,8 @@
 import React, { useRef, useEffect, useCallback } from 'react';
 import { Application, extend } from '@pixi/react';
 import { Graphics, Text as PixiText } from 'pixi.js';
-import { Visualizer } from '@/core';
-import type { Metronome } from '@/core';
-import type { DrumLoopLane, DrumLoopPattern } from '@/lib/drumLoop';
+import { Visualizer } from '@/core/index';
+import type { DrumLoopLane, DrumLoopPattern, Metronome } from '@/core/index';
 import { isEditableEventTarget } from '@/lib/utils';
 import { DrumLoopOverlay } from './DrumLoopOverlay';
 

@@ -4,10 +4,12 @@ import {
   createRuntimeApi,
   createSchemas,
   fromQuery,
+  installWindowBpm,
   mergeConfig,
+  seedDrumLoopPattern,
   toQuery,
-} from '@/api';
-import { seedDrumLoopPattern, type DrumLoopPattern } from '@/lib/drumLoop';
+  type DrumLoopPattern,
+} from '@/core/index';
 import type { ApiConfig } from '@/types';
 
 function cloneLoopPattern(pattern: DrumLoopPattern): DrumLoopPattern {
@@ -111,5 +113,38 @@ describe('browser api loop support', () => {
     expect(runtime.getLoopPattern()).toEqual(
       seedDrumLoopPattern({ beats: current.beats, subDivs: 1, swing: 0 }),
     );
+  });
+
+  it('merges runtime methods onto an existing window.bpm namespace and restores it', () => {
+    const target = {
+      bpm: {
+        Visualizer: 'existing-visualizer',
+      },
+    };
+
+    const runtime = createRuntimeApi({
+      getConfig: () => createConfig(),
+      applyConfig: () => {},
+      startPlayback: () => {},
+      stopPlayback: () => {},
+      togglePlayback: () => false,
+      isPlaying: () => false,
+      tap: () => {},
+      now: () => 0,
+      getSoundPacks: () => ['defaults', 'drumkit'],
+    });
+
+    const uninstall = installWindowBpm(runtime, target);
+
+    expect(target.bpm).toMatchObject({
+      Visualizer: 'existing-visualizer',
+      entrypoint: 'window.bpm',
+    });
+
+    uninstall();
+
+    expect(target.bpm).toEqual({
+      Visualizer: 'existing-visualizer',
+    });
   });
 });

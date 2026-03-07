@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Range } from './Range';
 import { StepButtons } from './StepButtons';
-import { useApp } from '@/context/AppContext';
+import { useApp } from '@/AppContext';
 import { cn } from '@/lib/utils';
 import { sendEvent, sendOneEvent } from '@/tracking';
 import type { NumberInput } from '@/types';

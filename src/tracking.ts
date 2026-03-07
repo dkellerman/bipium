@@ -1,4 +1,4 @@
-import { Visualizer } from '@/core';
+import { Visualizer } from '@/core/index';
 import type { TrackingWindow } from './types';
 
 const trackingWindow = window as TrackingWindow;

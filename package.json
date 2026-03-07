@@ -50,14 +50,15 @@
   "scripts": {
     "vercel": "node_modules/.bin/vercel",
     "dev": "vite",
+    "dev:vercel": "vercel dev",
     "start": "vite",
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run --environment jsdom",
     "test:watch": "vitest --environment jsdom",
     "build:core": "vite build --mode core-unminified && vite build --mode core-minified",
-    "format": "prettier --write \"src/**/*.{ts,tsx,css,md}\" index.html package.json tsconfig.json vite.config.mjs",
-    "format:check": "prettier --check \"src/**/*.{ts,tsx,css,md}\" index.html package.json tsconfig.json vite.config.mjs",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css,md}\" \"api/**/*.{ts,tsx,css,md}\" index.html package.json tsconfig.json vite.config.mjs",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css,md}\" \"api/**/*.{ts,tsx,css,md}\" index.html package.json tsconfig.json vite.config.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "pnpm run typecheck"
   },

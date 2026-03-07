@@ -1,6 +1,14 @@
 export type Sound = string | number | AudioBuffer;
 export type FinalSoundSpec = [Sound, number, number];
 export type SoundSpec = string | number | FinalSoundSpec;
+export declare const DRUM_LOOP_LANES: readonly ['kick', 'hat', 'snare'];
+export type DrumLoopLane = (typeof DRUM_LOOP_LANES)[number];
+export interface DrumLoopTiming {
+  beats: number;
+  subDivs: number;
+  swing: number;
+}
+export type DrumLoopPattern = Record<DrumLoopLane, boolean[]>;
 export type SoundPack = {
   [key: string]: SoundSpec;
 };

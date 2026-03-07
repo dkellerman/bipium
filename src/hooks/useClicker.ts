@@ -1,6 +1,6 @@
 import { useRef } from 'react';
-import { Clicker, DEFAULT_SOUNDS } from '@/core';
-import type { SoundPack } from '@/core';
+import { Clicker, DEFAULT_SOUNDS } from '@/core/index';
+import type { SoundPack } from '@/core/index';
 import type { SoundSpec } from '@/core/types';
 import type { ApiSoundSlot, ApiSoundUrls, ClickerHookOptions, SoundPacks } from '@/types';
 

@@ -6,6 +6,8 @@
     "moduleResolution": "Bundler",
     "baseUrl": ".",
     "paths": {
+      "@/core": ["src/core/index.ts"],
+      "@/core/*": ["src/core/*"],
       "@/*": ["src/*"]
     },
     "jsx": "react-jsx",
@@ -16,7 +18,7 @@
     "skipLibCheck": true,
     "strict": false,
     "noEmit": true,
-    "types": ["react", "react-dom", "vite/client", "vitest/globals"]
+    "types": ["node", "react", "react-dom", "vite/client", "vitest/globals"]
   },
-  "include": ["src"]
+  "include": ["src", "api"]
 }

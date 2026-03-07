@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { DRUM_LOOP_LANES, type DrumLoopLane } from '@/lib/drumLoop';
+import { DRUM_LOOP_LANES, type DrumLoopLane } from '@/core/index';
 
 interface DrumLoopViewProps {
   height?: number;
@@ -28,10 +28,7 @@ const laneMeta = {
   }
 >;
 
-export function DrumLoopView({
-  height = 124,
-  visible = true,
-}: DrumLoopViewProps) {
+export function DrumLoopView({ height = 124, visible = true }: DrumLoopViewProps) {
   if (!visible) {
     return null;
   }

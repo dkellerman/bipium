@@ -4,7 +4,21 @@ import qs from 'query-string';
 import copyToClipboard from 'copy-to-clipboard';
 import { AudioContext } from 'standardized-audio-context';
 import { Drum, Settings, Sparkles } from 'lucide-react';
-import { API_DEFAULT_CONFIG, createRuntimeApi, createSchemas, fromQuery, toQuery } from '@/api';
+import {
+  API_DEFAULT_CONFIG,
+  DRUM_LOOP_LANES,
+  createRuntimeApi,
+  createSchemas,
+  fromQuery,
+  installWindowBpm,
+  remapDrumLoopPattern,
+  resolveDrumLoopSounds,
+  seedDrumLoopPattern,
+  toQuery,
+  type DrumLoopLane,
+  type DrumLoopPattern,
+  type DrumLoopTiming,
+} from '@/core/index';
 import { AIPromptInput } from '@/components/AIPromptInput';
 import { BPMControls } from '@/components/BPMControls';
 import { BeatControls } from '@/components/BeatControls';
@@ -15,8 +29,8 @@ import { SettingsDrawer } from '@/components/SettingsDrawer';
 import { VolumeControl } from '@/components/VolumeControl';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { AppProvider } from '@/context/AppContext';
-import type { AppContextValue } from '@/context/AppContext';
+import { AppProvider } from '@/AppContext';
+import type { AppContextValue } from '@/AppContext';
 import {
   buildConfiguredSoundPack,
   SOUND_PACKS,
@@ -25,15 +39,6 @@ import {
   usePromptToApiConfig,
   useSetting,
 } from '@/hooks';
-import {
-  DRUM_LOOP_LANES,
-  seedDrumLoopPattern,
-  remapDrumLoopPattern,
-  resolveDrumLoopSounds,
-  type DrumLoopLane,
-  type DrumLoopPattern,
-  type DrumLoopTiming,
-} from '@/lib/drumLoop';
 import { cn, isEditableEventTarget } from '@/lib/utils';
 import { sendEvent, sendFrameRate } from '@/tracking';
 import type { ApiConfig, BooleanInput, NumberInput } from '@/types';
@@ -455,13 +460,7 @@ function App() {
       getSoundPacks: () => Object.keys(SOUND_PACKS),
     });
 
-    window.bpm = runtime;
-
-    return () => {
-      if (window.bpm === runtime) {
-        delete window.bpm;
-      }
-    };
+    return installWindowBpm(runtime);
   }, [applyApiConfig, clicker, getApiConfig]);
 
   useEffect(() => {

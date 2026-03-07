@@ -1,8 +1,12 @@
 import React, { useCallback, useMemo } from 'react';
 import { extend } from '@pixi/react';
 import { Graphics, Rectangle, type FederatedPointerEvent } from 'pixi.js';
-import type { Metronome } from '@/core';
-import { DRUM_LOOP_LANES, type DrumLoopLane, type DrumLoopPattern } from '@/lib/drumLoop';
+import {
+  DRUM_LOOP_LANES,
+  type DrumLoopLane,
+  type DrumLoopPattern,
+  type Metronome,
+} from '@/core/index';
 
 interface DrumLoopOverlayProps {
   metronome: Metronome;

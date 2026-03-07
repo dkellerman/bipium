@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Range } from './Range';
-import { useApp } from '@/context/AppContext';
+import { useApp } from '@/AppContext';
 import { cn } from '@/lib/utils';
 import { sendOneEvent } from '@/tracking';
 import type { NumberInput } from '@/types';

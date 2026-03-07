@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Range } from './Range';
 import { StepButtons } from './StepButtons';
 import { useTapBPM } from '@/hooks';
-import { useApp } from '@/context/AppContext';
+import { useApp } from '@/AppContext';
 import { cn, isEditableEventTarget } from '@/lib/utils';
 import { sendEvent, sendOneEvent } from '@/tracking';
 import type { NumberInput } from '@/types';

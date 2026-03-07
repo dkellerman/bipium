@@ -12,3 +12,5 @@ export function createMetronome(mOpts, clickerOpts = {}, audioContext = new Audi
 export { Metronome } from './Metronome';
 export { Clicker, DEFAULT_SOUNDS } from './Clicker';
 export { Visualizer } from './Visualizer';
+export { DRUM_LOOP_LANES } from './types';
+export * from './api';

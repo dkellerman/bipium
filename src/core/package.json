@@ -3,6 +3,10 @@
   "version": "1.0.4",
   "description": "Metronome",
   "main": "./lib/cjs/index.js",
+  "dependencies": {
+    "query-string": "^9.3.1",
+    "zod": "^4.3.6"
+  },
   "scripts": {
     "clean": "rm -rf ./lib",
     "build": "pnpm run clean && pnpm run build:esm && pnpm run build:cjs",

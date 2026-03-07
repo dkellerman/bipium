@@ -13,7 +13,7 @@ function coreBuildConfig(minified) {
       sourcemap: false,
       lib: {
         entry: resolve(__dirname, 'src/core/browser-esm.ts'),
-        name: 'Bipium',
+        name: 'bpm',
         formats: ['iife'],
       },
       rollupOptions: {
@@ -28,6 +28,8 @@ function coreBuildConfig(minified) {
 }
 
 export default defineConfig(({ mode }) => {
+  const devPort = Number.parseInt(process.env.PORT ?? '', 10);
+
   if (mode === 'core-minified') {
     return coreBuildConfig(true);
   }
@@ -38,7 +40,7 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react(), tailwindcss()],
-    envPrefix: ['VITE_', 'OPENAI_'],
+    envPrefix: ['VITE_'],
     resolve: {
       alias: {
         '@': resolve(__dirname, 'src'),
@@ -48,7 +50,7 @@ export default defineConfig(({ mode }) => {
       chunkSizeWarningLimit: 1200,
     },
     server: {
-      port: 3000,
+      port: Number.isFinite(devPort) ? devPort : 3000,
     },
   };
 });

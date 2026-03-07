@@ -1,8 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { AudioContext } from 'standardized-audio-context';
-import { Clicker, Metronome } from '@/core';
-import { API_DEFAULT_CONFIG, createRuntimeApi } from '@/api';
-import { resolveDrumLoopSounds } from '@/lib/drumLoop';
+import {
+  API_DEFAULT_CONFIG,
+  Clicker,
+  createRuntimeApi,
+  installWindowBpm,
+  Metronome,
+  resolveDrumLoopSounds,
+} from '@/core/index';
 import type { ApiConfig, RuntimeApi } from '@/types';
 import { buildConfiguredSoundPack } from './useClicker';
 
@@ -143,14 +148,12 @@ export function useApi(onConfigChange?: (config: ApiConfig) => void) {
 
     applyConfig(configRef.current);
     setRuntimeApi(runtime);
-    window.bpm = runtime;
+    const uninstallWindowBpm = installWindowBpm(runtime);
 
     return () => {
       metronomeRef.current?.stop();
       startedRef.current = false;
-      if (window.bpm === runtime) {
-        delete window.bpm;
-      }
+      uninstallWindowBpm();
       metronomeRef.current = null;
       clickerRef.current = null;
       audioContextRef.current = null;

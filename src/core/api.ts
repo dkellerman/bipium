@@ -2,18 +2,12 @@ import qs from 'query-string';
 import { z } from 'zod';
 import {
   DRUM_LOOP_LANES,
-  remapDrumLoopPattern,
-  seedDrumLoopPattern,
+  type Click,
   type DrumLoopPattern,
   type DrumLoopTiming,
-} from './lib/drumLoop';
-import type {
-  ApiConfig,
-  ApiSchemaJson,
-  ApiSoundSlot,
-  ApiSoundUrls,
-  RuntimeApi,
-  ValidationResult,
+  type FinalSoundSpec,
+  type SoundPack,
+  type SoundSpec,
 } from './types';
 
 export const API_VERSION = 1;
@@ -26,6 +20,210 @@ export const API_DISCOVERY = {
   agents: '/agents.txt',
 } as const;
 export const BIPIUM_API_DISCOVERY = API_DISCOVERY;
+
+export type ApiSoundSlot = 'bar' | 'beat' | 'half' | 'subDiv' | 'user';
+export type ApiSoundUrls = Partial<Record<ApiSoundSlot, string>>;
+
+export interface ApiConfig {
+  bpm: number;
+  beats: number;
+  subDivs: number;
+  playSubDivs: boolean;
+  swing: number;
+  soundPack: string;
+  volume: number;
+  loopMode: boolean;
+  loopRepeats: number;
+  soundUrls: ApiSoundUrls;
+  loopPattern: DrumLoopPattern;
+}
+
+export interface ApiSchemaJson {
+  config: unknown;
+  configPatch: unknown;
+}
+
+export type ValidationResult = { ok: true; value: ApiConfig } | { ok: false; error: string };
+
+export interface RuntimeApi {
+  version: number;
+  entrypoint: 'window.bpm';
+  discovery: {
+    ui: string;
+    markdown: string;
+    llms: string;
+    agents: string;
+  };
+  defaults: ApiConfig;
+  schemas: {
+    config: unknown;
+    configPatch: unknown;
+  };
+  schemaJson: ApiSchemaJson;
+  getSchemaJson(): ApiSchemaJson;
+  start(
+    bpm?: number,
+    beats?: number,
+    subDivs?: number,
+    swing?: number,
+    soundPack?: string,
+    volume?: number,
+  ): ApiConfig;
+  stop(): void;
+  toggle(): boolean;
+  isStarted(): boolean;
+  isLoopMode(): boolean;
+  getLoopRepeats(): number;
+  getSoundUrls(): ApiSoundUrls;
+  getConfig(): ApiConfig;
+  setConfig(partial: Partial<ApiConfig>): ApiConfig;
+  getLoopPattern(): DrumLoopPattern;
+  setLoopMode(enabled: boolean): ApiConfig;
+  setLoopRepeats(repeats: number): ApiConfig;
+  setSoundUrls(soundUrls: ApiSoundUrls): ApiConfig;
+  setLoopPattern(pattern: DrumLoopPattern): ApiConfig;
+  resetLoopPattern(): ApiConfig;
+  validateConfig(input: unknown): ValidationResult;
+  fromQuery(query?: string): ApiConfig;
+  toQuery(config?: Partial<ApiConfig>): string;
+  applyQuery(query?: string): ApiConfig;
+  tap(): void;
+  getSoundPacks(): string[];
+  now(): number;
+}
+
+export type BipiumApiConfig = ApiConfig;
+export type BipiumApiSchemaJson = ApiSchemaJson;
+export type BipiumValidationResult = ValidationResult;
+export type BipiumRuntimeApi = RuntimeApi;
+
+function createLane(stepCount: number) {
+  return Array.from({ length: stepCount }, () => false);
+}
+
+function getStepCount({ beats, subDivs }: DrumLoopTiming) {
+  return Math.max(1, beats * subDivs);
+}
+
+export function createEmptyDrumLoopPattern(timing: DrumLoopTiming): DrumLoopPattern {
+  const stepCount = getStepCount(timing);
+  return {
+    kick: createLane(stepCount),
+    hat: createLane(stepCount),
+    snare: createLane(stepCount),
+  };
+}
+
+function getStepIndex({ beat, subDiv, subDivs }: Pick<Click, 'beat' | 'subDiv' | 'subDivs'>) {
+  return (beat - 1) * subDivs + (subDiv - 1);
+}
+
+function isBeatAlignedStep(stepIndex: number, subDivs: number) {
+  return stepIndex % subDivs === 0;
+}
+
+function getStepPositions({ beats, subDivs, swing }: DrumLoopTiming) {
+  const totalSteps = getStepCount({ beats, subDivs, swing });
+  const base = 1 / totalSteps;
+  const swingOffset = base * (swing / 100);
+
+  return Array.from({ length: totalSteps }, (_, index) => {
+    const position = index * base;
+    return index % 2 === 1 ? position + swingOffset : position;
+  });
+}
+
+function nearestIndex(target: number, positions: number[]) {
+  let bestIndex = 0;
+  let bestDistance = Number.POSITIVE_INFINITY;
+
+  positions.forEach((position, index) => {
+    const distance = Math.abs(position - target);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      bestIndex = index;
+    }
+  });
+
+  return bestIndex;
+}
+
+export function seedDrumLoopPattern(timing: DrumLoopTiming): DrumLoopPattern {
+  const pattern = createEmptyDrumLoopPattern(timing);
+  const midpointBeat = Math.ceil(timing.beats / 2) + 1;
+
+  for (let stepIndex = 0; stepIndex < getStepCount(timing); stepIndex += 1) {
+    const beat = Math.floor(stepIndex / timing.subDivs) + 1;
+    const subDiv = (stepIndex % timing.subDivs) + 1;
+
+    pattern.hat[stepIndex] = true;
+
+    if (beat === 1 && subDiv === 1) {
+      pattern.kick[stepIndex] = true;
+    }
+
+    if (beat === midpointBeat && subDiv === 1) {
+      pattern.snare[stepIndex] = true;
+    }
+  }
+
+  return pattern;
+}
+
+export function remapDrumLoopPattern(
+  pattern: DrumLoopPattern,
+  fromTiming: DrumLoopTiming,
+  toTiming: DrumLoopTiming,
+): DrumLoopPattern {
+  const next = createEmptyDrumLoopPattern(toTiming);
+  const fromPositions = getStepPositions(fromTiming);
+  const toPositions = getStepPositions(toTiming);
+
+  DRUM_LOOP_LANES.forEach(lane => {
+    pattern[lane].forEach((active, index) => {
+      if (!active) return;
+      const targetIndex = nearestIndex(fromPositions[index] ?? 0, toPositions);
+      next[lane][targetIndex] = true;
+    });
+  });
+
+  return next;
+}
+
+function toFinalSoundSpec(soundSpec?: SoundSpec): FinalSoundSpec | null {
+  if (!soundSpec) return null;
+  if (Array.isArray(soundSpec)) return soundSpec as FinalSoundSpec;
+  return [soundSpec, 1.0, 0.05];
+}
+
+export function resolveDrumLoopSounds(
+  click: Pick<Click, 'beat' | 'subDiv' | 'subDivs'>,
+  pattern: DrumLoopPattern,
+  sounds: SoundPack,
+): FinalSoundSpec[] {
+  const stepIndex = getStepIndex(click);
+  const resolved: FinalSoundSpec[] = [];
+
+  if (pattern.kick[stepIndex]) {
+    const kickSound = toFinalSoundSpec(sounds.bar || sounds.beat);
+    if (kickSound) resolved.push(kickSound);
+  }
+
+  if (pattern.snare[stepIndex]) {
+    const snareSound = toFinalSoundSpec(sounds.half || sounds.beat);
+    if (snareSound) resolved.push(snareSound);
+  }
+
+  if (pattern.hat[stepIndex]) {
+    const isBeat = isBeatAlignedStep(stepIndex, click.subDivs);
+    const hatSound = toFinalSoundSpec(
+      isBeat ? sounds.beat || sounds.subDiv : sounds.subDiv || sounds.beat,
+    );
+    if (hatSound) resolved.push(hatSound);
+  }
+
+  return resolved;
+}
 
 function getLoopTiming(config: Pick<ApiConfig, 'beats' | 'subDivs' | 'playSubDivs' | 'swing'>) {
   return {
@@ -567,3 +765,29 @@ export function createRuntimeApi(controls: RuntimeControls): RuntimeApi {
   };
 }
 export const createBipiumRuntimeApi = createRuntimeApi;
+
+type RuntimeNamespaceTarget = {
+  bpm?: Record<string, unknown>;
+};
+
+export function installWindowBpm(
+  runtime: RuntimeApi,
+  target: RuntimeNamespaceTarget = globalThis as RuntimeNamespaceTarget,
+) {
+  const previous = target.bpm;
+  const next =
+    previous && typeof previous === 'object'
+      ? { ...previous, ...runtime }
+      : ({ ...runtime } as Record<string, unknown>);
+
+  target.bpm = next;
+
+  return () => {
+    if (target.bpm !== next) return;
+    if (previous && typeof previous === 'object') {
+      target.bpm = previous;
+      return;
+    }
+    delete target.bpm;
+  };
+}

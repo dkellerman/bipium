@@ -1,14 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AudioContext } from 'standardized-audio-context-mock';
-import { Clicker, DEFAULT_SOUNDS } from '@/core';
 import {
   createEmptyDrumLoopPattern,
+  Clicker,
+  DEFAULT_SOUNDS,
   remapDrumLoopPattern,
   resolveDrumLoopSounds,
   seedDrumLoopPattern,
   type DrumLoopPattern,
   type DrumLoopTiming,
-} from '@/lib/drumLoop';
+} from '@/core/index';
 import { SOUND_PACKS } from '@/hooks';
 
 function createPattern(

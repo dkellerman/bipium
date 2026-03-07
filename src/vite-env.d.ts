@@ -1,11 +1,8 @@
 /// <reference types="vite/client" />
 
-import type { RuntimeApi } from './types';
+import type { RuntimeApi } from './core';
 
 interface ImportMetaEnv {
-  readonly VITE_OPENAI_KEY?: string;
-  readonly OPENAI_API_KEY?: string;
-  readonly VITE_OPENAI_MODEL?: string;
   readonly VITE_LLM_DEBUG?: string;
 }
 

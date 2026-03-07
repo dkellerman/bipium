@@ -23,4 +23,14 @@ export { Visualizer } from './Visualizer';
 export type { MetronomeOptions } from './Metronome';
 export type { ClickerOptions } from './Clicker';
 export type { VisualizerOptions } from './Visualizer';
-export type { SoundPack } from './types';
+export { DRUM_LOOP_LANES } from './types';
+export type {
+  Click,
+  DrumLoopLane,
+  DrumLoopPattern,
+  DrumLoopTiming,
+  FinalSoundSpec,
+  SoundPack,
+  SoundSpec,
+} from './types';
+export * from './api';

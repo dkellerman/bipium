@@ -1,6 +1,6 @@
 import { act } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { Metronome, Visualizer, Clicker, DEFAULT_SOUNDS } from '@/core';
+import { Metronome, Visualizer, Clicker, DEFAULT_SOUNDS } from '@/core/index';
 import { AudioContext } from 'standardized-audio-context-mock';
 import type { Click } from '@/core/types';
 

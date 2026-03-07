@@ -2,12 +2,12 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import copyToClipboard from 'copy-to-clipboard';
 import { Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { API_DEFAULT_CONFIG, API_DISCOVERY } from '@/core/index';
 import { AIPromptInput } from '@/components/AIPromptInput';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { usePromptToApiConfig } from '@/hooks/usePromptToApiConfig';
 import { cn } from '@/lib/utils';
-import { API_DEFAULT_CONFIG, API_DISCOVERY } from '@/api';
 import type { ApiConfig, ValidationResult } from '@/types';
 import { useApi } from '@/hooks/useApi';
 

@@ -43,7 +43,7 @@ export interface AppProviderProps {
   children?: ReactNode;
 }
 
-export const AppContext = createContext<AppContextValue | null>(null);
+const AppContext = createContext<AppContextValue | null>(null);
 
 export function AppProvider({ value, children }: AppProviderProps) {
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

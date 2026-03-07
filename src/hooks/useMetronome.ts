@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { Metronome } from '@/core';
+import { Metronome } from '@/core/index';
 import type { MetronomeSettings } from '@/types';
 
 export function useMetronome(settings: MetronomeSettings) {
