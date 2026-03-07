@@ -5,12 +5,15 @@ import { cn } from '../../lib/utils';
 
 const buttonVariants = cva(
   cn(
-    'inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium',
+    'inline-flex items-center justify-center whitespace-nowrap rounded-md border text-sm font-medium',
+    'border-transparent',
     'ring-offset-white',
     'transition-all duration-150 motion-safe:hover:scale-[1.04]',
     'motion-safe:active:scale-[0.98]',
     'focus-visible:outline-none focus-visible:ring-2',
     'focus-visible:ring-sky-400 focus-visible:ring-offset-2',
+    'aria-pressed:border-emerald-500 aria-pressed:ring-2',
+    'aria-pressed:ring-emerald-400/80 aria-pressed:ring-offset-1',
     'disabled:pointer-events-none disabled:opacity-50',
   ),
   {

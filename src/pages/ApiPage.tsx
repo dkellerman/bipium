@@ -636,7 +636,7 @@ export default function ApiPage() {
             </Button>
             <Button
               type="button"
-              variant={showAIPrompt || llmGenerating ? 'default' : 'outline'}
+              variant="outline"
               onClick={() => setShowAIPrompt(current => !current)}
               aria-pressed={showAIPrompt || llmGenerating}
               title="AI prompt"

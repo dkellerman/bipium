@@ -97,6 +97,8 @@ export function BPMControls() {
           type="button"
           variant="outline"
           className="size-20 rounded-full p-0 text-2xl"
+          title="Tap tempo"
+          aria-label="Tap tempo"
           onClick={() => handleTap()}
           onMouseDown={() => {
             clicker.click();
@@ -160,6 +162,8 @@ export function BPMControls() {
           }}
           disableIncrement={bpm >= 300}
           disableDecrement={bpm <= 20}
+          incrementLabel="Increase BPM"
+          decrementLabel="Decrease BPM"
         />
       </div>
 

@@ -689,8 +689,6 @@ function App() {
                   className={cn(
                     'absolute right-0 top-0 z-30 size-8 translate-x-1/4 -translate-y-1/4 rounded-full border shadow-md',
                     'border-emerald-500 bg-white text-black hover:bg-white hover:text-black',
-                    renderedVisualizerMode === 'drumLoop' &&
-                      'ring-2 ring-emerald-400/80 ring-offset-1 ring-offset-white',
                   )}
                   title={
                     renderedVisualizerMode === 'drumLoop'
@@ -702,6 +700,7 @@ function App() {
                       ? 'Switch to standard visualizer'
                       : 'Switch to drum loop mode'
                   }
+                  aria-pressed={renderedVisualizerMode === 'drumLoop'}
                   onClick={() => {
                     toggleVisualizerMode();
                   }}
@@ -768,10 +767,7 @@ function App() {
             type="button"
             variant="outline"
             size="icon"
-            className={cn(
-              'relative z-10 size-11 rounded-full bg-white p-2 shadow-md',
-              (showAIPrompt || llmGenerating) && 'border-sky-300 text-sky-700 hover:bg-sky-50',
-            )}
+            className="relative z-10 size-11 rounded-full bg-white p-2 shadow-md"
             title="AI prompt"
             aria-label="AI prompt"
             aria-pressed={showAIPrompt || llmGenerating}

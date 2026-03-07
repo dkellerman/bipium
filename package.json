@@ -3,6 +3,9 @@
   "version": "1.0.1",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": "22.x"
+  },
   "author": "David Kellerman <david@silvermoon.org>",
   "license": "MIT",
   "homepage": "https://bipium.com",

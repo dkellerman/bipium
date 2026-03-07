@@ -123,6 +123,7 @@ export function VolumeControl({ compact = false, inline = false }: VolumeControl
           size="icon"
           className={cn('size-11 rounded-full bg-white p-2 shadow-md')}
           aria-label={showVolume ? 'Hide volume controls' : 'Show volume controls'}
+          aria-pressed={showVolume}
           onMouseEnter={() => setShowVolume(true)}
           onFocus={() => setShowVolume(true)}
           onClick={() => setShowVolume(value => !value)}

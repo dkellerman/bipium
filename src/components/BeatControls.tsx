@@ -116,6 +116,8 @@ function BeatsRow() {
         }}
         disableIncrement={beats >= 12}
         disableDecrement={beats <= 1}
+        incrementLabel="Increase beats"
+        decrementLabel="Decrease beats"
       />
     </div>
   );
@@ -162,6 +164,8 @@ function SubDivsRow() {
         }}
         disableIncrement={subDivs >= 8}
         disableDecrement={subDivs <= 1}
+        incrementLabel="Increase subdivisions"
+        decrementLabel="Decrease subdivisions"
       />
     </div>
   );
@@ -288,6 +292,8 @@ function SwingControls() {
             }}
             disableIncrement={!canSwing || swing >= 100}
             disableDecrement={!canSwing || swing <= 0}
+            incrementLabel="Increase swing"
+            decrementLabel="Decrease swing"
           />
         </div>
 

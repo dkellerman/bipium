@@ -6,6 +6,8 @@ interface StepButtonsProps {
   onDecrement: () => void;
   disableIncrement: boolean;
   disableDecrement: boolean;
+  incrementLabel: string;
+  decrementLabel: string;
 }
 
 export function StepButtons({
@@ -13,6 +15,8 @@ export function StepButtons({
   onDecrement,
   disableIncrement,
   disableDecrement,
+  incrementLabel,
+  decrementLabel,
 }: StepButtonsProps) {
   return (
     <div className="flex items-center gap-1">
@@ -22,6 +26,8 @@ export function StepButtons({
         size="icon"
         className={cn('size-14 p-3 text-3xl', 'sm:size-12 sm:p-2')}
         disabled={disableIncrement}
+        title={incrementLabel}
+        aria-label={incrementLabel}
         onClick={onIncrement}
       >
         +
@@ -32,6 +38,8 @@ export function StepButtons({
         size="icon"
         className={cn('size-14 p-3 text-3xl', 'sm:size-12 sm:p-2')}
         disabled={disableDecrement}
+        title={decrementLabel}
+        aria-label={decrementLabel}
         onClick={onDecrement}
       >
         -
