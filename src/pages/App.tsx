@@ -260,6 +260,12 @@ function App() {
 
   const toggleVisualizerMode = useCallback(() => {
     const nextMode = visualizerMode === 'drumLoop' ? 'default' : 'drumLoop';
+    if (visualizerMode === 'drumLoop') {
+      const nextPattern = seedDrumLoopPattern(loopTimingRef.current);
+      drumPatternRef.current = nextPattern;
+      setDrumPattern(nextPattern);
+      setDrumPatternDirty(false);
+    }
     pendingRenderedVisualizerModeRef.current = nextMode;
     setVisualizerMode(nextMode);
     sendEvent('toggle_visualizer_mode', 'App', nextMode);
