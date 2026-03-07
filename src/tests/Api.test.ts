@@ -6,6 +6,7 @@ import {
   fromQuery,
   installWindowBpm,
   mergeConfig,
+  normalizeLoopModeConfig,
   seedDrumLoopPattern,
   toQuery,
   type DrumLoopPattern,
@@ -74,6 +75,22 @@ describe('browser api loop support', () => {
     expect(next.soundUrls).toEqual(config.soundUrls);
     expect(next.loopPattern).toEqual(config.loopPattern);
     expect(next.subDivs).toBe(2);
+  });
+
+  it('normalizes generated configs to seeded non-loop patterns when no custom loop exists', () => {
+    const config = createConfig({
+      beats: 4,
+      subDivs: 2,
+      playSubDivs: true,
+      swing: 0,
+      loopMode: true,
+      loopPattern: seedDrumLoopPattern({ beats: 4, subDivs: 2, swing: 0 }),
+    });
+
+    const next = normalizeLoopModeConfig(config);
+
+    expect(next.loopMode).toBe(false);
+    expect(next.loopPattern).toEqual(seedDrumLoopPattern({ beats: 4, subDivs: 2, swing: 0 }));
   });
 
   it('exposes loop helpers on the runtime api', () => {

@@ -1,5 +1,4 @@
 import { useCallback, useRef, useState } from 'react';
-import { seedDrumLoopPattern } from '@/core/index';
 import type { ApiConfig, RuntimeApi } from '@/types';
 
 interface UsePromptToApiConfigOptions {
@@ -25,13 +24,12 @@ async function requestPayloadFromServer(params: {
   docsMarkdown: string;
   runtime: RuntimeApi;
   signal?: AbortSignal;
-}) {
+}): Promise<ApiConfig> {
   const payload = {
     prompt: params.prompt,
     docsMarkdown: params.docsMarkdown,
     currentConfig: params.runtime.getConfig(),
     soundPacks: params.runtime.getSoundPacks(),
-    schema: params.runtime.getSchemaJson().config as object,
   };
 
   llmDebug('config: request', {
@@ -76,40 +74,9 @@ async function requestPayloadFromServer(params: {
     throw new Error(message);
   }
 
-  const data = (await response.json()) as unknown;
+  const data = (await response.json()) as ApiConfig;
   llmDebug('config: output', data);
   return data;
-}
-
-function shouldUseLoopMode(config: ApiConfig) {
-  const activeSubDivs = config.playSubDivs ? config.subDivs : 1;
-  const swing = config.playSubDivs && config.subDivs % 2 === 0 ? config.swing : 0;
-  const seededPattern = seedDrumLoopPattern({ beats: config.beats, subDivs: activeSubDivs, swing });
-
-  return JSON.stringify(config.loopPattern) !== JSON.stringify(seededPattern);
-}
-
-function normalizeLoopConfig(config: ApiConfig): ApiConfig {
-  const loopMode = shouldUseLoopMode(config);
-  if (loopMode) {
-    return {
-      ...config,
-      loopMode: true,
-    };
-  }
-
-  const activeSubDivs = config.playSubDivs ? config.subDivs : 1;
-  const swing = config.playSubDivs && config.subDivs % 2 === 0 ? config.swing : 0;
-
-  return {
-    ...config,
-    loopMode: false,
-    loopPattern: seedDrumLoopPattern({
-      beats: config.beats,
-      subDivs: activeSubDivs,
-      swing,
-    }),
-  };
 }
 
 function waitForAnimationFrame() {
@@ -162,7 +129,7 @@ export function usePromptToApiConfig({
         const docsMarkdown = docsResponse.ok ? await docsResponse.text() : '';
 
         onStatusChange('Generating runtime config...');
-        const parsedRaw = await requestPayloadFromServer({
+        const generatedConfig = await requestPayloadFromServer({
           prompt,
           docsMarkdown,
           runtime,
@@ -171,17 +138,9 @@ export function usePromptToApiConfig({
 
         if (requestId !== activeRequestIdRef.current) return false;
 
-        const validation = runtime.validateConfig(parsedRaw);
-        if (!validation.ok) {
-          throw new Error(
-            `Validation failed: ${'error' in validation ? validation.error : 'Invalid config.'}`,
-          );
-        }
-
-        const normalizedConfig = normalizeLoopConfig(validation.value);
-        const pretty = JSON.stringify(normalizedConfig, null, 2);
         runtime.stop();
-        runtime.setConfig(normalizedConfig);
+        const appliedConfig = runtime.setConfig(generatedConfig);
+        const pretty = JSON.stringify(appliedConfig, null, 2);
         await waitForAnimationFrame();
         await waitForAnimationFrame();
         if (requestId !== activeRequestIdRef.current) return false;
