@@ -30,6 +30,7 @@ async function requestPayloadFromServer(params: {
     docsMarkdown: params.docsMarkdown,
     currentConfig: params.runtime.getConfig(),
     soundPacks: params.runtime.getSoundPacks(),
+    schema: params.runtime.getSchemaJson().config as object,
   };
 
   llmDebug('config: request', {

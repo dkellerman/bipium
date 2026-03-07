@@ -1,9 +1,4 @@
-import {
-  createSchemas,
-  mergeConfig,
-  normalizeLoopModeConfig,
-  type ApiConfig,
-} from '../src/core/api';
+import type { ApiConfig } from '../src/core/api';
 
 type ResponsesApiOutput = {
   output?: Array<{
@@ -20,6 +15,7 @@ type AiConfigRequestBody = {
   docsMarkdown: string;
   currentConfig: unknown;
   soundPacks: string[];
+  schema: Record<string, unknown>;
 };
 
 class RequestValidationError extends Error {}
@@ -118,11 +114,63 @@ function parseRequestBody(payload: unknown): AiConfigRequestBody {
     throw new RequestValidationError('Request body must be a JSON object.');
   }
 
+  if (!isPlainObject(payload.schema)) {
+    throw new RequestValidationError('Invalid config schema payload.');
+  }
+
   return {
     prompt: validatePrompt(payload.prompt),
     docsMarkdown: validateDocsMarkdown(payload.docsMarkdown),
     currentConfig: payload.currentConfig,
     soundPacks: validateSoundPacks(payload.soundPacks),
+    schema: payload.schema,
+  };
+}
+
+function createSeededLoopPattern(config: Pick<ApiConfig, 'beats' | 'subDivs' | 'playSubDivs' | 'swing'>) {
+  const activeSubDivs = config.playSubDivs ? config.subDivs : 1;
+  const swing = config.playSubDivs && config.subDivs % 2 === 0 ? config.swing : 0;
+  const stepCount = Math.max(1, config.beats * activeSubDivs);
+  const midpointBeat = Math.ceil(config.beats / 2) + 1;
+  const pattern = {
+    kick: Array.from({ length: stepCount }, () => false),
+    hat: Array.from({ length: stepCount }, () => false),
+    snare: Array.from({ length: stepCount }, () => false),
+  };
+
+  for (let stepIndex = 0; stepIndex < stepCount; stepIndex += 1) {
+    const beat = Math.floor(stepIndex / activeSubDivs) + 1;
+    const subDiv = (stepIndex % activeSubDivs) + 1;
+
+    pattern.hat[stepIndex] = true;
+
+    if (beat === 1 && subDiv === 1) {
+      pattern.kick[stepIndex] = true;
+    }
+
+    if (beat === midpointBeat && subDiv === 1) {
+      pattern.snare[stepIndex] = true;
+    }
+  }
+
+  return pattern;
+}
+
+function normalizeLoopConfig(config: ApiConfig): ApiConfig {
+  const seededPattern = createSeededLoopPattern(config);
+  const hasCustomLoopPattern = JSON.stringify(config.loopPattern) !== JSON.stringify(seededPattern);
+
+  if (hasCustomLoopPattern) {
+    return {
+      ...config,
+      loopMode: true,
+    };
+  }
+
+  return {
+    ...config,
+    loopMode: false,
+    loopPattern: seededPattern,
   };
 }
 
@@ -168,14 +216,9 @@ async function requestPayloadFromModel(params: {
   docsMarkdown: string;
   currentConfig: unknown;
   soundPacks: string[];
+  schema: object;
   signal?: AbortSignal;
 }) {
-  const schemas = createSchemas(new Set(params.soundPacks));
-  const currentConfigResult = schemas.config.safeParse(params.currentConfig);
-  if (!currentConfigResult.success) {
-    throw new RequestValidationError('Invalid current config payload.');
-  }
-
   const payload = {
     model: params.model,
     temperature: 0,
@@ -183,7 +226,7 @@ async function requestPayloadFromModel(params: {
       format: {
         type: 'json_schema',
         name: 'bipium_runtime_config',
-        schema: schemas.schemaJson.config,
+        schema: params.schema,
         strict: false,
       },
     },
@@ -222,13 +265,7 @@ async function requestPayloadFromModel(params: {
     throw new Error('Model returned empty content.');
   }
 
-  const mergedConfig = mergeConfig(
-    currentConfigResult.data as ApiConfig,
-    JSON.parse(content) as unknown,
-    schemas,
-  );
-
-  return normalizeLoopModeConfig(mergedConfig);
+  return normalizeLoopConfig(JSON.parse(content) as ApiConfig);
 }
 
 export async function POST(request: Request) {
@@ -254,6 +291,7 @@ export async function POST(request: Request) {
       docsMarkdown: body.docsMarkdown,
       currentConfig: body.currentConfig,
       soundPacks: body.soundPacks,
+      schema: body.schema as object,
       signal: request.signal,
     });
 

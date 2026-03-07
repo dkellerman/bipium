@@ -233,25 +233,6 @@ function getLoopTiming(config: Pick<ApiConfig, 'beats' | 'subDivs' | 'playSubDiv
   } satisfies DrumLoopTiming;
 }
 
-export function normalizeLoopModeConfig(config: ApiConfig): ApiConfig {
-  const loopTiming = getLoopTiming(config);
-  const seededPattern = seedDrumLoopPattern(loopTiming);
-  const hasCustomLoopPattern = JSON.stringify(config.loopPattern) !== JSON.stringify(seededPattern);
-
-  if (hasCustomLoopPattern) {
-    return {
-      ...config,
-      loopMode: true,
-    };
-  }
-
-  return {
-    ...config,
-    loopMode: false,
-    loopPattern: seededPattern,
-  };
-}
-
 function cloneLoopPattern(pattern: DrumLoopPattern): DrumLoopPattern {
   return {
     kick: [...pattern.kick],
