@@ -110,7 +110,7 @@ export function SettingsDrawer() {
             >
               Code
             </a>
-            <Link className="block underline" to="/api">
+            <Link className="block underline" to="/apidocs">
               API
             </Link>
             {buildSha && (

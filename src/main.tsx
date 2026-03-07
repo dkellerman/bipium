@@ -19,7 +19,7 @@ if (rootElement) {
         >
           <Routes>
             <Route path="/" element={<App />} />
-            <Route path="/api" element={<ApiPage />} />
+            <Route path="/apidocs" element={<ApiPage />} />
             <Route path="/about" element={<About />} />
           </Routes>
         </div>

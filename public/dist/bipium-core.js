@@ -5854,7 +5854,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
   const API_VERSION = 1;
   const BIPIUM_API_VERSION = API_VERSION;
   const API_DISCOVERY = {
-    ui: "/api",
+    ui: "/apidocs",
     markdown: "/api.md",
     llms: "/llms.txt",
     agents: "/agents.txt"
@@ -5874,11 +5874,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
       snare: createLane(stepCount)
     };
   }
-  function getStepIndex({
-    beat,
-    subDiv,
-    subDivs
-  }) {
+  function getStepIndex({ beat, subDiv, subDivs }) {
     return (beat - 1) * subDivs + (subDiv - 1);
   }
   function isBeatAlignedStep(stepIndex, subDivs) {

@@ -125,7 +125,7 @@ Bipium also supports URL-driven config via query params:
 
 ## Discovery
 
-- Human docs: `/api`
+- Human docs: `/apidocs`
 - Markdown docs: `/api.md`
 - Agent docs: `/llms.txt`
 - Compatibility mirror: `/agents.txt`

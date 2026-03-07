@@ -3,6 +3,7 @@
 Primary runtime object: `window.bpm`
 
 Preferred sequence:
+
 1. Validate config with `window.bpm.validateConfig(input)` (zod-backed).
 2. Apply config with `window.bpm.setConfig(partial)` or `window.bpm.applyQuery(query)`.
 3. Start with `window.bpm.start(...)`.
@@ -11,6 +12,7 @@ Preferred sequence:
 If you need a sharable link, call `window.bpm.toQuery(config)`.
 For schema inspection, use `window.bpm.schemaJson` or `window.bpm.getSchemaJson()`.
 Loop helpers:
+
 - `window.bpm.setLoopMode(true|false)`
 - `window.bpm.setLoopRepeats(n)` where `0` means forever
 - `window.bpm.setSoundUrls({ beat: "...", bar: "..." })`
@@ -20,6 +22,7 @@ Loop helpers:
 - `window.bpm.getLoopPattern()`
 
 Swing guidance:
+
 - Prefer `swing: 0` unless swing/shuffle is explicitly requested or the groove strongly implies it
 - Around `33` is basic swing
 - Around `50` is a heavy shuffle
@@ -27,5 +30,6 @@ Swing guidance:
 - "A little swing" usually means below `33`
 
 Reference docs:
-- `/api`
+
+- `/apidocs`
 - `/api.md`

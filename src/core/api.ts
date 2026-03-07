@@ -14,7 +14,7 @@ export const API_VERSION = 1;
 export const BIPIUM_API_VERSION = API_VERSION;
 
 export const API_DISCOVERY = {
-  ui: '/api',
+  ui: '/apidocs',
   markdown: '/api.md',
   llms: '/llms.txt',
   agents: '/agents.txt',
