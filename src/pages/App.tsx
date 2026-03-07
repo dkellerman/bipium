@@ -3,10 +3,11 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import qs from 'query-string';
 import copyToClipboard from 'copy-to-clipboard';
 import { AudioContext } from 'standardized-audio-context';
-import { Drum, Settings, Sparkles } from 'lucide-react';
+import { Drum, Eraser, Settings, Sparkles } from 'lucide-react';
 import {
   API_DEFAULT_CONFIG,
   DRUM_LOOP_LANES,
+  createEmptyDrumLoopPattern,
   createRuntimeApi,
   createSchemas,
   fromQuery,
@@ -95,6 +96,10 @@ function getLoopTimingFromConfig(
 
 function isSeedLoopPattern(pattern: DrumLoopPattern, timing: DrumLoopTiming) {
   return JSON.stringify(pattern) === JSON.stringify(seedDrumLoopPattern(timing));
+}
+
+function isEmptyLoopPattern(pattern: DrumLoopPattern) {
+  return DRUM_LOOP_LANES.every(lane => pattern[lane].every(step => !step));
 }
 
 function shouldUseLoopVisualizer(
@@ -270,6 +275,14 @@ function App() {
       };
     });
     setDrumPatternDirty(true);
+  }, []);
+
+  const clearDrumLoopPattern = useCallback(() => {
+    const nextPattern = createEmptyDrumLoopPattern(loopTimingRef.current);
+    drumPatternRef.current = nextPattern;
+    setDrumPattern(nextPattern);
+    setDrumPatternDirty(!isSeedLoopPattern(nextPattern, loopTimingRef.current));
+    sendEvent('clear_drum_loop', 'App');
   }, []);
 
   const updateBPM = useCallback(
@@ -636,6 +649,10 @@ function App() {
     ],
   );
   const isRenderedDrumLoop = renderedVisualizerMode === 'drumLoop';
+  const floatingVisualizerButtonClass = cn(
+    'absolute z-30 size-8 rounded-full border shadow-md',
+    'border-emerald-500 bg-white text-black hover:bg-white hover:text-black',
+  );
 
   return (
     <AppProvider value={appContextValue}>
@@ -687,8 +704,8 @@ function App() {
                   variant="outline"
                   size="icon"
                   className={cn(
-                    'absolute right-0 top-0 z-30 size-8 translate-x-1/4 -translate-y-1/4 rounded-full border shadow-md',
-                    'border-emerald-500 bg-white text-black hover:bg-white hover:text-black',
+                    floatingVisualizerButtonClass,
+                    'right-0 top-0 translate-x-1/4 -translate-y-1/4',
                   )}
                   title={
                     renderedVisualizerMode === 'drumLoop'
@@ -707,6 +724,23 @@ function App() {
                 >
                   <Drum className="size-5" />
                 </Button>
+                {isRenderedDrumLoop ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className={cn(
+                      floatingVisualizerButtonClass,
+                      'bottom-0 right-0 translate-x-1/4 translate-y-1/4',
+                    )}
+                    title="Clear drum loop"
+                    aria-label="Clear drum loop"
+                    aria-pressed
+                    onClick={clearDrumLoopPattern}
+                  >
+                    <Eraser className="size-5" />
+                  </Button>
+                ) : null}
                 <div className="h-full w-full overflow-hidden rounded-sm bg-black">
                   <DefaultVisualizer
                     id={id}
