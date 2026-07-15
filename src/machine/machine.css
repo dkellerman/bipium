@@ -1,0 +1,60 @@
+/* Machine UI styles — used only by src/machine/ (the /machine route). */
+@layer components {
+  .machine-range {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 44px;
+    background: transparent;
+    cursor: pointer;
+    --track: #e5e7eb;
+    --fill: #10b981;
+    --thumb: #10b981;
+    --thumb-ring: rgba(16, 185, 129, 0.2);
+    --pct: 50%;
+  }
+  .machine-range:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+  .machine-range::-webkit-slider-runnable-track {
+    height: 8px;
+    border-radius: 9999px;
+    background: linear-gradient(
+      to right,
+      var(--fill) 0%,
+      var(--fill) var(--pct),
+      var(--track) var(--pct),
+      var(--track) 100%
+    );
+  }
+  .machine-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 9999px;
+    border: none;
+    background: var(--thumb);
+    margin-top: -10px;
+    box-shadow: 0 0 0 6px var(--thumb-ring);
+  }
+  .machine-range::-moz-range-track {
+    height: 8px;
+    border-radius: 9999px;
+    background: linear-gradient(
+      to right,
+      var(--fill) 0%,
+      var(--fill) var(--pct),
+      var(--track) var(--pct),
+      var(--track) 100%
+    );
+  }
+  .machine-range::-moz-range-thumb {
+    width: 28px;
+    height: 28px;
+    border-radius: 9999px;
+    border: none;
+    background: var(--thumb);
+    box-shadow: 0 0 0 6px var(--thumb-ring);
+  }
+}

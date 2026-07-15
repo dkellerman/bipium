@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import App from '@/pages/App';
 import About from '@/pages/About';
 import ApiPage from '@/pages/ApiPage';
+import MachinePage from '@/machine/MachinePage';
 import './index.css';
 
 const rootElement = document.getElementById('root');
@@ -19,6 +20,7 @@ if (rootElement) {
         >
           <Routes>
             <Route path="/" element={<App />} />
+            <Route path="/machine" element={<MachinePage />} />
             <Route path="/apidocs" element={<ApiPage />} />
             <Route path="/about" element={<About />} />
           </Routes>
