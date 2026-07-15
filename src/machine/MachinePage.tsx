@@ -119,7 +119,7 @@ function MachinePage() {
   const [subDivs, setSubDivs] = useSetting('subDivs', 1, int);
   const [swing, setSwing] = useSetting('swing', 0, float);
   const [swingEnabled, setSwingEnabled] = useSetting('swingEnabled', false, bool);
-  const [playSubDivs, setPlaySubDivs] = useSetting('playSubDivs', true, bool);
+  const [playSubDivs, setPlaySubDivs] = useSetting('playSubDivs', false, bool);
   const [volume, setVolume] = useSetting('volume', 35, int, localStorage);
   const [muted, setMuted] = useState(false);
   const [started, setStarted] = useState(false);
