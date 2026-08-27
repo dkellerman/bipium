@@ -3,6 +3,7 @@
 ## Entry Point
 
 - Global runtime object: `window.bpm`
+- Native WebMCP progressively exposes start, stop, and current-state tools through `document.modelContext` when the browser supports it.
 
 ## Validate First
 

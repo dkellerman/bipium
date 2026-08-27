@@ -1,5 +1,6 @@
 import qs from 'query-string';
 import { z } from 'zod';
+import { registerBipiumWebMcp } from './webmcp';
 import {
   DRUM_LOOP_LANES,
   type Click,
@@ -773,6 +774,10 @@ type RuntimeNamespaceTarget = {
 export function installWindowBpm(
   runtime: RuntimeApi,
   target: RuntimeNamespaceTarget = globalThis as RuntimeNamespaceTarget,
+  modelContext: Pick<WebMCP.ModelContext, 'registerTool'> | undefined = target === globalThis &&
+  typeof document !== 'undefined'
+    ? document.modelContext
+    : undefined,
 ) {
   const previous = target.bpm;
   const next =
@@ -781,8 +786,10 @@ export function installWindowBpm(
       : ({ ...runtime } as Record<string, unknown>);
 
   target.bpm = next;
+  const unregisterWebMcp = registerBipiumWebMcp(runtime, modelContext);
 
   return () => {
+    unregisterWebMcp();
     if (target.bpm !== next) return;
     if (previous && typeof previous === 'object') {
       target.bpm = previous;
