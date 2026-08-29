@@ -5,7 +5,7 @@ Machine-readable guidance for autonomous agents.
 ## Canonical Entrypoints
 
 - Runtime API: `window.bpm`
-- Native WebMCP: supported browsers discover the same start, stop, and state controls through `document.modelContext`
+- Native WebMCP: supported browsers discover the complete `window.bpm` API through `document.modelContext`, including discovery, validation, playback, configuration, loop patterns, sound settings, query conversion, and tapping
 - Human docs: `/apidocs`
 - Machine docs: `/api.md`
 

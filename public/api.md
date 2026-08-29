@@ -3,7 +3,7 @@
 ## Entry Point
 
 - Global runtime object: `window.bpm`
-- Native WebMCP progressively exposes start, stop, and current-state tools through `document.modelContext` when the browser supports it.
+- Native WebMCP progressively exposes the complete runtime API through `document.modelContext` when the browser supports it. Its tools cover discovery and state, validation, playback, every configuration control, loop patterns, sound URLs, query parsing and serialization, and tapping.
 
 ## Validate First
 

@@ -18,12 +18,43 @@ function createRuntime() {
   } satisfies ApiConfig;
 
   return {
-    schemaJson: { configPatch: { type: 'object' } },
+    version: 1,
+    discovery: {},
+    defaults: config,
+    schemaJson: {
+      config: { type: 'object' },
+      configPatch: {
+        type: 'object',
+        properties: {
+          loopRepeats: { type: 'integer' },
+          soundUrls: { type: 'object' },
+          loopPattern: { type: 'object' },
+        },
+      },
+    },
+    getSchemaJson: vi.fn(() => ({ config: {}, configPatch: {} })),
+    validateConfig: vi.fn(() => ({ ok: true as const, value: config })),
     setConfig: vi.fn(() => config),
     start: vi.fn(() => config),
     stop: vi.fn(),
+    toggle: vi.fn(() => false),
     isStarted: vi.fn(() => true),
+    isLoopMode: vi.fn(() => false),
+    getLoopRepeats: vi.fn(() => 0),
+    getSoundUrls: vi.fn(() => ({})),
     getConfig: vi.fn(() => config),
+    getLoopPattern: vi.fn(() => config.loopPattern),
+    setLoopMode: vi.fn(() => config),
+    setLoopRepeats: vi.fn(() => config),
+    setSoundUrls: vi.fn(() => config),
+    setLoopPattern: vi.fn(() => config),
+    resetLoopPattern: vi.fn(() => config),
+    fromQuery: vi.fn(() => config),
+    toQuery: vi.fn(() => '?bpm=120'),
+    applyQuery: vi.fn(() => config),
+    tap: vi.fn(),
+    getSoundPacks: vi.fn(() => ['defaults', 'drumkit']),
+    now: vi.fn(() => 1),
   } as unknown as RuntimeApi;
 }
 
@@ -45,20 +76,55 @@ describe('registerBipiumWebMcp', () => {
     const unregister = registerBipiumWebMcp(runtime, context);
 
     expect(tools.map(tool => tool.name)).toEqual([
+      'get_bipium_info',
+      'validate_bipium_config',
       'start_metronome',
       'stop_metronome',
+      'toggle_metronome',
+      'set_metronome_config',
+      'set_bipium_loop_mode',
+      'set_bipium_loop_repeats',
+      'set_bipium_sound_urls',
+      'set_bipium_loop_pattern',
+      'reset_bipium_loop_pattern',
+      'parse_bipium_query',
+      'create_bipium_query',
+      'apply_bipium_query',
+      'tap_bipium',
       'get_metronome_state',
     ]);
 
-    await tools[0].execute({ bpm: 96, loopMode: true }, { signal: signals[0] });
+    const byName = Object.fromEntries(
+      tools.map((tool, index) => [tool.name, { tool, signal: signals[index] }]),
+    );
+
+    await byName.start_metronome.tool.execute(
+      { bpm: 96, loopMode: true },
+      { signal: byName.start_metronome.signal },
+    );
     expect(runtime.setConfig).toHaveBeenCalledWith({ bpm: 96, loopMode: true });
     expect(runtime.start).toHaveBeenCalledOnce();
 
-    await tools[1].execute({}, { signal: signals[1] });
+    await byName.stop_metronome.tool.execute({}, { signal: byName.stop_metronome.signal });
     expect(runtime.stop).toHaveBeenCalledOnce();
 
-    const state = await tools[2].execute({}, { signal: signals[2] });
+    const state = await byName.get_metronome_state.tool.execute(
+      {},
+      { signal: byName.get_metronome_state.signal },
+    );
     expect(JSON.parse(state as string)).toMatchObject({ started: true, config: { bpm: 120 } });
+
+    await byName.set_bipium_loop_pattern.tool.execute(
+      { pattern: runtime.getConfig().loopPattern },
+      { signal: byName.set_bipium_loop_pattern.signal },
+    );
+    expect(runtime.setLoopPattern).toHaveBeenCalledWith(runtime.getConfig().loopPattern);
+
+    await byName.apply_bipium_query.tool.execute(
+      { query: '?bpm=96' },
+      { signal: byName.apply_bipium_query.signal },
+    );
+    expect(runtime.applyQuery).toHaveBeenCalledWith('?bpm=96');
 
     unregister();
     expect(signals.every(signal => signal.aborted)).toBe(true);
@@ -78,10 +144,12 @@ describe('registerBipiumWebMcp', () => {
     registerBipiumWebMcp(runtime, context);
 
     await expect(
-      tools[0].execute(
-        { loopMode: true, loopPattern: { kick: [true], hat: [], snare: [] } },
-        { signal: new AbortController().signal },
-      ),
+      tools
+        .find(tool => tool.name === 'start_metronome')
+        ?.execute(
+          { loopMode: true, loopPattern: { kick: [true], hat: [], snare: [] } },
+          { signal: new AbortController().signal },
+        ),
     ).rejects.toThrow('wrong length');
     expect(runtime.start).not.toHaveBeenCalled();
   });
