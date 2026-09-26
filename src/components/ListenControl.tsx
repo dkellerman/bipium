@@ -185,6 +185,11 @@ export function ListenControl({
         recognition.phrases = [
           'kick', 'snare', 'hi hat', 'beat one', 'beat two', 'beat three', 'beat four',
           'on the one', 'on the two', 'on the three', 'on the four',
+          'and', 'ee', 'uh', 'e and a',
+          'and of one', 'and of two', 'and of three', 'and of four',
+          'one ee and uh', 'two ee and uh', 'three ee and uh', 'four ee and uh',
+          'triplet', 'one triplet', 'two triplet', 'three triplet', 'four triplet',
+          'upbeat', 'offbeat',
           'eighth notes', 'sixteenth notes', 'triplets', 'BPM', 'stop listening',
         ].map(phrase => new Phrase(phrase, 3));
       } catch { /* Optional hints must not prevent normal recognition. */ }
