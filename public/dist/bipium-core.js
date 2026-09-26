@@ -6049,6 +6049,28 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
     register(
       context,
       {
+        name: "clear_bipium_loop_pattern",
+        title: "Clear Bipium drum grid",
+        description: "Remove every kick, hat, and snare hit while preserving timing, mode, and playback state.",
+        inputSchema: EMPTY_INPUT_SCHEMA,
+        execute: async () => JSON.stringify({ config: runtime2.clearLoopPattern() })
+      },
+      signal
+    );
+    register(
+      context,
+      {
+        name: "reset_bipium_to_defaults",
+        title: "Reset Bipium to defaults",
+        description: "Stop playback and restore all default settings, sounds, and the default pattern. Remove custom sound URLs.",
+        inputSchema: EMPTY_INPUT_SCHEMA,
+        execute: async () => JSON.stringify({ status: "stopped", config: runtime2.resetToDefaults() })
+      },
+      signal
+    );
+    register(
+      context,
+      {
         name: "parse_bipium_query",
         title: "Parse Bipium query",
         description: "Parse a Bipium URL query into a configuration without applying it.",
@@ -6622,6 +6644,19 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
         });
         controls.applyConfig(next);
         return cloneApiConfig(controls.getConfig());
+      },
+      clearLoopPattern() {
+        const next = mergeWithCurrent({
+          loopPattern: createEmptyDrumLoopPattern(getLoopTiming(controls.getConfig()))
+        });
+        controls.applyConfig(next);
+        return cloneApiConfig(next);
+      },
+      resetToDefaults() {
+        const next = cloneApiConfig(API_DEFAULT_CONFIG);
+        controls.stopPlayback();
+        controls.applyConfig(next);
+        return cloneApiConfig(next);
       },
       validateConfig(input) {
         const result = validateConfig(controls.getConfig(), input, schemas);

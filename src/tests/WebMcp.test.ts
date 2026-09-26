@@ -49,6 +49,8 @@ function createRuntime() {
     setSoundUrls: vi.fn(() => config),
     setLoopPattern: vi.fn(() => config),
     resetLoopPattern: vi.fn(() => config),
+    clearLoopPattern: vi.fn(() => config),
+    resetToDefaults: vi.fn(() => config),
     fromQuery: vi.fn(() => config),
     toQuery: vi.fn(() => '?bpm=120'),
     applyQuery: vi.fn(() => config),
@@ -87,6 +89,8 @@ describe('registerBipiumWebMcp', () => {
       'set_bipium_sound_urls',
       'set_bipium_loop_pattern',
       'reset_bipium_loop_pattern',
+      'clear_bipium_loop_pattern',
+      'reset_bipium_to_defaults',
       'parse_bipium_query',
       'create_bipium_query',
       'apply_bipium_query',
@@ -119,6 +123,16 @@ describe('registerBipiumWebMcp', () => {
       { signal: byName.set_bipium_loop_pattern.signal },
     );
     expect(runtime.setLoopPattern).toHaveBeenCalledWith(runtime.getConfig().loopPattern);
+    await byName.clear_bipium_loop_pattern.tool.execute(
+      {},
+      { signal: byName.clear_bipium_loop_pattern.signal },
+    );
+    expect(runtime.clearLoopPattern).toHaveBeenCalled();
+    await byName.reset_bipium_to_defaults.tool.execute(
+      {},
+      { signal: byName.reset_bipium_to_defaults.signal },
+    );
+    expect(runtime.resetToDefaults).toHaveBeenCalled();
 
     await byName.apply_bipium_query.tool.execute(
       { query: '?bpm=96' },

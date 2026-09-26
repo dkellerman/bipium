@@ -33,7 +33,7 @@ The `src/core` directory contains an app-independent metronome implementation wi
 ## Experimental GPT Sites copy
 
 This branch preserves the current classic and machine interfaces, `window.bpm`,
-all 16 native WebMCP tools, URL configuration, and the standalone core library.
+all 18 native WebMCP tools, URL configuration, and the standalone core library.
 The Listen control uses browser speech recognition. The previous
 OpenAI request flow and Vercel model endpoint are removed. No reCAPTCHA or app login
 is present; the original Vercel deployment is separate.
@@ -62,9 +62,11 @@ explicitly reported and preserve selected hits; impossible combinations are reje
 Responses keep the exact prompt, all Jev answers including confidence and choice
 probabilities, the full Jev request, selected source references, usage, and timing.
 Confidence is Jev's distribution summary, not a calibrated accuracy estimate for
-this app. Playback requires every decision used to build the beat to exceed 70% confidence.
-A lower or equal score leaves the player unchanged and displays a short rephrasing message.
-The response includes `resultConfidence`, the minimum confidence among the action and requested changes; preserved fields are excluded.
+this app. For each setting, Jev confidence must exceed 50% to change it; otherwise the previous
+value is preserved. Uncertain actions do nothing. Every valid server API call executes
+without an overall confidence threshold or a second model check. The response has one diagnostic `confidence` number (minimum active
+decision confidence); raw answers remain in `decisions`. Confidence never blocks
+playback. Invalid or unsupported requests still return no executable call.
 Recent responses are retained in browser session storage for conversational context.
 Prompt and decision metadata remain in the server response, with no details UI or history download. Prompt history is not persisted on the
 server. Stop listening cancels queued/in-flight interpretations but leaves any
@@ -91,3 +93,6 @@ See `data/README.md` for provenance, corpus coverage, and refresh instructions.
 ## Example code
 
 - See example of reusing the Metronome code in `public/example.html`
+
+Voice commands “clear the drum grid” and “reset to defaults” invoke `clearLoopPattern()`
+and `resetToDefaults()` through the browser API.

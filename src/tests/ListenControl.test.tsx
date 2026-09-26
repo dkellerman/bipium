@@ -26,7 +26,7 @@ const response = () => ({
   message: '100 BPM',
   call: { method: 'setConfig', args: [{ ...API_DEFAULT_CONFIG, bpm: 100 }] },
   playback: 'start',
-  confidence: { tempo: 0.9 },
+  confidence: 0.9,
   references: [],
 });
 const click = async (label: string) => {
@@ -50,6 +50,8 @@ beforeEach(async () => {
     validateConfig: vi.fn(c => ({ ok: true, value: c })),
     start: vi.fn(),
     stop: vi.fn(),
+    clearLoopPattern: vi.fn(),
+    resetToDefaults: vi.fn(),
   };
   (window as any).bpm = api;
   (window as any).SpeechRecognition = FakeSpeech;
@@ -107,7 +109,7 @@ describe('listening controls', () => {
     expect(document.body.textContent).toContain('permission was denied');
     expect(document.querySelector('input[aria-label="Beat prompt"]')).toBeNull();
   });
-  it('shows the low-confidence message without applying or starting a beat', async () => {
+  it('shows a no-call response without applying or starting a beat', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async () =>
@@ -142,6 +144,31 @@ describe('listening controls', () => {
     );
     expect(request.prompt).toBe('faster');
     expect(request.recentTurns).toEqual([{ prompt: 'funk', applied: true }]);
+  });
+  it.each(['clearLoopPattern', 'resetToDefaults'])(
+    'executes %s without starting playback',
+    async method => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () =>
+          Response.json({ ...response(), call: { method, args: [] }, playback: undefined }),
+        ),
+      );
+      await click('Listen');
+      await act(async () => FakeSpeech.latest.phrase('reset'));
+      expect(api[method]).toHaveBeenCalledOnce();
+      expect(api.start).not.toHaveBeenCalled();
+    },
+  );
+  it('executes a valid server call regardless of its confidence score', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => Response.json({ ...response(), confidence: 0.1 })),
+    );
+    await click('Listen');
+    await act(async () => FakeSpeech.latest.phrase('a beat'));
+    expect(api.setConfig).toHaveBeenCalled();
+    expect(api.start).toHaveBeenCalled();
   });
   it('stops microphone and aborts requests when the page unmounts', async () => {
     await click('Listen');

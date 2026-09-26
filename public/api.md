@@ -130,3 +130,7 @@ Bipium also supports URL-driven config via query params:
 - Markdown docs: `/api.md`
 - Agent docs: `/llms.txt`
 - Compatibility mirror: `/agents.txt`
+
+- `window.bpm.clearLoopPattern()` clears every drum-grid hit without changing timing, mode, or playback state.
+- `window.bpm.resetToDefaults()` stops playback and restores all defaults, including sounds and pattern; removes custom sound URLs.
+- Existing `resetLoopPattern()` only reseeds the pattern at the current timing.

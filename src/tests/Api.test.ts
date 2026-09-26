@@ -115,6 +115,60 @@ describe('browser api loop support', () => {
     );
   });
 
+  it('clears the active grid without altering controls, then resets every setting and stops', () => {
+    let current = createConfig();
+    let playing = true;
+    const runtime = createRuntimeApi({
+      getConfig: () => current,
+      applyConfig: next => {
+        current = next;
+      },
+      startPlayback: () => {
+        playing = true;
+      },
+      stopPlayback: () => {
+        playing = false;
+      },
+      togglePlayback: () => playing,
+      isPlaying: () => playing,
+      tap: () => {},
+      now: () => 0,
+      getSoundPacks: () => ['defaults', 'drumkit'],
+    });
+    runtime.setConfig({
+      bpm: 137,
+      beats: 3,
+      subDivs: 2,
+      playSubDivs: true,
+      swing: 23,
+      volume: 67,
+      loopMode: true,
+      loopRepeats: 9,
+      soundUrls: { beat: 'https://example.com/custom.wav' },
+    });
+    const before = runtime.getConfig();
+    const cleared = runtime.clearLoopPattern();
+    expect(cleared).toEqual({
+      ...before,
+      loopPattern: {
+        kick: Array(6).fill(false),
+        hat: Array(6).fill(false),
+        snare: Array(6).fill(false),
+      },
+    });
+    expect(playing).toBe(true);
+    cleared.loopPattern.kick[0] = true;
+    expect(runtime.getLoopPattern().kick[0]).toBe(false);
+    const reset = runtime.resetToDefaults();
+    expect(playing).toBe(false);
+    expect(reset).toEqual(API_DEFAULT_CONFIG);
+    expect(runtime.getConfig()).toEqual(API_DEFAULT_CONFIG);
+    reset.soundUrls.beat = 'https://example.com/other.wav';
+    expect(runtime.getSoundUrls()).toEqual({});
+    runtime.setConfig({ beats: 5, subDivs: 4, playSubDivs: false });
+    expect(runtime.clearLoopPattern().loopPattern.kick).toEqual(Array(5).fill(false));
+  });
+
   it('merges runtime methods onto an existing window.bpm namespace and restores it', () => {
     const target = {
       bpm: {

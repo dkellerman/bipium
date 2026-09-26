@@ -57,23 +57,32 @@ describe('voice interpretation and vector retrieval', () => {
     expect(c.loopPattern.snare).toEqual(base.loopPattern.snare);
     expect(c.loopPattern.hat.some(Boolean)).toBe(false);
   });
-  it.each([0.69, 0.7, 0.70001])(
-    'requires strictly over 70 percent, including the weakest decision (%s)',
+  it.each([0.49, 0.5, 0.50001])(
+    'only applies a setting when its confidence exceeds 50 percent (%s)',
     confidence => {
-      const p = prepare('100 BPM', current);
-      const a = decisions(p, { tempo: 'n:100' });
+      const p = prepare('100 BPM and a little swing', current);
+      const a = decisions(p, { tempo: 'n:100', swing: 'light' });
       a.tempo.confidence = confidence;
-      const original = structuredClone(current);
       const result = assemble(p, a, current);
-      expect(result.resultConfidence).toBe(confidence);
-      if (confidence <= 0.7) {
-        expect(result.call).toBeNull();
-        expect(result.playback).toBeUndefined();
-        expect(result.message).toBe('Not confident enough—try rephrasing.');
-      } else expect(result.playback).toBe('start');
-      expect(current).toEqual(original);
+      expect(result.call.args[0].bpm).toBe(confidence > 0.5 ? 100 : current.bpm);
+      expect(result.call.args[0].swing).toBe(15);
     },
   );
+  it('does not execute an uncertain operation', () => {
+    const p = prepare('reset', current);
+    const a = decisions(p, { action: 'reset' });
+    a.action.confidence = 0.5;
+    expect(assemble(p, a, current).call).toBeNull();
+  });
+  it('preserves uncertain timing and incompatible lanes while applying a confident tempo change', () => {
+    const p = prepare('a custom beat at 100 BPM', current);
+    const a = decisions(p, { tempo: 'n:100', loopMode: 'on', hat: 'eighths' });
+    a.subDivs.confidence = 0.5;
+    const c = assemble(p, a, current).call.args[0];
+    expect(c.bpm).toBe(100);
+    expect(c.subDivs).toBe(current.subDivs);
+    expect(c.loopPattern.hat).toEqual(current.loopPattern.hat);
+  });
   it('uses the current beat for faster and slower and includes recent outcomes', () => {
     const recentTurns = [
       { prompt: 'funk at 100 BPM', applied: true },
@@ -109,7 +118,6 @@ describe('voice interpretation and vector retrieval', () => {
     a.action.confidence = 1;
     for (const field of Object.keys(a)) if (a[field].choice === 'keep') a[field].confidence = 0.3;
     const result = assemble(p, a, current);
-    expect(result.resultConfidence).toBe(0.95);
     expect(result.call.args[0].bpm).toBe(current.bpm + 10);
   });
   it('ignores custom lane choices when ordinary playback was selected', () => {
@@ -120,6 +128,18 @@ describe('voice interpretation and vector retrieval', () => {
     expect(c.loopMode).toBe(false);
     expect(c.loopPattern).toEqual(current.loopPattern);
     expect(c.subDivs).toBe(current.subDivs);
+  });
+  it.each([
+    ['clear', 'clearLoopPattern'],
+    ['reset', 'resetToDefaults'],
+  ])('maps %s to a direct API call, using action confidence', (action, method) => {
+    const p = prepare(action, current);
+    const a = decisions(p, { action });
+    const result = assemble(p, a, current);
+    expect(result.call).toEqual({ method, args: [] });
+    expect(result.playback).toBeUndefined();
+    a.action.confidence = 0.7;
+    expect(assemble(p, a, current).call).toEqual({ method, args: [] });
   });
   it('rejects out of range numeric values and invalid or incomplete decisions', () => {
     const p = prepare('400 BPM', current);
@@ -140,9 +160,9 @@ describe('voice interpretation and vector retrieval', () => {
     const prompt = 'A house beat at 124 BPM';
     const p = prepare(prompt, current);
     const answers = decisions(p, { tempo: 'n:124' });
-    const provider = vi.fn(async () =>
-      Response.json({ id: 'decision-1', answers, usage: { cost: 0.001 } }),
-    );
+    const provider = vi
+      .fn()
+      .mockResolvedValueOnce(Response.json({ id: 'decision-1', answers, usage: { cost: 0.001 } }));
     vi.stubGlobal('fetch', provider);
     const result = await voice(
       new Request('https://test/api/voice', {
@@ -155,7 +175,9 @@ describe('voice interpretation and vector retrieval', () => {
     expect(body.prompt).toBe(prompt);
     expect(body.jevRequest.state.request).toBe(prompt);
     expect(body.decisions).toEqual(answers);
-    expect(body.confidence.tempo).toBe(0.83);
+    expect(body.confidence).toBe(0.83);
+    expect(provider).toHaveBeenCalledTimes(1);
+    expect(typeof body.confidence).toBe('number');
     expect(body.references).toHaveLength(4);
     expect(JSON.stringify(body)).not.toContain('private-test-key');
     expect(provider.mock.calls[0][0]).toBe('https://openrouter.ai/api/alpha/decisions');

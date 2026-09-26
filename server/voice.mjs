@@ -30,6 +30,8 @@ export function prepare(prompt, current, recentTurns = []) {
     action: choice('Classify the requested operation. Unrelated speech must not create a beat.', {
       play: 'Create or change a beat, tempo, metronome or resume playback',
       stop: 'Stop or pause playback',
+      clear: 'Clear or empty all drum grid hits, without resetting other settings',
+      reset: 'Reset everything or restore default settings',
       unrelated: 'Not a music control request',
       unsupported:
         'Requires unsupported audio export, velocities, additional drum lanes, tempo ramps, or conflicting instructions',
@@ -101,7 +103,9 @@ export function prepare(prompt, current, recentTurns = []) {
   const patterns = {};
   for (const lane of lanes) {
     patterns[lane] = {
-      keep: current.loopPattern[lane].flatMap((hit, i) => (hit ? [i / current.subDivs] : [])),
+      keep: current.loopPattern[lane].flatMap((hit, i) =>
+        hit ? [i / (current.playSubDivs ? current.subDivs : 1)] : [],
+      ),
       silent: [],
       quarters: Array.from({ length: 12 }, (_, i) => i),
       eighths: Array.from({ length: 24 }, (_, i) => i / 2),
@@ -168,7 +172,10 @@ export function assemble(prepared, answers, current) {
     )
       throw Error('Jev returned an incomplete decision. Please try again.');
   }
-  const selected = Object.fromEntries(Object.entries(answers).map(([k, a]) => [k, a.choice]));
+  if (answers.action.confidence <= 0.5) return { call: null, message: 'Kept the current beat.' };
+  const selected = Object.fromEntries(
+    Object.entries(answers).map(([k, a]) => [k, a.confidence > 0.5 ? a.choice : 'keep']),
+  );
   if (['unrelated', 'unsupported'].includes(selected.action))
     return {
       call: null,
@@ -179,20 +186,18 @@ export function assemble(prepared, answers, current) {
     };
   if (selected.action === 'stop')
     return { call: { method: 'stop', args: [] }, message: 'Playback stopped.' };
+  if (selected.action === 'clear' || selected.action === 'reset') {
+    return {
+      call: {
+        method: selected.action === 'clear' ? 'clearLoopPattern' : 'resetToDefaults',
+        args: [],
+      },
+      message: selected.action === 'clear' ? 'Drum grid cleared.' : 'Reset to defaults.',
+    };
+  }
   const usesCustomPattern =
     selected.loopMode === 'on' || (selected.loopMode === 'keep' && current.loopMode);
   if (!usesCustomPattern) for (const lane of lanes) selected[lane] = 'keep';
-  const resultConfidence = Math.min(
-    ...Object.keys(prepared.request.questions)
-      .filter(field => selected[field] !== 'keep')
-      .map(field => answers[field].confidence),
-  );
-  if (resultConfidence <= 0.7)
-    return {
-      call: null,
-      resultConfidence,
-      message: 'Not confident enough—try rephrasing.',
-    };
   const c = structuredClone(current);
   const numeric = (s, old, map) => (s.startsWith('n:') ? Number(s.slice(2)) : (map[s] ?? old));
   c.bpm = numeric(selected.tempo, c.bpm, {
@@ -234,25 +239,41 @@ export function assemble(prepared, answers, current) {
       const compatible = [1, 2, 3, 4, 5, 6, 7, 8].find(
         n => n >= c.subDivs && all.every(p => Math.abs(p * n - Math.round(p * n)) < 1e-6),
       );
-      if (!compatible)
-        return {
-          call: null,
-          resultConfidence,
-          message: 'Couldn’t make that beat. Try rephrasing.',
-        };
-      c.subDivs = compatible;
-      adjustments.push('Subdivision grid expanded to preserve selected drum hits.');
+      if (answers.subDivs.confidence <= 0.5) {
+        for (const lane of lanes)
+          if (
+            positions[lane].some(p => Math.abs(p * c.subDivs - Math.round(p * c.subDivs)) > 1e-6)
+          ) {
+            positions[lane] = prepared.patterns[lane].keep.filter(p => p < c.beats);
+          }
+      } else {
+        if (!compatible) return { call: null, message: 'Couldn’t make that beat. Try rephrasing.' };
+        c.subDivs = compatible;
+        adjustments.push('Subdivision grid expanded to preserve selected drum hits.');
+      }
     }
-    if (all.some(p => p % 1 !== 0) && !c.playSubDivs) {
-      c.playSubDivs = true;
-      adjustments.push('Subdivision playback enabled for selected drum hits.');
+    if (
+      Object.values(positions)
+        .flat()
+        .some(p => p % 1 !== 0) &&
+      !c.playSubDivs
+    ) {
+      if (answers.playSubDivs.confidence <= 0.5) {
+        for (const lane of lanes)
+          if (positions[lane].some(p => p % 1 !== 0))
+            positions[lane] = prepared.patterns[lane].keep.filter(p => p < c.beats);
+      } else {
+        c.playSubDivs = true;
+        adjustments.push('Subdivision playback enabled for selected drum hits.');
+      }
     }
   }
+  const activeSubDivs = c.playSubDivs ? c.subDivs : 1;
   c.loopPattern = Object.fromEntries(
     lanes.map(lane => [
       lane,
-      Array.from({ length: c.beats * c.subDivs }, (_, i) =>
-        positions[lane].some(p => Math.abs(p * c.subDivs - i) < 1e-6),
+      Array.from({ length: c.beats * activeSubDivs }, (_, i) =>
+        positions[lane].some(p => Math.abs(p * activeSubDivs - i) < 1e-6),
       ),
     ]),
   );
@@ -261,7 +282,6 @@ export function assemble(prepared, answers, current) {
   return {
     call: { method: 'setConfig', args: [checked.data] },
     playback: 'start',
-    resultConfidence,
     adjustments,
     message: `${c.bpm} BPM · ${c.beats} beats · ${c.swing}% swing`,
   };
@@ -329,14 +349,15 @@ export async function voice(request, env) {
       );
     const result = await response.json();
     const output = assemble(prepared, result.answers, current.data);
+    const activeAnswers = Object.values(result.answers).filter(answer => answer.choice !== 'keep');
+    const confidence = Math.min(...activeAnswers.map(answer => answer.confidence));
     return Response.json(
       {
         id: result.id,
         prompt: body.prompt,
         ...output,
-        confidence: Object.fromEntries(
-          Object.entries(result.answers).map(([k, v]) => [k, v.confidence]),
-        ),
+        confidence,
+        confidenceMethod: 'minimum_active_decision_confidence',
         decisions: result.answers,
         references: prepared.references,
         model: prepared.request.model,

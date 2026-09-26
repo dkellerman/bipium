@@ -84,6 +84,8 @@ export interface RuntimeApi {
   setSoundUrls(soundUrls: ApiSoundUrls): ApiConfig;
   setLoopPattern(pattern: DrumLoopPattern): ApiConfig;
   resetLoopPattern(): ApiConfig;
+  clearLoopPattern(): ApiConfig;
+  resetToDefaults(): ApiConfig;
   validateConfig(input: unknown): ValidationResult;
   fromQuery(query?: string): ApiConfig;
   toQuery(config?: Partial<ApiConfig>): string;
@@ -737,6 +739,19 @@ export function createRuntimeApi(controls: RuntimeControls): RuntimeApi {
       });
       controls.applyConfig(next);
       return cloneApiConfig(controls.getConfig());
+    },
+    clearLoopPattern() {
+      const next = mergeWithCurrent({
+        loopPattern: createEmptyDrumLoopPattern(getLoopTiming(controls.getConfig())),
+      });
+      controls.applyConfig(next);
+      return cloneApiConfig(next);
+    },
+    resetToDefaults() {
+      const next = cloneApiConfig(API_DEFAULT_CONFIG);
+      controls.stopPlayback();
+      controls.applyConfig(next);
+      return cloneApiConfig(next);
     },
     validateConfig(input) {
       const result = validateConfig(controls.getConfig(), input, schemas);

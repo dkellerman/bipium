@@ -121,6 +121,15 @@ const METHOD_DOCS = [
     summary: 'Validate and apply a full drum loop pattern for the current grid.',
   },
   {
+    method: 'window.bpm.clearLoopPattern()',
+    summary: 'Clear all drum-grid hits; preserve timing, mode, and playback.',
+  },
+  {
+    method: 'window.bpm.resetToDefaults()',
+    summary:
+      'Stop playback and restore every default setting, pattern, and sound; remove custom sound URLs.',
+  },
+  {
     method: 'window.bpm.resetLoopPattern()',
     summary: 'Reset the loop pattern to the seeded default for the current timing.',
   },

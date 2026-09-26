@@ -24,9 +24,12 @@ type Recognition = {
 type VoiceResult = {
   prompt: string;
   message: string;
-  call: { method: 'setConfig' | 'stop'; args: ApiConfig[] } | null;
+  call: {
+    method: 'setConfig' | 'stop' | 'clearLoopPattern' | 'resetToDefaults';
+    args: ApiConfig[];
+  } | null;
   playback?: string;
-  confidence: Record<string, number>;
+  confidence: number;
   references: { id: number; title: string; url: string }[];
   [key: string]: unknown;
 };
@@ -138,6 +141,10 @@ export function ListenControl({
             flushSync(() => api.setConfig(validated.value));
             if (result.playback === 'start') api.start();
           } else if (result.call?.method === 'stop') api.stop();
+          else if (result.call?.method === 'clearLoopPattern')
+            flushSync(() => api.clearLoopPattern());
+          else if (result.call?.method === 'resetToDefaults')
+            flushSync(() => api.resetToDefaults());
           historyRef.current = [...historyRef.current, result].slice(-10);
           setHistory(historyRef.current);
           setStatus(result.message);
