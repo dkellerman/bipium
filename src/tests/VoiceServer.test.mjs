@@ -57,6 +57,61 @@ describe('voice interpretation and vector retrieval', () => {
     expect(c.loopPattern.snare).toEqual(base.loopPattern.snare);
     expect(c.loopPattern.hat.some(Boolean)).toBe(false);
   });
+  it.each([0.79, 0.8, 0.80001])(
+    'requires strictly over 80 percent, including the weakest decision (%s)',
+    confidence => {
+      const p = prepare('100 BPM', current);
+      const a = decisions(p, { tempo: 'n:100' });
+      a.tempo.confidence = confidence;
+      const original = structuredClone(current);
+      const result = assemble(p, a, current);
+      expect(result.resultConfidence).toBe(confidence);
+      if (confidence <= 0.8) {
+        expect(result.call).toBeNull();
+        expect(result.playback).toBeUndefined();
+        expect(result.message).toBe('Not confident enough—try rephrasing.');
+      } else expect(result.playback).toBe('start');
+      expect(current).toEqual(original);
+    },
+  );
+  it('uses the current beat for faster and slower and includes recent outcomes', () => {
+    const recentTurns = [
+      { prompt: 'funk at 100 BPM', applied: true },
+      { prompt: 'a confusing request', applied: false },
+    ];
+    const base = { ...current, bpm: 100 };
+    const p = prepare('faster', base, recentTurns);
+    expect(p.request.state.recent_turns).toEqual(recentTurns);
+    const faster = assemble(p, decisions(p, { tempo: 'faster' }), base).call.args[0];
+    expect(faster.bpm).toBe(110);
+    const slower = prepare('slower', faster, recentTurns);
+    expect(assemble(slower, decisions(slower, { tempo: 'slower' }), faster).call.args[0].bpm).toBe(
+      100,
+    );
+  });
+  it('prepares all required playback settings without asking the user to enable them', () => {
+    const base = { ...current, playSubDivs: false };
+    const p = prepare('a beat', base);
+    const result = assemble(
+      p,
+      decisions(p, { loopMode: 'on', playSubDivs: 'off', hat: 'eighths' }),
+      base,
+    );
+    expect(result.call.args[0].playSubDivs).toBe(true);
+    expect(result.call.args[0].subDivs).toBe(2);
+    expect(result.playback).toBe('start');
+    expect(result.message).not.toContain('enable');
+  });
+  it('does not veto a confident tempo edit over fields being preserved unchanged', () => {
+    const p = prepare('faster', current);
+    const a = decisions(p, { tempo: 'faster' });
+    a.tempo.confidence = 0.95;
+    a.action.confidence = 1;
+    for (const field of Object.keys(a)) if (a[field].choice === 'keep') a[field].confidence = 0.3;
+    const result = assemble(p, a, current);
+    expect(result.resultConfidence).toBe(0.95);
+    expect(result.call.args[0].bpm).toBe(current.bpm + 10);
+  });
   it('rejects out of range numeric values and invalid or incomplete decisions', () => {
     const p = prepare('400 BPM', current);
     expect(() => assemble(p, decisions(p, { tempo: 'n:400' }), current)).toThrow(/range/);

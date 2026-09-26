@@ -50,7 +50,6 @@ export function ListenControl({
   const [open, setOpen] = useState(false);
   const [listening, setListening] = useState(false);
   const [interim, setInterim] = useState('');
-  const [text, setText] = useState('');
   const [status, setStatus] = useState('Describe a beat to get started.');
   const [busy, setBusy] = useState(false);
   const [history, setHistory] = useState<VoiceResult[]>(() => {
@@ -60,6 +59,7 @@ export function ListenControl({
       return [];
     }
   });
+  const historyRef = useRef(history);
   const active = useRef(false),
     sr = useRef<Recognition | null>(null),
     generation = useRef(0),
@@ -102,7 +102,6 @@ export function ListenControl({
       setStatus('Listening stopped.');
       return;
     }
-    setText(prompt);
     const version = generation.current;
     queue.current = queue.current
       .catch(() => {})
@@ -121,7 +120,13 @@ export function ListenControl({
           const response = await fetch('/api/voice', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt, currentConfig: api.getConfig() }),
+            body: JSON.stringify({
+              prompt,
+              currentConfig: api.getConfig(),
+              recentTurns: historyRef.current
+                .slice(-6)
+                .map(turn => ({ prompt: turn.prompt, applied: turn.call !== null })),
+            }),
             signal: abort.signal,
           });
           const result = await response.json();
@@ -133,7 +138,8 @@ export function ListenControl({
             flushSync(() => api.setConfig(validated.value));
             if (result.playback === 'start') api.start();
           } else if (result.call?.method === 'stop') api.stop();
-          setHistory(previous => [...previous, result].slice(-10));
+          historyRef.current = [...historyRef.current, result].slice(-10);
+          setHistory(historyRef.current);
           setStatus(result.message);
         } catch (error) {
           if (!abort.signal.aborted)
@@ -148,7 +154,9 @@ export function ListenControl({
     window.dispatchEvent(new Event('bipium:unlock-audio'));
     const SR = constructor();
     if (!SR) {
-      setStatus('Voice recognition is unavailable in this browser. You can type a beat below.');
+      setStatus(
+        'Voice recognition is unavailable in this browser. Try a browser that supports it.',
+      );
       return;
     }
     const recognition = new SR();
@@ -176,8 +184,8 @@ export function ListenControl({
       stop();
       setStatus(
         event.error === 'not-allowed'
-          ? 'Microphone permission was denied. You can type your beat below.'
-          : `Listening stopped (${event.error}). You can try again or type below.`,
+          ? 'Microphone permission was denied. Allow microphone access to use voice mode.'
+          : `Listening stopped (${event.error}). Tap the microphone to try again.`,
       );
     };
     recognition.onend = () => {
@@ -199,10 +207,9 @@ export function ListenControl({
       recognition.start();
     } catch {
       stop();
-      setStatus('Could not start the microphone. You can type below.');
+      setStatus('Could not start the microphone. Please try again.');
     }
   };
-  const latest = history.at(-1);
   const label = listening ? 'Stop listening' : 'Listen';
   const icon = listening ? (
     <Square className="size-5" aria-hidden="true" />
@@ -262,76 +269,6 @@ export function ListenControl({
                 </span>
               )}
             </p>
-            <details className="mt-1 text-xs opacity-80">
-              <summary className="w-fit cursor-pointer">Prompt{latest ? ' & details' : ''}</summary>
-              <div className="mt-2 max-h-36 overflow-auto">
-                <form
-                  onSubmit={event => {
-                    event.preventDefault();
-                    window.dispatchEvent(new Event('bipium:unlock-audio'));
-                    submit(text);
-                  }}
-                  className="flex gap-2"
-                >
-                  <input
-                    aria-label="Beat prompt"
-                    placeholder="Type a beat…"
-                    value={text}
-                    onChange={event => setText(event.target.value)}
-                    maxLength={1000}
-                    className="min-w-0 flex-1 rounded border border-slate-300 bg-white p-2 text-sm text-slate-900"
-                  />
-                  <Button type="submit" aria-label="Play prompt" disabled={!text.trim()}>
-                    Play
-                  </Button>
-                </form>
-                {latest && (
-                  <>
-                    <p className="my-2">“{latest.prompt}”</p>
-                    <dl className="grid grid-cols-2 gap-x-5 gap-y-1">
-                      {Object.entries(latest.confidence).map(([field, value]) => (
-                        <div key={field} className="flex justify-between gap-2">
-                          <dt>{field}</dt>
-                          <dd>{Math.round(value * 100)}%</dd>
-                        </div>
-                      ))}
-                    </dl>
-                    <p className="my-2">
-                      Jev confidence describes its choice distribution, not measured accuracy.
-                    </p>
-                    {latest.references.map(ref => (
-                      <a
-                        key={ref.id}
-                        href={ref.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="mb-1 block underline"
-                      >
-                        {ref.title}
-                      </a>
-                    ))}
-                    <button
-                      type="button"
-                      className="mt-2 underline"
-                      onClick={() => {
-                        const url = URL.createObjectURL(
-                          new Blob([JSON.stringify(history, null, 2)], {
-                            type: 'application/json',
-                          }),
-                        );
-                        const link = document.createElement('a');
-                        link.href = url;
-                        link.download = 'bipium-prompts.json';
-                        link.click();
-                        setTimeout(() => URL.revokeObjectURL(url), 1000);
-                      }}
-                    >
-                      Download prompt history and full decisions
-                    </button>
-                  </>
-                )}
-              </div>
-            </details>
           </div>,
           target,
         )}

@@ -13,8 +13,16 @@ const nums = (start, end) =>
     Array.from({ length: end - start + 1 }, (_, i) => [String(start + i), String(start + i)]),
   );
 const lanes = ['kick', 'hat', 'snare'];
-export function prepare(prompt, current) {
-  const references = retrieve(prompt);
+export function prepare(prompt, current, recentTurns = []) {
+  const references = retrieve(
+    [
+      ...recentTurns
+        .filter(turn => turn.applied)
+        .slice(-2)
+        .map(turn => turn.prompt),
+      prompt,
+    ].join(' '),
+  );
   const numeric = Object.fromEntries(
     [...new Set(prompt.match(/\d+(?:\.\d+)?/g) || [])].slice(0, 30).map(n => ['n:' + n, n]),
   );
@@ -133,6 +141,9 @@ export function prepare(prompt, current) {
       state: {
         request: prompt,
         current_config: current,
+        recent_turns: recentTurns,
+        context_note:
+          'Current config is the actual player state. Interpret follow-up requests such as faster or slower against that state and recent turns. Turns with applied=false were not executed.',
         reference_note:
           'Fallible outside examples, not requirements. Explicit instructions override examples.',
         reference_examples: references,
@@ -165,6 +176,17 @@ export function assemble(prepared, answers, current) {
     };
   if (selected.action === 'stop')
     return { call: { method: 'stop', args: [] }, message: 'Playback stopped.' };
+  const resultConfidence = Math.min(
+    ...Object.keys(prepared.request.questions)
+      .filter(field => selected[field] !== 'keep')
+      .map(field => answers[field].confidence),
+  );
+  if (resultConfidence <= 0.8)
+    return {
+      call: null,
+      resultConfidence,
+      message: 'Not confident enough—try rephrasing.',
+    };
   const c = structuredClone(current);
   const numeric = (s, old, map) => (s.startsWith('n:') ? Number(s.slice(2)) : (map[s] ?? old));
   c.bpm = numeric(selected.tempo, c.bpm, {
@@ -207,15 +229,15 @@ export function assemble(prepared, answers, current) {
         n => n >= c.subDivs && all.every(p => Math.abs(p * n - Math.round(p * n)) < 1e-6),
       );
       if (!compatible)
-        throw Error('The requested rhythms do not fit one supported grid. Try a simpler beat.');
+        return {
+          call: null,
+          resultConfidence,
+          message: 'Couldn’t make that beat. Try rephrasing.',
+        };
       c.subDivs = compatible;
       adjustments.push('Subdivision grid expanded to preserve selected drum hits.');
     }
     if (all.some(p => p % 1 !== 0) && !c.playSubDivs) {
-      if (selected.playSubDivs === 'off')
-        throw Error(
-          'Those drum hits need subdivisions. Try main-beat drum placements or enable subdivisions.',
-        );
       c.playSubDivs = true;
       adjustments.push('Subdivision playback enabled for selected drum hits.');
     }
@@ -233,6 +255,7 @@ export function assemble(prepared, answers, current) {
   return {
     call: { method: 'setConfig', args: [checked.data] },
     playback: 'start',
+    resultConfidence,
     adjustments,
     message: `${c.bpm} BPM · ${c.beats} beats · ${c.swing}% swing`,
   };
@@ -264,8 +287,25 @@ export async function voice(request, env) {
     const current = schema.safeParse(body.currentConfig);
     if (!current.success)
       return Response.json({ error: 'Invalid current configuration' }, { status: 400, headers });
+    const recentTurns = body.recentTurns ?? [];
+    if (
+      !Array.isArray(recentTurns) ||
+      recentTurns.length > 6 ||
+      recentTurns.some(
+        turn =>
+          !turn ||
+          typeof turn.prompt !== 'string' ||
+          turn.prompt.length > 1000 ||
+          typeof turn.applied !== 'boolean',
+      )
+    )
+      return Response.json({ error: 'Invalid voice context' }, { status: 400, headers });
     const start = Date.now();
-    const prepared = prepare(body.prompt, current.data);
+    const prepared = prepare(
+      body.prompt,
+      current.data,
+      recentTurns.map(({ prompt, applied }) => ({ prompt, applied })),
+    );
     const retrieved = Date.now();
     const response = await fetch('https://openrouter.ai/api/alpha/decisions', {
       method: 'POST',

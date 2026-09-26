@@ -101,11 +101,47 @@ describe('listening controls', () => {
     expect(api.stop).not.toHaveBeenCalled();
     expect(FakeSpeech.latest.abort).toHaveBeenCalled();
   });
-  it('mic denial ends listening and leaves the typed prompt available', async () => {
+  it('mic denial ends listening without offering a typed input', async () => {
     await click('Listen');
     await act(async () => FakeSpeech.latest.onerror({ error: 'not-allowed' }));
     expect(document.body.textContent).toContain('permission was denied');
-    expect(document.querySelector('input[aria-label="Beat prompt"]')).toBeTruthy();
+    expect(document.querySelector('input[aria-label="Beat prompt"]')).toBeNull();
+  });
+  it('shows the low-confidence message without applying or starting a beat', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        Response.json({
+          ...response(),
+          call: null,
+          playback: undefined,
+          resultConfidence: 0.8,
+          message: 'Not confident enough—try rephrasing.',
+        }),
+      ),
+    );
+    await click('Listen');
+    await act(async () => FakeSpeech.latest.phrase('something vague'));
+    expect(api.setConfig).not.toHaveBeenCalled();
+    expect(api.start).not.toHaveBeenCalled();
+    expect(api.stop).not.toHaveBeenCalled();
+    expect(document.querySelector('[role="status"]')?.textContent).toContain(
+      'Not confident enough',
+    );
+    expect(document.querySelector('input')).toBeNull();
+    expect(document.querySelector('details')).toBeNull();
+  });
+  it('keeps recent spoken context across phrases in the same listening session', async () => {
+    const fetcher = vi.fn(async () => Response.json(response()));
+    vi.stubGlobal('fetch', fetcher);
+    await click('Listen');
+    await act(async () => FakeSpeech.latest.phrase('funk'));
+    await act(async () => FakeSpeech.latest.phrase('faster'));
+    const request = JSON.parse(
+      (fetcher.mock.calls as unknown as [string, RequestInit][])[1][1].body as string,
+    );
+    expect(request.prompt).toBe('faster');
+    expect(request.recentTurns).toEqual([{ prompt: 'funk', applied: true }]);
   });
   it('stops microphone and aborts requests when the page unmounts', async () => {
     await click('Listen');

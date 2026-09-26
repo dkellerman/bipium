@@ -34,7 +34,7 @@ The `src/core` directory contains an app-independent metronome implementation wi
 
 This branch preserves the current classic and machine interfaces, `window.bpm`,
 all 16 native WebMCP tools, URL configuration, and the standalone core library.
-The Listen control accepts browser speech recognition and typed prompts. The previous
+The Listen control uses browser speech recognition. The previous
 OpenAI request flow and Vercel model endpoint are removed. No reCAPTCHA or app login
 is present; the original Vercel deployment is separate.
 
@@ -45,7 +45,9 @@ is present; the original Vercel deployment is separate.
 
 ### Voice and Jev
 
-`POST /api/voice` takes `{ prompt, currentConfig }`. The Worker retrieves four
+`POST /api/voice` takes `{ prompt, currentConfig, recentTurns }`. Each phrase includes
+the actual current player configuration and up to six recent spoken prompts with
+whether they were applied, so relative edits use the ongoing context. The Worker retrieves four
 references from the full research vector index, then calls OpenRouter Decisions
 with `typesafe/jev-1.13`. It assembles and validates one `call` envelope:
 `{ method: "setConfig", args: [config] }`, plus `playback: "start"`. A stop request
@@ -57,8 +59,11 @@ explicitly reported and preserve selected hits; impossible combinations are reje
 Responses keep the exact prompt, all Jev answers including confidence and choice
 probabilities, the full Jev request, selected source references, usage, and timing.
 Confidence is Jev's distribution summary, not a calibrated accuracy estimate for
-this app. The panel retains the last ten successful responses in browser session
-storage and offers a JSON history download. Prompt history is not persisted on the
+this app. Playback requires every decision used to build the beat to exceed 80% confidence.
+A lower or equal score leaves the player unchanged and displays a short rephrasing message.
+The response includes `resultConfidence`, the minimum confidence among the action and requested changes; preserved fields are excluded.
+Recent responses are retained in browser session storage for conversational context.
+Prompt and decision metadata remain in the server response, with no details UI or history download. Prompt history is not persisted on the
 server. Stop listening cancels queued/in-flight interpretations but leaves any
 already-playing beat alone. Spoken "stop playback" stops the player.
 
@@ -66,8 +71,8 @@ Store `OPENROUTER_API_KEY` only as a secret in GPT Sites. For local Worker testi
 put it in the ignored `dist/server/.dev.vars` after building. Never use a `VITE_`
 prefix or put the key in client code. No other model or speech-service key is used.
 Browser recognition support varies; it can use the browser vendor's remote speech
-service and is not guaranteed offline. Microphone denial/unsupported browsers keep
-the typed prompt available. The Listen click unlocks the player's audio context.
+service and is not guaranteed offline. Microphone denial/unsupported browsers show a short voice availability message.
+There is no typed prompt input. The Listen click unlocks the player's audio context.
 
 ### Research vector database
 
