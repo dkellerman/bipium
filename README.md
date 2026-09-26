@@ -25,19 +25,33 @@ A metronome web app. https://bipium.com
 - React, Typescript, Tailwind, Shadcn
 - PIXI.js for visualizer, to allow GPU rendering
 - Metronome implementation inspired by https://github.com/cwilso/metronome
-- Vite for app and core distribution builds, deployed to Vercel
+- Vite for app and core distribution builds, deployed to GPT Sites
 - microsecond time syncing via AudioContext
 
 The `src/core` directory contains an app-independent metronome implementation with no library dependencies.
 
-## AI Dev Setup
+## Experimental GPT Sites copy
 
-The AI config generator now runs through a Vercel Function at `/api/ai-config`, so the OpenAI key stays server-side.
+This branch preserves the current classic and machine interfaces, `window.bpm`,
+all 16 native WebMCP tools, URL configuration, and the standalone core library.
+The AI button is disabled. The previous prompt modal, OpenAI request hook, and
+Vercel model endpoint have been removed. No reCAPTCHA code is present.
 
-- Set `OPENAI_API_KEY` in Vercel project env vars for production.
-- For local development, pull env vars locally with `vercel env pull .env.local`, or otherwise provide `OPENAI_API_KEY` before starting Vercel dev.
-- Run `pnpm dev:vercel` when you need the app and the server function together.
-- `pnpm dev` still runs the Vite app only.
+- `pnpm dev` serves the application locally.
+- `pnpm build` builds the client and the Sites Worker.
+- `pnpm test`, `pnpm typecheck`, and `pnpm test:server` verify the retained API and routing.
+- GPT Sites owns deployment and public access. There is no app login.
+- Production analytics is not loaded in this experimental copy.
+
+### Future voice and Jev integration
+
+`server/index.mjs` is the server entrypoint. Store `OPENROUTER_API_KEY` only as a
+secret in GPT Sites; the Worker receives it through `env.OPENROUTER_API_KEY`.
+Never use a `VITE_` prefix or expose the key to client code. The client sends
+requests to a same-origin server route; that route will call OpenRouter and
+return only the classification result. No model-calling route is enabled yet.
+Validated results can be applied through the existing `window.bpm.setConfig`
+or corresponding WebMCP tools. The browser still owns timing and playback.
 
 ## Example code
 

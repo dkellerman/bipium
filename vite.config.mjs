@@ -47,6 +47,7 @@ export default defineConfig(({ mode }) => {
       },
     },
     build: {
+      outDir: 'dist/client',
       chunkSizeWarningLimit: 1200,
     },
     server: {

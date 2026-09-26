@@ -24,7 +24,7 @@ unaffected:
   `MachineDrawer` (menu only — volume/sounds live on the faceplate).
 - Shared infrastructure is imported read-only: `AppContext`, hooks
   (`useClicker`, `useMetronome`, `useTapBPM`, `SOUND_PACKS`), `core/`,
-  `components/AIPromptInput`, `components/DrumLoopOverlay`, and the ui
+  `components/DrumLoopOverlay`, and the ui
   primitives used by the drawer.
 - Styles live in `machine.css` (`.machine-range`), imported only by
   `MachinePage`.

@@ -24,7 +24,6 @@ import {
   type DrumLoopPattern,
   type DrumLoopTiming,
 } from '@/core/index';
-import { AIPromptInput } from '@/components/AIPromptInput';
 import { AppProvider } from '@/AppContext';
 import type { AppContextValue } from '@/AppContext';
 import {
@@ -32,7 +31,6 @@ import {
   SOUND_PACKS,
   useClicker,
   useMetronome,
-  usePromptToApiConfig,
   useSetting,
 } from '@/hooks';
 import { isEditableEventTarget } from '@/lib/utils';
@@ -132,8 +130,6 @@ function MachinePage() {
 
   const [showSideBar, setShowSideBar] = useState(false);
   const [copiedURL, setCopiedURL] = useState<string | null>(null);
-  const [showAIPrompt, setShowAIPrompt] = useState(false);
-  const [aiPlaybackActive, setAiPlaybackActive] = useState(false);
   const [viewportWidth, setViewportWidth] = useState(
     typeof window !== 'undefined' ? window.innerWidth : 390,
   );
@@ -141,7 +137,11 @@ function MachinePage() {
   const forceRender = () => setUpdate(value => !value);
 
   const previousSwingRef = useRef(swing || 0);
-  const audioContext = useRef(new AudioContext());
+  // One context for the page's lifetime. Passing new AudioContext() straight
+  // to useRef constructs a throwaway context on every render; mobile browsers
+  // cap live contexts and freeze the oldest, which is the one the ref keeps.
+  const [audioContextInstance] = useState(() => new AudioContext());
+  const audioContext = useRef(audioContextInstance);
   const beatsRef = useRef(beats);
   const subDivsRef = useRef(subDivs);
   const playSubDivsRef = useRef(playSubDivs);
@@ -174,6 +174,10 @@ function MachinePage() {
     [beats, activeSubDivs, swingActive, swing],
   );
   const [visualizerMode, setVisualizerMode] = useState<VisualizerMode>('default');
+  // Mirrors kept in sync synchronously so the window.bpm API reads correct
+  // values immediately after a call, before React re-renders.
+  const visualizerModeRef = useRef<VisualizerMode>('default');
+  visualizerModeRef.current = visualizerMode;
   const [renderedVisualizerMode, setRenderedVisualizerMode] = useState<VisualizerMode>('default');
   const [soundUrls, setSoundUrls] = useState(() => ({ ...API_DEFAULT_CONFIG.soundUrls }));
   const [drumPattern, setDrumPattern] = useState<DrumLoopPattern>(() =>
@@ -220,34 +224,30 @@ function MachinePage() {
     };
   }, []);
 
-  const start = useCallback(() => {
-    setStarted(true);
+  // Resume inside the user-gesture call stack. Mobile Safari can park the
+  // context in an 'interrupted' state that the core's suspended-only resume
+  // check never clears, leaving the clock (and the visualizer) frozen.
+  const resumeAudioContext = useCallback(() => {
+    void audioContext.current.resume().catch(() => undefined);
   }, []);
 
+  const start = useCallback(() => {
+    resumeAudioContext();
+    startedRef.current = true;
+    setStarted(true);
+  }, [resumeAudioContext]);
+
   const stop = useCallback(() => {
+    startedRef.current = false;
     setStarted(false);
   }, []);
 
-  const handlePromptPayloadReady = useCallback(() => {
-    setAiPlaybackActive(true);
-  }, []);
-
-  const handlePromptStatusChange = useCallback(() => {}, []);
-
-  const { llmGenerating, generateAndRunFromPrompt, cancelPromptGeneration } = usePromptToApiConfig({
-    onPayloadReady: handlePromptPayloadReady,
-    onStatusChange: handlePromptStatusChange,
-  });
-
-  const cancelAi = useCallback(() => {
-    cancelPromptGeneration();
-    setShowAIPrompt(false);
-    setAiPlaybackActive(false);
-  }, [cancelPromptGeneration]);
-
   const toggle = useCallback(() => {
-    setStarted(value => !value);
-  }, []);
+    resumeAudioContext();
+    const next = !startedRef.current;
+    startedRef.current = next;
+    setStarted(next);
+  }, [resumeAudioContext]);
 
   const toggleVisualizerMode = useCallback(() => {
     const nextMode = visualizerMode === 'drumLoop' ? 'default' : 'drumLoop';
@@ -258,6 +258,7 @@ function MachinePage() {
       setDrumPatternDirty(false);
     }
     pendingRenderedVisualizerModeRef.current = nextMode;
+    visualizerModeRef.current = nextMode;
     setVisualizerMode(nextMode);
     sendEvent('toggle_visualizer_mode', 'App', nextMode);
   }, [visualizerMode]);
@@ -322,7 +323,7 @@ function MachinePage() {
 
   useEffect(() => {
     if (window.location.search.indexOf('?reset') === 0) {
-      window.location.replace('/machine');
+      window.location.replace(window.location.pathname);
     }
   }, []);
 
@@ -368,11 +369,11 @@ function MachinePage() {
       soundPack: soundPackRef.current,
       volume: volumeRef.current,
       soundUrls: { ...soundUrlsRef.current },
-      loopMode: visualizerMode === 'drumLoop',
+      loopMode: visualizerModeRef.current === 'drumLoop',
       loopRepeats: loopRepeatsRef.current,
       loopPattern: cloneLoopPattern(drumPatternRef.current),
     }),
-    [visualizerMode],
+    [],
   );
 
   const applyApiConfig = useCallback(
@@ -408,6 +409,7 @@ function MachinePage() {
 
       loopTimingRef.current = nextLoopTiming;
       pendingRenderedVisualizerModeRef.current = nextVisualizerMode;
+      visualizerModeRef.current = nextVisualizerMode;
       clicker.setVolume(nextVolume);
       void clicker.setSounds(
         buildConfiguredSoundPack(
@@ -452,13 +454,18 @@ function MachinePage() {
       getConfig: getApiConfig,
       applyConfig: applyApiConfig,
       startPlayback: () => {
+        resumeAudioContext();
+        startedRef.current = true;
         setStarted(true);
       },
       stopPlayback: () => {
+        startedRef.current = false;
         setStarted(false);
       },
       togglePlayback: () => {
+        resumeAudioContext();
         const next = !startedRef.current;
+        startedRef.current = next;
         setStarted(next);
         return next;
       },
@@ -530,7 +537,6 @@ function MachinePage() {
 
   useEffect(() => {
     if (!started) {
-      setAiPlaybackActive(false);
       metronome.stop();
       sendFrameRate();
     } else {
@@ -652,27 +658,14 @@ function MachinePage() {
     clearDrumLoopPattern,
     drumPattern,
     toggleDrumLoopStep,
-    showAIPrompt,
-    setShowAIPrompt,
-    llmGenerating,
     start,
-    stopAll: () => {
-      cancelAi();
-      stop();
-    },
+    stopAll: stop,
   };
 
   return (
     <AppProvider value={appContextValue}>
       <Machine extras={machineExtras} />
       <MachineDrawer />
-      {showAIPrompt ? (
-        <AIPromptInput
-          isLoading={llmGenerating}
-          onSubmitPrompt={generateAndRunFromPrompt}
-          onRequestClose={cancelAi}
-        />
-      ) : null}
     </AppProvider>
   );
 }

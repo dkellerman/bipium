@@ -5851,6 +5851,268 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
   function preprocess(fn, schema) {
     return pipe(transform(fn), schema);
   }
+  const EMPTY_INPUT_SCHEMA = {
+    type: "object",
+    properties: {},
+    additionalProperties: false
+  };
+  function schemaProperty(schema, name) {
+    if (!schema || typeof schema !== "object") return {};
+    const properties = schema.properties;
+    const property = properties?.[name];
+    return property && typeof property === "object" ? property : {};
+  }
+  function currentState(runtime2) {
+    return {
+      started: runtime2.isStarted(),
+      config: runtime2.getConfig()
+    };
+  }
+  function register(context, tool, signal) {
+    void context.registerTool(tool, { signal }).catch((error) => {
+      if (!signal.aborted) console.warn(`Could not register WebMCP tool "${tool.name}".`, error);
+    });
+  }
+  function registerBipiumWebMcp(runtime2, context) {
+    if (!context) return () => {
+    };
+    const controller = new AbortController();
+    const { signal } = controller;
+    register(
+      context,
+      {
+        name: "get_bipium_info",
+        title: "Get Bipium information",
+        description: "Return the full Bipium runtime state, defaults, sound packs, schemas, timing, and discovery links.",
+        inputSchema: EMPTY_INPUT_SCHEMA,
+        annotations: { readOnlyHint: true },
+        execute: async () => JSON.stringify({
+          version: runtime2.version,
+          entrypoint: runtime2.entrypoint,
+          discovery: runtime2.discovery,
+          defaults: runtime2.defaults,
+          ...currentState(runtime2),
+          loopMode: runtime2.isLoopMode(),
+          loopRepeats: runtime2.getLoopRepeats(),
+          loopPattern: runtime2.getLoopPattern(),
+          soundUrls: runtime2.getSoundUrls(),
+          soundPacks: runtime2.getSoundPacks(),
+          now: runtime2.now(),
+          schemas: runtime2.getSchemaJson()
+        })
+      },
+      signal
+    );
+    register(
+      context,
+      {
+        name: "validate_bipium_config",
+        title: "Validate Bipium configuration",
+        description: "Validate a complete Bipium configuration without applying it.",
+        inputSchema: runtime2.schemaJson.config,
+        annotations: { readOnlyHint: true },
+        execute: async (input) => JSON.stringify(runtime2.validateConfig(input))
+      },
+      signal
+    );
+    register(
+      context,
+      {
+        name: "start_metronome",
+        title: "Start Bipium metronome",
+        description: "Apply an optional Bipium configuration and start visible metronome or drum-loop playback.",
+        inputSchema: runtime2.schemaJson.configPatch,
+        execute: async (input) => {
+          if (Object.keys(input).length > 0) runtime2.setConfig(input);
+          const config2 = runtime2.start();
+          return JSON.stringify({ status: "playing", config: config2 });
+        }
+      },
+      signal
+    );
+    register(
+      context,
+      {
+        name: "stop_metronome",
+        title: "Stop Bipium metronome",
+        description: "Stop the active Bipium metronome or drum loop.",
+        inputSchema: EMPTY_INPUT_SCHEMA,
+        execute: async () => {
+          runtime2.stop();
+          return JSON.stringify({ status: "stopped" });
+        }
+      },
+      signal
+    );
+    register(
+      context,
+      {
+        name: "toggle_metronome",
+        title: "Toggle Bipium metronome",
+        description: "Toggle Bipium playback and return the new playing state.",
+        inputSchema: EMPTY_INPUT_SCHEMA,
+        execute: async () => JSON.stringify({ started: runtime2.toggle() })
+      },
+      signal
+    );
+    register(
+      context,
+      {
+        name: "set_metronome_config",
+        title: "Set Bipium configuration",
+        description: "Apply a partial Bipium metronome or drum-loop configuration without changing playback state.",
+        inputSchema: runtime2.schemaJson.configPatch,
+        execute: async (input) => JSON.stringify({ config: runtime2.setConfig(input) })
+      },
+      signal
+    );
+    register(
+      context,
+      {
+        name: "set_bipium_loop_mode",
+        title: "Set Bipium loop mode",
+        description: "Enable or disable Bipium drum-loop mode.",
+        inputSchema: {
+          type: "object",
+          properties: { enabled: { type: "boolean" } },
+          required: ["enabled"],
+          additionalProperties: false
+        },
+        execute: async ({ enabled }) => JSON.stringify({ config: runtime2.setLoopMode(enabled) })
+      },
+      signal
+    );
+    register(
+      context,
+      {
+        name: "set_bipium_loop_repeats",
+        title: "Set Bipium loop repeats",
+        description: "Set how many drum-loop bars Bipium plays; zero repeats forever.",
+        inputSchema: {
+          type: "object",
+          properties: { repeats: schemaProperty(runtime2.schemaJson.configPatch, "loopRepeats") },
+          required: ["repeats"],
+          additionalProperties: false
+        },
+        execute: async ({ repeats }) => JSON.stringify({ config: runtime2.setLoopRepeats(repeats) })
+      },
+      signal
+    );
+    register(
+      context,
+      {
+        name: "set_bipium_sound_urls",
+        title: "Set Bipium sound URLs",
+        description: "Override Bipium audio files for individual click and subdivision slots.",
+        inputSchema: {
+          type: "object",
+          properties: { soundUrls: schemaProperty(runtime2.schemaJson.configPatch, "soundUrls") },
+          required: ["soundUrls"],
+          additionalProperties: false
+        },
+        execute: async ({ soundUrls }) => JSON.stringify({ config: runtime2.setSoundUrls(soundUrls) })
+      },
+      signal
+    );
+    register(
+      context,
+      {
+        name: "set_bipium_loop_pattern",
+        title: "Set Bipium loop pattern",
+        description: "Replace the kick, hat, and snare step arrays used by Bipium drum-loop mode.",
+        inputSchema: {
+          type: "object",
+          properties: { pattern: schemaProperty(runtime2.schemaJson.configPatch, "loopPattern") },
+          required: ["pattern"],
+          additionalProperties: false
+        },
+        execute: async ({ pattern }) => JSON.stringify({ config: runtime2.setLoopPattern(pattern) })
+      },
+      signal
+    );
+    register(
+      context,
+      {
+        name: "reset_bipium_loop_pattern",
+        title: "Reset Bipium loop pattern",
+        description: "Reset the Bipium drum pattern for the current timing configuration.",
+        inputSchema: EMPTY_INPUT_SCHEMA,
+        execute: async () => JSON.stringify({ config: runtime2.resetLoopPattern() })
+      },
+      signal
+    );
+    const querySchema = {
+      type: "object",
+      properties: { query: { type: "string", description: "A Bipium URL query string." } },
+      additionalProperties: false
+    };
+    register(
+      context,
+      {
+        name: "parse_bipium_query",
+        title: "Parse Bipium query",
+        description: "Parse a Bipium URL query into a configuration without applying it.",
+        inputSchema: querySchema,
+        annotations: { readOnlyHint: true },
+        execute: async ({ query }) => JSON.stringify({ config: runtime2.fromQuery(query) })
+      },
+      signal
+    );
+    register(
+      context,
+      {
+        name: "create_bipium_query",
+        title: "Create Bipium query",
+        description: "Create a shareable Bipium URL query from an optional partial configuration.",
+        inputSchema: {
+          type: "object",
+          properties: { config: runtime2.schemaJson.configPatch },
+          additionalProperties: false
+        },
+        annotations: { readOnlyHint: true },
+        execute: async ({ config: config2 }) => JSON.stringify({ query: runtime2.toQuery(config2) })
+      },
+      signal
+    );
+    register(
+      context,
+      {
+        name: "apply_bipium_query",
+        title: "Apply Bipium query",
+        description: "Parse and apply a Bipium URL query to the visible metronome or drum loop.",
+        inputSchema: querySchema,
+        execute: async ({ query }) => JSON.stringify({ config: runtime2.applyQuery(query) })
+      },
+      signal
+    );
+    register(
+      context,
+      {
+        name: "tap_bipium",
+        title: "Tap Bipium",
+        description: "Trigger Bipium's user click sound once.",
+        inputSchema: EMPTY_INPUT_SCHEMA,
+        execute: async () => {
+          runtime2.tap();
+          return JSON.stringify({ status: "tapped" });
+        }
+      },
+      signal
+    );
+    register(
+      context,
+      {
+        name: "get_metronome_state",
+        title: "Get Bipium state",
+        description: "Return whether Bipium is playing and its current metronome or drum-loop configuration.",
+        inputSchema: EMPTY_INPUT_SCHEMA,
+        annotations: { readOnlyHint: true },
+        execute: async () => JSON.stringify(currentState(runtime2))
+      },
+      signal
+    );
+    return () => controller.abort();
+  }
   const API_VERSION = 1;
   const BIPIUM_API_VERSION = API_VERSION;
   const API_DISCOVERY = {
@@ -6389,11 +6651,13 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
     };
   }
   const createBipiumRuntimeApi = createRuntimeApi;
-  function installWindowBpm(runtime2, target = globalThis) {
+  function installWindowBpm(runtime2, target = globalThis, modelContext = target === globalThis && typeof document !== "undefined" ? document.modelContext : void 0) {
     const previous = target.bpm;
     const next = previous && typeof previous === "object" ? { ...previous, ...runtime2 } : { ...runtime2 };
     target.bpm = next;
+    const unregisterWebMcp = registerBipiumWebMcp(runtime2, modelContext);
     return () => {
+      unregisterWebMcp();
       if (target.bpm !== next) return;
       if (previous && typeof previous === "object") {
         target.bpm = previous;

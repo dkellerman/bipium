@@ -1,12 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import copyToClipboard from 'copy-to-clipboard';
 import { Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { API_DEFAULT_CONFIG, API_DISCOVERY } from '@/core/index';
-import { AIPromptInput } from '@/components/AIPromptInput';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { usePromptToApiConfig } from '@/hooks/usePromptToApiConfig';
 import { cn } from '@/lib/utils';
 import type { ApiConfig, ValidationResult } from '@/types';
 import { useApi } from '@/hooks/useApi';
@@ -194,8 +192,6 @@ export default function ApiPage() {
   });
   const [liveStarted, setLiveStarted] = useState(false);
   const [liveConfig, setLiveConfig] = useState<ApiConfig>({ ...API_DEFAULT_CONFIG });
-  const [showAIPrompt, setShowAIPrompt] = useState(false);
-  const [aiPlaybackActive, setAiPlaybackActive] = useState(false);
 
   const runtime = useApi(config => {
     setLiveConfig(config);
@@ -207,27 +203,6 @@ export default function ApiPage() {
       };
     });
   });
-
-  const handlePromptPayloadReady = useCallback((prettyPayload: string) => {
-    setPayload(prettyPayload);
-    setAiPlaybackActive(true);
-  }, []);
-  const handlePromptStatusChange = useCallback((text: string) => {
-    setStatus({
-      tone: text.startsWith('LLM error') ? 'error' : 'ok',
-      text,
-    });
-  }, []);
-  const { llmGenerating, generateAndRunFromPrompt, cancelPromptGeneration } = usePromptToApiConfig({
-    onPayloadReady: handlePromptPayloadReady,
-    onStatusChange: handlePromptStatusChange,
-  });
-
-  const cancelAi = useCallback(() => {
-    cancelPromptGeneration();
-    setShowAIPrompt(false);
-    setAiPlaybackActive(false);
-  }, [cancelPromptGeneration]);
 
   const preview = useMemo(() => {
     if (!runtime) {
@@ -280,9 +255,6 @@ export default function ApiPage() {
     const timer = window.setInterval(() => {
       const started = runtime.isStarted();
       setLiveStarted(started);
-      if (!started) {
-        setAiPlaybackActive(false);
-      }
     }, 200);
 
     return () => window.clearInterval(timer);
@@ -359,7 +331,6 @@ export default function ApiPage() {
     }
 
     if (runtime.isStarted()) {
-      cancelAi();
       runtime.stop();
       setLiveStarted(false);
       setStatus({ tone: 'ok', text: 'Playback stopped.' });
@@ -376,7 +347,6 @@ export default function ApiPage() {
       runtime.setConfig(validated.value);
       runtime.start();
       setLiveStarted(true);
-      setAiPlaybackActive(false);
       setStatus({ tone: 'ok', text: 'Playback started.' });
     } catch (error) {
       setStatus({
@@ -637,9 +607,8 @@ export default function ApiPage() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => setShowAIPrompt(current => !current)}
-              aria-pressed={showAIPrompt || llmGenerating}
-              title="AI prompt"
+              disabled
+              title="AI is temporarily disabled"
               aria-label="AI prompt"
             >
               <span className="inline-flex items-center gap-2">
@@ -683,14 +652,6 @@ export default function ApiPage() {
           <p className={cn('text-sm', statusClass)}>{status.text}</p>
         </CardContent>
       </Card>
-
-      {showAIPrompt ? (
-        <AIPromptInput
-          isLoading={llmGenerating}
-          onSubmitPrompt={generateAndRunFromPrompt}
-          onRequestClose={cancelAi}
-        />
-      ) : null}
     </main>
   );
 }

@@ -20,7 +20,6 @@ import {
   type DrumLoopPattern,
   type DrumLoopTiming,
 } from '@/core/index';
-import { AIPromptInput } from '@/components/AIPromptInput';
 import { BPMControls } from '@/components/BPMControls';
 import { BeatControls } from '@/components/BeatControls';
 import { DefaultVisualizer } from '@/components/DefaultVisualizer';
@@ -37,7 +36,6 @@ import {
   SOUND_PACKS,
   useClicker,
   useMetronome,
-  usePromptToApiConfig,
   useSetting,
 } from '@/hooks';
 import { cn, isEditableEventTarget } from '@/lib/utils';
@@ -133,8 +131,6 @@ function App() {
 
   const [showSideBar, setShowSideBar] = useState(false);
   const [copiedURL, setCopiedURL] = useState<string | null>(null);
-  const [showAIPrompt, setShowAIPrompt] = useState(false);
-  const [aiPlaybackActive, setAiPlaybackActive] = useState(false);
   const [viewportWidth, setViewportWidth] = useState(
     typeof window !== 'undefined' ? window.innerWidth : 390,
   );
@@ -236,23 +232,6 @@ function App() {
   const stop = useCallback(() => {
     setStarted(false);
   }, []);
-
-  const handlePromptPayloadReady = useCallback(() => {
-    setAiPlaybackActive(true);
-  }, []);
-
-  const handlePromptStatusChange = useCallback(() => {}, []);
-
-  const { llmGenerating, generateAndRunFromPrompt, cancelPromptGeneration } = usePromptToApiConfig({
-    onPayloadReady: handlePromptPayloadReady,
-    onStatusChange: handlePromptStatusChange,
-  });
-
-  const cancelAi = useCallback(() => {
-    cancelPromptGeneration();
-    setShowAIPrompt(false);
-    setAiPlaybackActive(false);
-  }, [cancelPromptGeneration]);
 
   const toggle = useCallback(() => {
     setStarted(value => !value);
@@ -539,7 +518,6 @@ function App() {
 
   useEffect(() => {
     if (!started) {
-      setAiPlaybackActive(false);
       metronome.stop();
       sendFrameRate();
     } else {
@@ -791,7 +769,6 @@ function App() {
               )}
               onClick={event => {
                 event.preventDefault();
-                cancelAi();
                 stop();
                 sendEvent('stop');
               }}
@@ -808,22 +785,13 @@ function App() {
             variant="outline"
             size="icon"
             className="relative z-10 size-11 rounded-full bg-white p-2 shadow-md"
-            title="AI prompt"
+            title="AI is temporarily disabled"
             aria-label="AI prompt"
-            aria-pressed={showAIPrompt || llmGenerating}
-            onClick={() => setShowAIPrompt(current => !current)}
+            disabled
           >
             <Sparkles className="size-5" aria-hidden="true" />
           </Button>
         </div>
-
-        {showAIPrompt ? (
-          <AIPromptInput
-            isLoading={llmGenerating}
-            onSubmitPrompt={generateAndRunFromPrompt}
-            onRequestClose={cancelAi}
-          />
-        ) : null}
       </main>
     </AppProvider>
   );

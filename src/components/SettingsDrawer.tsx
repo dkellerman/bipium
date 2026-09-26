@@ -4,6 +4,7 @@ import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { SOUND_PACKS } from '@/hooks';
 import { useApp } from '@/AppContext';
+import { storeTheme, type UITheme } from '@/lib/theme';
 import { sendEvent } from '@/tracking';
 import { VolumeControl } from './VolumeControl';
 
@@ -54,6 +55,23 @@ export function SettingsDrawer() {
                     : key}
                 </option>
               ))}
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="font-medium">Theme</label>
+            <select
+              className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 outline-none"
+              value="classic"
+              onChange={event => {
+                const theme = event.target.value as UITheme;
+                storeTheme(theme);
+                sendEvent('set_theme', 'App', theme);
+                if (theme !== 'classic') window.location.assign('/');
+              }}
+            >
+              <option value="classic">Classic</option>
+              <option value="machine">Machine</option>
             </select>
           </div>
 

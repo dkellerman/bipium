@@ -18,9 +18,6 @@ export interface MachineExtras {
   clearDrumLoopPattern: () => void;
   drumPattern: DrumLoopPattern;
   toggleDrumLoopStep: (lane: DrumLoopLane, stepIndex: number) => void;
-  showAIPrompt: boolean;
-  setShowAIPrompt: (value: boolean) => void;
-  llmGenerating: boolean;
   start: () => void;
   stopAll: () => void;
 }

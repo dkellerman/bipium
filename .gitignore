@@ -28,3 +28,10 @@ yarn-error.log*
 .vercel
 
 TODO.md
+
+# Local secrets and Sites runtime
+.env
+.env.*
+.dev.vars*
+.sites-runtime/
+.wrangler/

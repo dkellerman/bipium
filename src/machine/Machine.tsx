@@ -89,6 +89,10 @@ export function Machine({ extras }: MachineProps) {
   const vizBoxRef = useRef<HTMLDivElement | null>(null);
   const [vizHeight, setVizHeight] = useState(160);
 
+  // The subdiv strip stays open (showing "1" when subdivisions are off) until
+  // the Subdivs key collapses it; collapsed, the visualizer takes the space.
+  const [stripOpen, setStripOpen] = useState(app.playSubDivs);
+
   useEffect(() => {
     const el = vizBoxRef.current;
     if (!el) return;
@@ -129,13 +133,13 @@ export function Machine({ extras }: MachineProps) {
             <button
               type="button"
               aria-label="AI prompt"
-              aria-pressed={extras.showAIPrompt || extras.llmGenerating}
+              title="AI is temporarily disabled"
+              disabled
               className={cn(
                 'grid size-10 place-items-center rounded-md border-[3px] border-stone-900',
                 'shadow-[2px_2px_0_#1c1917] active:translate-x-px active:translate-y-px active:shadow-[1px_1px_0_#1c1917]',
-                extras.showAIPrompt || extras.llmGenerating ? 'bg-yellow-300' : 'bg-[#f6f3ea]',
+                'bg-[#f6f3ea] disabled:opacity-40 disabled:cursor-not-allowed',
               )}
-              onClick={() => extras.setShowAIPrompt(!extras.showAIPrompt)}
             >
               <Sparkles className="size-5" />
             </button>
@@ -211,12 +215,19 @@ export function Machine({ extras }: MachineProps) {
             label="Toggle subdivisions"
             active={app.playSubDivs}
             onClick={() => {
-              const next = !app.playSubDivs;
-              app.setPlaySubDivsWithTracking(next);
-              // Turning on always lands on a real division (1 means "off").
-              if (next && app.subDivs < 2) app.setSubDivs(2);
-              // Swing must never re-arm itself; it only turns on by its own key.
-              if (!next && app.swingEnabled) app.setSwingEnabledWithRestore(false);
+              // The key toggles the strip; collapsing always lands on "off",
+              // even from the "1" (already off) position.
+              const opening = !stripOpen;
+              setStripOpen(opening);
+              if (opening) {
+                app.setPlaySubDivsWithTracking(true);
+                // Opening always lands on a real division (1 means "off").
+                if (app.subDivs < 2) app.setSubDivs(2);
+              } else {
+                if (app.playSubDivs) app.setPlaySubDivsWithTracking(false);
+                // Swing must never re-arm itself; it only turns on by its own key.
+                if (app.swingEnabled) app.setSwingEnabledWithRestore(false);
+              }
             }}
             className="text-[13px]"
           >
@@ -233,11 +244,11 @@ export function Machine({ extras }: MachineProps) {
           </Key>
         </div>
 
-        {/* revealed strip: subdivisions + swing in one compact row. The row is
-            always reserved (tall enough for the swing ticks) so the screen
-            below never changes size. */}
-        <div className="flex h-[60px] items-center gap-2">
-          {app.playSubDivs && (
+        {/* subdiv strip: shown while open, in its own row; the Subdivs key
+            collapses it and the visualizer below expands into the space. The
+            row hugs its content so the column's gap stays even. */}
+        {stripOpen && (
+          <div className="flex shrink-0 items-center gap-2">
             <>
               <div className="flex min-w-0 flex-1 gap-1">
                 {SUBDIV_OPTIONS.map(option => (
@@ -249,7 +260,9 @@ export function Machine({ extras }: MachineProps) {
                     className={cn(
                       'h-11 min-w-0 flex-1 rounded border-2 border-stone-900 text-[13px] font-bold',
                       'shadow-[2px_2px_0_#1c1917] active:translate-x-px active:translate-y-px active:shadow-[1px_1px_0_#1c1917]',
-                      app.subDivs === option.value ? 'bg-stone-900 text-[#6cf59a]' : 'bg-[#f6f3ea]',
+                      (app.playSubDivs ? app.subDivs : 1) === option.value
+                        ? 'bg-stone-900 text-[#6cf59a]'
+                        : 'bg-[#f6f3ea]',
                     )}
                     onClick={() => {
                       if (option.value === 1) {
@@ -262,13 +275,14 @@ export function Machine({ extras }: MachineProps) {
                       // Odd divisions suspend swing (it resumes on an even
                       // division); only explicit offs clear swingEnabled.
                       app.setSubDivs(option.value);
+                      if (!app.playSubDivs) app.setPlaySubDivsWithTracking(true);
                     }}
                   >
                     {option.short}
                   </button>
                 ))}
               </div>
-              {app.swingEnabled && canSwing && (
+              {app.playSubDivs && app.swingEnabled && canSwing && (
                 <div className="flex w-[150px] shrink-0 items-start gap-1.5">
                   <MachineRange
                     label="Swing"
@@ -292,8 +306,8 @@ export function Machine({ extras }: MachineProps) {
                 </div>
               )}
             </>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* visualizer screen — fills whatever faceplate space is left */}
         <div ref={vizBoxRef} className="flex min-h-[104px] flex-1 items-center justify-center">

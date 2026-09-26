@@ -29,6 +29,7 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.2.1",
+    "@types/node": "^22.20.4",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.4",
@@ -53,19 +54,19 @@
     "arrowParens": "avoid"
   },
   "scripts": {
-    "vercel": "node_modules/.bin/vercel",
     "dev": "vite",
-    "dev:vercel": "vercel dev",
     "start": "vite",
-    "build": "vite build",
+    "build": "vite build && node scripts/build-server.mjs",
     "preview": "vite preview",
     "test": "vitest run --environment jsdom",
     "test:watch": "vitest --environment jsdom",
     "build:core": "vite build --mode core-unminified && vite build --mode core-minified",
-    "format": "prettier --write \"src/**/*.{ts,tsx,css,md}\" \"api/**/*.{ts,tsx,css,md}\" index.html package.json tsconfig.json vite.config.mjs",
-    "format:check": "prettier --check \"src/**/*.{ts,tsx,css,md}\" \"api/**/*.{ts,tsx,css,md}\" index.html package.json tsconfig.json vite.config.mjs",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css,md}\" index.html package.json tsconfig.json vite.config.mjs",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css,md}\" index.html package.json tsconfig.json vite.config.mjs",
     "typecheck": "tsc --noEmit",
-    "lint": "pnpm run typecheck"
+    "lint": "pnpm run typecheck",
+    "build:client": "vite build",
+    "test:server": "node --test server/routing.check.mjs"
   },
   "browserslist": {
     "production": [

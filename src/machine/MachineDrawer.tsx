@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { useApp } from '@/AppContext';
+import { storeTheme, type UITheme } from '@/lib/theme';
 import { sendEvent } from '@/tracking';
 
 export function MachineDrawer() {
@@ -22,6 +23,23 @@ export function MachineDrawer() {
         }
       >
         <div className="mt-2 space-y-6">
+          <div className="space-y-2">
+            <label className="font-medium">Theme</label>
+            <select
+              className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 outline-none"
+              value="machine"
+              onChange={event => {
+                const theme = event.target.value as UITheme;
+                storeTheme(theme);
+                sendEvent('set_theme', 'App', theme);
+                if (theme !== 'machine') window.location.assign('/');
+              }}
+            >
+              <option value="classic">Classic</option>
+              <option value="machine">Machine</option>
+            </select>
+          </div>
+
           <div className="flex flex-col items-start gap-2">
             <Button
               type="button"
@@ -30,7 +48,7 @@ export function MachineDrawer() {
               onClick={event => {
                 event.preventDefault();
                 sendEvent('reset');
-                window.location.replace('/machine?reset');
+                window.location.replace(`${window.location.pathname}?reset`);
               }}
             >
               Reset all settings

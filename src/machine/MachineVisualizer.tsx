@@ -1,8 +1,8 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 /*
- * Machine UI — pixi visualizer. Copy of components/DefaultVisualizer with two
- * tweaks (now-line hidden while stopped; edge-hugging grid lines skipped),
- * kept here so the classic UI's version stays untouched.
+ * Machine UI — pixi visualizer. Copy of components/DefaultVisualizer with one
+ * tweak (edge-hugging grid lines skipped), kept here so the classic UI's
+ * version stays untouched. The now-line behaves exactly as in classic.
  */
 import React, { useRef, useEffect, useCallback } from 'react';
 import { Application, extend } from '@pixi/react';
@@ -67,6 +67,7 @@ export function MachineVisualizer({
   const mAny = m as any;
   const v = useRef(new Visualizer({ metronome: mAny }));
   const frameRef = useRef<number | null>(null);
+  const appRef = useRef<any>(null);
   const nowLineRef = useRef<any>(null);
   const countRef = useRef<any>(null);
   const descRef = useRef<any>(null);
@@ -98,6 +99,24 @@ export function MachineVisualizer({
     textNode.x = Math.round(centerX - (bounds.x + bounds.width / 2));
     textNode.y = Math.round(centerY - (bounds.y + bounds.height / 2));
   };
+
+  // The Application mounts once and never remounts (remounting mid-playback
+  // kills the renderer on mobile), so size changes are applied to the live
+  // renderer here instead. Init is async, so the current size is also applied
+  // in onInit — without it the first measured size lands before the renderer
+  // exists and is lost.
+  const sizeRef = useRef({ width, height });
+  sizeRef.current = { width, height };
+
+  const applySize = useCallback((application?: any) => {
+    const holder = application ?? (appRef.current as any);
+    const app = holder?.getApplication?.() ?? holder;
+    app?.renderer?.resize?.(sizeRef.current.width, sizeRef.current.height);
+  }, []);
+
+  useEffect(() => {
+    applySize();
+  }, [applySize, width, height]);
 
   useEffect(() => {
     countRef.current?.anchor?.set?.(0);
@@ -196,7 +215,6 @@ export function MachineVisualizer({
     if (mAny.started) {
       if (nowLineRef.current) {
         nowLineRef.current.x = 0;
-        nowLineRef.current.visible = showNow;
       }
       if (descRef.current) {
         descRef.current.text = showClicks ? DEFAULT_DESC_TEXT : '';
@@ -206,7 +224,6 @@ export function MachineVisualizer({
     } else {
       if (nowLineRef.current) {
         nowLineRef.current.x = 0;
-        nowLineRef.current.visible = false;
       }
       if (descRef.current) {
         descRef.current.text = '';
@@ -244,7 +261,8 @@ export function MachineVisualizer({
     <>
       {mAny && (
         <Application
-          key={gridSignature}
+          ref={appRef}
+          onInit={applySize}
           width={width}
           height={height}
           antialias={false}
@@ -270,9 +288,6 @@ export function MachineVisualizer({
             ref={nowLineRef}
             draw={g => {
               g.clear();
-              // Hidden until playback starts; the start/stop effect and the
-              // frame loop manage visibility from there.
-              g.visible = mAny.started && showNow;
               if (!showNow) {
                 return;
               }
