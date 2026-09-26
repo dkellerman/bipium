@@ -97,3 +97,5 @@ See `data/README.md` for provenance, corpus coverage, and refresh instructions.
 
 Voice commands “clear the drum grid” and “reset to defaults” invoke `clearLoopPattern()`
 and `resetToDefaults()` through the browser API.
+
+Voice interpretation uses a shared declarative change policy in `server/change-policy.mjs`: contextual musical changes, deliberate property changes, and rare changes requiring clear current intent. Policies apply to fields or individual choices, before Jev reports confidence; they are product preferences rather than measured frequencies. History supplies context without repeating old commands. The per-item execution threshold remains over 50%.

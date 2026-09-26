@@ -1,5 +1,6 @@
 import { createSchemas } from '../src/core/api.ts';
 import { retrieve, corpusCount } from './retrieval.mjs';
+import { applyChangePolicy } from './change-policy.mjs';
 const schema = createSchemas(new Set(['drumkit', 'defaults'])).config;
 const choice = (instructions, criteria) => ({
   type: 'choice',
@@ -59,7 +60,7 @@ export function prepare(prompt, current, recentTurns = []) {
       { ...nums(1, 8), keep: 'No explicit subdivision change' },
     ),
     swing: choice(
-      'Choose swing amount. Do not infer swing from genre alone. Little=light. Numeric candidates only apply when they describe swing percentage.',
+      'Choose swing amount. Little=light. Numeric candidates only apply when they describe swing percentage.',
       {
         ...numeric,
         keep: 'No swing change',
@@ -84,20 +85,19 @@ export function prepare(prompt, current, recentTurns = []) {
       forever: 'Repeat forever',
     }),
     soundPack: choice(
-      'Sound changes are rare and must be explicitly requested in the CURRENT request. Default to keep. Do not infer a sound change from genre, a new beat, tempo, swing, regular metronome mode, or stopping custom drum patterns. Do not repeat an earlier sound request from conversation history. Respect negation: do not use beeps means keep the existing sounds unless a replacement is specified.',
+      'Choose the sound palette.',
       {
-        keep: 'No explicit request to change sounds, or a sound change is negated; retain the current sound pack',
-        defaults:
-          'Explicit request to switch to electronic beeps, beep sounds, or classic metronome click sounds',
-        drumkit: 'Explicit request to switch back to drum-kit or acoustic drum sounds',
+        keep: 'Retain current sound palette',
+        defaults: 'Electronic beeps or classic metronome clicks',
+        drumkit: 'Acoustic drum-kit sounds',
       },
     ),
     loopMode: choice(
-      'Prefer regular metronome playback. A generic beat, groove, genre, tempo, or swing request does not ask for a custom drum pattern. Use custom drum-loop mode only when the user explicitly requests a custom drum pattern, drum loop, or instrument-specific placements. Preserve the current mode for follow-up adjustments like faster, slower, or volume changes.',
+      'Choose playback mode. For a new ordinary beat use regular metronome mode. Preserve mode for follow-up edits.',
       {
-        on: 'Explicit custom drum pattern, drum loop, or kick/snare/hat placement request',
-        off: 'New ordinary beat or metronome request without explicit custom drums; also plain clicks',
-        keep: 'Follow-up adjustment without a mode change',
+        on: 'Custom drum pattern, drum loop, or instrument-specific placements',
+        off: 'Regular metronome playback',
+        keep: 'Retain current mode',
       },
     ),
     playSubDivs: choice(
@@ -145,10 +145,11 @@ export function prepare(prompt, current, recentTurns = []) {
         `${r.title}: ${lane} source pattern at quarter-note positions ${patterns[lane]['ref' + i].join(', ')} (zero=beat 1). Optional style example.`;
     });
     questions[lane] = choice(
-      `Choose COMPLETE ${lane} pattern. Use keep unless the user explicitly requests custom drums, a drum loop, or changes to this instrument. A genre name or generic beat request alone does not request a custom pattern. For explicit custom drums select a suitable example or pattern; explicit placements and removals take precedence. Preserve this lane when editing other fields.`,
+      `Choose COMPLETE ${lane} pattern. Within a requested custom drum pattern, select a suitable example or pattern. Specific placements and removals take precedence. Preserve this lane when editing other instruments.`,
       criteria,
     );
   }
+  applyChangePolicy(questions);
   return {
     references,
     patterns,
