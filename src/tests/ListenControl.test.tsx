@@ -8,6 +8,7 @@ class FakeSpeech {
   continuous = false;
   interimResults = false;
   lang = '';
+  phrases: { phrase: string; boost: number }[] = [];
   onresult: any;
   onend: any;
   onerror: any;
@@ -69,8 +70,24 @@ afterEach(async () => {
   host.remove();
   vi.unstubAllGlobals();
   delete (window as any).SpeechRecognition;
+  delete (window as any).SpeechRecognitionPhrase;
 });
 describe('listening controls', () => {
+  it('adds musical vocabulary hints and restarts without them if unsupported', async () => {
+    (window as any).SpeechRecognitionPhrase = class {
+      constructor(public phrase: string, public boost: number) {}
+    };
+    await click('Listen');
+    expect(FakeSpeech.latest.phrases.some(p => p.phrase === 'on the four')).toBe(true);
+    await act(async () => {
+      FakeSpeech.latest.onerror({ error: 'phrases-not-supported' });
+      FakeSpeech.latest.onend();
+    });
+    expect(FakeSpeech.latest.phrases).toEqual([]);
+    await act(async () => new Promise(resolve => setTimeout(resolve, 180)));
+    expect(FakeSpeech.latest.start).toHaveBeenCalledTimes(2);
+    expect(FakeSpeech.latest.abort).not.toHaveBeenCalled();
+  });
   it('shows examples, sends only final phrases, and applies the returned API config', async () => {
     const fetcher = vi.fn(async () => Response.json(response()));
     vi.stubGlobal('fetch', fetcher);

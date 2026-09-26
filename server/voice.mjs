@@ -128,8 +128,6 @@ export function prepare(prompt, current, recentTurns = []) {
       offbeats: Array.from({ length: 12 }, (_, i) => i + 0.5),
       backbeat: [1, 3],
       one_three: [0, 2],
-      one: [0],
-      three: [2],
       funk: [0, 1.5, 2],
     };
     const criteria = {
@@ -141,17 +139,34 @@ export function prepare(prompt, current, recentTurns = []) {
       offbeats: 'Only the and after every beat',
       backbeat: 'Only beats 2 and 4',
       one_three: 'Only beats 1 and 3',
-      one: 'Only beat 1',
-      three: 'Only beat 3',
       funk: 'Beat 1, and of 2, beat 3',
     };
+    const divisions = current.playSubDivs ? current.subDivs : 1;
+    for (let step = 0; step < current.beats * divisions; step++) {
+      const position = step / divisions;
+      const beat = Math.floor(position) + 1;
+      const part = step % divisions;
+      const label = part === 0 ? `beat ${beat}`
+        : part / divisions === 0.5 ? `the and of beat ${beat}`
+        : divisions === 4 ? `the ${part === 1 ? 'e' : 'a'} of beat ${beat}`
+        : `subdivision ${part + 1} of ${divisions} on beat ${beat}`;
+      patterns[lane][`only:${step}`] = [position];
+      criteria[`only:${step}`] = `Play ${lane} ONLY on ${label}; remove its other hits`;
+      // Relative choices carry the complete edited lane, retaining every other hit.
+      const exists = patterns[lane].keep.includes(position);
+      const key = `${exists ? 'remove' : 'add'}:${step}`;
+      patterns[lane][key] = exists
+        ? patterns[lane].keep.filter(p => p !== position)
+        : [...patterns[lane].keep, position].sort((a, b) => a - b);
+      criteria[key] = `${exists ? 'Remove' : 'Add'} ${lane} on ${label} only; preserve all its other hits`;
+    }
     references.forEach((r, i) => {
       patterns[lane]['ref' + i] = r.pattern[lane].map(s => s / 4);
       criteria['ref' + i] =
         `${r.title}: ${lane} source pattern at quarter-note positions ${patterns[lane]['ref' + i].join(', ')} (zero=beat 1). Optional style example.`;
     });
     questions[lane] = choice(
-      `Choose COMPLETE ${lane} pattern. Within a requested custom drum pattern, select a suitable example or pattern. Specific placements and removals take precedence. Preserve this lane when editing other instruments.`,
+      `Choose the resulting ${lane} pattern. Add/remove choices edit one position while preserving other hits. ONLY choices replace the lane with one hit. Silent removes the ENTIRE lane, never a single specified hit. Within a requested new custom drum pattern, select a suitable example or pattern. Specific placements and removals take precedence. Preserve this lane when editing other instruments.`,
       criteria,
     );
   }
@@ -167,6 +182,8 @@ export function prepare(prompt, current, recentTurns = []) {
         recent_turns: recentTurns,
         context_note:
           'Current config is the actual player state. Interpret follow-up requests such as faster or slower against that state and recent turns. Turns with applied=false were not executed.',
+        speech_note:
+          'The request is speech-recognition text and may contain homophones. Use musical context and the current grid to interpret likely transcription errors in beat counts and instrument names (for example floor/for/four, to/two, won/one). Beat numbers are one-based. Do not rewrite song titles or interpret unrelated speech as controls. Just/only specifies exclusive placement; removing a hit preserves the other hits.',
         reference_note:
           'Fallible outside examples, not requirements. Explicit instructions override examples.',
         reference_examples: references,

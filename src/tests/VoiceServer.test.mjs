@@ -19,6 +19,29 @@ function decisions(prepared, overrides = {}) {
 }
 afterEach(() => vi.unstubAllGlobals());
 describe('voice interpretation and vector retrieval', () => {
+  it('removes one snare hit without replacing its other hits or other lanes', () => {
+    const base = { ...structuredClone(current), loopMode: true };
+    base.loopPattern.snare = [false, true, true, true];
+    const p = prepare('remove snare from the 3', base);
+    const a = decisions(p, { snare: 'remove:2' });
+    const c = assemble(p, a, base).call.args[0];
+    expect(c.loopPattern.snare).toEqual([false, true, false, true]);
+    expect(c.loopPattern.kick).toEqual(base.loopPattern.kick);
+    expect(c.loopPattern.hat).toEqual(base.loopPattern.hat);
+    a.snare.confidence = 0.5;
+    expect(assemble(p, a, base).call.args[0].loopPattern).toEqual(base.loopPattern);
+  });
+  it('supports exclusive placement and relative edits on subdivision positions', () => {
+    const base = { ...structuredClone(current), loopMode: true, subDivs: 2 };
+    base.loopPattern = { kick: Array(8).fill(false), hat: Array(8).fill(true), snare: [false, false, true, false, true, false, true, false] };
+    const p = prepare('snare just on the floor', base);
+    expect(assemble(p, decisions(p, { snare: 'only:6' }), base).call.args[0].loopPattern.snare)
+      .toEqual([false, false, false, false, false, false, true, false]);
+    expect(assemble(p, decisions(p, { snare: 'add:5' }), base).call.args[0].loopPattern.snare)
+      .toEqual([false, false, true, false, true, true, true, false]);
+    expect(assemble(p, decisions(p, { snare: 'remove:4' }), base).call.args[0].loopPattern.snare)
+      .toEqual([false, false, true, false, false, false, true, false]);
+  });
   it('searches all research entries and returns both sources', () => {
     expect(corpusCount).toBe(673);
     const refs = retrieve('house beat at 124 BPM');

@@ -16,6 +16,7 @@ type Recognition = {
   continuous: boolean;
   interimResults: boolean;
   lang: string;
+  phrases?: { phrase: string; boost: number }[];
   start(): void;
   abort(): void;
   onresult: ((event: RecognitionEvent) => void) | null;
@@ -176,6 +177,18 @@ export function ListenControl({
     recognition.continuous = !ios;
     recognition.interimResults = true;
     recognition.lang = 'en-US';
+    const Phrase = (window as unknown as {
+      SpeechRecognitionPhrase?: new (phrase: string, boost: number) => { phrase: string; boost: number };
+    }).SpeechRecognitionPhrase;
+    if (Phrase && 'phrases' in recognition) {
+      try {
+        recognition.phrases = [
+          'kick', 'snare', 'hi hat', 'beat one', 'beat two', 'beat three', 'beat four',
+          'on the one', 'on the two', 'on the three', 'on the four',
+          'eighth notes', 'sixteenth notes', 'triplets', 'BPM', 'stop listening',
+        ].map(phrase => new Phrase(phrase, 3));
+      } catch { /* Optional hints must not prevent normal recognition. */ }
+    }
     recognition.onresult = event => {
       if (sr.current !== recognition) return;
       let unfinished = '';
@@ -190,6 +203,11 @@ export function ListenControl({
     recognition.onerror = event => {
       if (sr.current !== recognition) return;
       if (['no-speech', 'aborted'].includes(event.error)) return;
+      if (event.error === 'phrases-not-supported' && recognition.phrases?.length) {
+        recognition.phrases = [];
+        // The normal onend handler restarts without unsupported hints.
+        return;
+      }
       stop();
       setStatus(
         event.error === 'not-allowed'
