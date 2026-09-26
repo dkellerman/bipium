@@ -176,3 +176,26 @@ describe('listening controls', () => {
     expect(FakeSpeech.latest.abort).toHaveBeenCalled();
   });
 });
+
+it('shows streamed lookup status before applying the final beat', async () => {
+  let streamController: ReadableStreamDefaultController;
+  const encoder = new TextEncoder();
+  vi.stubGlobal('fetch', vi.fn(async () => new Response(new ReadableStream({
+    start(c) { streamController = c; },
+  }), { headers: { 'Content-Type': 'application/x-ndjson' } })));
+  await click('Listen');
+  await act(async () => FakeSpeech.latest.phrase('Billie Jean'));
+  await act(async () => {
+    streamController.enqueue(encoder.encode(JSON.stringify({ type: 'status', message: 'Looking up Billie Jean…' }) + '\n'));
+  });
+  expect(document.body.textContent).toContain('Looking up Billie Jean');
+  expect(api.setConfig).not.toHaveBeenCalled();
+  await act(async () => {
+    const line = JSON.stringify({ type: 'result', result: response() }) + '\n';
+    streamController.enqueue(encoder.encode(line.slice(0, 17)));
+    streamController.enqueue(encoder.encode(line.slice(17)));
+    streamController.close();
+  });
+  expect(api.setConfig).toHaveBeenCalledWith(expect.objectContaining({ bpm: 100 }));
+  expect(api.start).toHaveBeenCalledTimes(1);
+});

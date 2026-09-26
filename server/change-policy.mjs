@@ -6,6 +6,7 @@ const levels = {
   rare: 'Rare change: strongly prefer preserving the current state. Require a clear, affirmative request for this property or capability in the current utterance; do not infer it as a side effect of another change. When clearly requested, select it normally: rarity is not a reason to reduce confidence in an explicit request.',
 };
 const policies = {
+  songQuery: { level: 'deliberate' },
   action: { level: 'contextual', choices: { clear: 'rare', reset: 'rare' } },
   tempo: { level: 'contextual' },
   beats: { level: 'contextual' },

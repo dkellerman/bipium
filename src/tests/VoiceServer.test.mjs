@@ -216,3 +216,23 @@ describe('voice interpretation and vector retrieval', () => {
     expect(provider).not.toHaveBeenCalled();
   });
 });
+
+it('a song lookup streams progress and changes only BPM', async () => {
+  const base = { ...current, swing: 17, soundPack: 'drumkit', loopMode: true };
+  const fetcher = vi.fn(async (url, options) => {
+    if (String(url).includes('openrouter')) {
+      const request = JSON.parse(options.body);
+      const songChoice = Object.entries(request.questions.songQuery.criteria).find(([,v]) => v === 'Test Song by Test Artist')[0];
+      return Response.json({ answers: decisions({ request }, { songQuery: songChoice, tempo: 'keep', soundPack: 'defaults', loopMode: 'off' }) });
+    }
+    if (String(url).includes('/search?')) return Response.json({content:[{id:'12345678-1111-1111-1111-111111111111',trackTitle:'Test Song',artists:[{name:'Test Artist'}],popularity:80,href:'https://open.spotify.com/track/test'}]});
+    return Response.json({tempo:119.6});
+  });
+  vi.stubGlobal('fetch', fetcher);
+  const response = await voice(new Request('https://example.test/api/voice', {method:'POST',headers:{Accept:'application/x-ndjson'},body:JSON.stringify({prompt:'play Test Song by Test Artist',currentConfig:base})}), {OPENROUTER_API_KEY:'test'});
+  const events = (await response.text()).trim().split('\n').map(line=>JSON.parse(line));
+  expect(events[0]).toMatchObject({type:'status'});
+  expect(events[1].result.call.args[0]).toEqual({...base,bpm:120});
+  expect(events[1].result.playback).toBe('start');
+  expect(fetcher).toHaveBeenCalledTimes(3);
+});

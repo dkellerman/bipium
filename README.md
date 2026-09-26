@@ -99,3 +99,16 @@ Voice commands “clear the drum grid” and “reset to defaults” invoke `cle
 and `resetToDefaults()` through the browser API.
 
 Voice interpretation uses a shared declarative change policy in `server/change-policy.mjs`: contextual musical changes, deliberate property changes, and rare changes requiring clear current intent. Policies apply to fields or individual choices, before Jev reports confidence; they are product preferences rather than measured frequencies. History supplies context without repeating old commands. The per-item execution threshold remains over 50%.
+
+### Song tempo lookup
+
+Named-song requests use the free, unauthenticated ReccoBeats API, only after Jev
+selects a song phrase with over 50% confidence. An explicit numeric BPM bypasses
+lookup. Search requires an exact normalized title and, when supplied, artist;
+ambiguous titles request the artist. A successful lookup changes only BPM and
+starts playback through the existing API. Failed lookups return no call. Results
+are cached for one hour in a bounded 256-entry Worker-instance cache.
+
+The voice client requests NDJSON progress events so lookup status appears in the
+existing text below the mic before the final API call. Other callers retain JSON.
+No song audio or catalog download, Spotify credentials, or new paid service is used.

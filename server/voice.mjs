@@ -1,6 +1,7 @@
 import { createSchemas } from '../src/core/api.ts';
 import { retrieve, corpusCount } from './retrieval.mjs';
 import { applyChangePolicy } from './change-policy.mjs';
+import { songCandidates, lookupSongTempo } from './song-tempo.mjs';
 const schema = createSchemas(new Set(['drumkit', 'defaults'])).config;
 const choice = (instructions, criteria) => ({
   type: 'choice',
@@ -27,9 +28,14 @@ export function prepare(prompt, current, recentTurns = []) {
   const numeric = Object.fromEntries(
     [...new Set(prompt.match(/\d+(?:\.\d+)?/g) || [])].slice(0, 30).map(n => ['n:' + n, n]),
   );
+  const songs = songCandidates(prompt);
   const questions = {
-    action: choice('Classify the requested operation. Unrelated speech must not create a beat.', {
-      play: 'Create or change a beat, tempo, metronome or resume playback',
+    songQuery: choice(
+      "Select the song title and artist phrase ONLY when the current request asks for a named song tempo or a beat like that song. A song title spoken alone is a fresh lookup request, including when repeated from an earlier turn. Select the requested title even if unfamiliar; the catalog checks whether it exists. Choose the full title plus by artist when stated, excluding command words. Do not look up generic genres, ordinary adjustments, unrelated speech, negated requests, or when an explicit BPM already supplies the tempo. Do not repeat song requests from history. Use keep if no song lookup is needed. Song lookup supplies only BPM, never infer other settings from the song.",
+      { keep: "No song lookup needed", ...songs },
+    ),
+    action: choice('Classify the requested operation in a voice-controlled metronome. A song title offered on its own requests its tempo and counts as play. Unrelated speech must not create a beat.', {
+      play: 'Create or change a beat, tempo, metronome, request a named song tempo, or resume playback',
       stop: 'Stop or pause playback',
       clear: 'Clear or empty all drum grid hits, without resetting other settings',
       reset: 'Reset everything or restore default settings',
@@ -38,7 +44,7 @@ export function prepare(prompt, current, recentTurns = []) {
         'Requires unsupported audio export, velocities, additional drum lanes, tempo ramps, or conflicting instructions',
     }),
     tempo: choice(
-      'Choose requested BPM or relative tempo. Numeric candidates may refer to other settings; only choose one if it describes tempo.',
+      'Choose requested BPM or relative tempo. For a named song BPM lookup choose keep; do not guess the song tempo. Numeric candidates may refer to other settings; only choose one if it describes tempo.',
       {
         ...numeric,
         keep: 'No tempo change stated',
@@ -295,7 +301,7 @@ export function assemble(prepared, answers, current) {
     message: `${c.bpm} BPM · ${c.beats} beats · ${c.swing}% swing`,
   };
 }
-export async function voice(request, env) {
+async function voiceJson(request, env, progress = () => {}) {
   const headers = { 'Cache-Control': 'no-store' };
   if (request.method !== 'POST')
     return Response.json({ error: 'Use POST' }, { status: 405, headers });
@@ -357,7 +363,23 @@ export async function voice(request, env) {
         { status: 502, headers },
       );
     const result = await response.json();
-    const output = assemble(prepared, result.answers, current.data);
+    let output = assemble(prepared, result.answers, current.data);
+    const songAnswer = result.answers.songQuery;
+    if (result.answers.action.choice === 'play' && result.answers.action.confidence > 0.5 &&
+        songAnswer.choice !== 'keep' && songAnswer.confidence > 0.5 &&
+        !result.answers.tempo.choice.startsWith('n:')) {
+      const query = prepared.request.questions.songQuery.criteria[songAnswer.choice];
+      progress(`Looking up “${query}”…`);
+      try {
+        const song = await lookupSongTempo(query, request.signal);
+        const config = schema.parse({ ...current.data, bpm: song.bpm });
+        output = { call: { method: 'setConfig', args: [config] }, playback: 'start', song,
+          message: `${song.title} · ${song.artist} · ${song.bpm} BPM` };
+      } catch (error) {
+        output = { call: null, message: error.name === 'TimeoutError'
+          ? 'Song lookup took too long. Kept the current beat.' : error.message };
+      }
+    }
     const activeAnswers = Object.values(result.answers).filter(answer => answer.choice !== 'keep');
     const confidence = Math.min(...activeAnswers.map(answer => answer.confidence));
     return Response.json(
@@ -390,4 +412,20 @@ export async function voice(request, env) {
       { status: 422, headers },
     );
   }
+}
+
+// Existing API callers retain JSON; the voice UI can opt into progress events.
+export function voice(request, env) {
+  if (!request.headers.get('Accept')?.includes('application/x-ndjson')) return voiceJson(request, env);
+  const encoder = new TextEncoder();
+  return new Response(new ReadableStream({
+    async start(controller) {
+      const send = value => { if (!request.signal.aborted) controller.enqueue(encoder.encode(JSON.stringify(value) + '\n')); };
+      try {
+        const response = await voiceJson(request, env, message => send({ type: 'status', message }));
+        const result = await response.json();
+        send(response.ok ? { type: 'result', result } : { type: 'error', error: result.error });
+      } finally { controller.close(); }
+    },
+  }), { headers: { 'Content-Type': 'application/x-ndjson', 'Cache-Control': 'no-store' } });
 }

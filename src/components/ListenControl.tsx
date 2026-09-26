@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal, flushSync } from 'react-dom';
 import { Mic, Square, LoaderCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { readVoiceResponse } from '@/lib/voice-response';
 import type { ApiConfig, RuntimeApi } from '@/core/api';
 
 type RecognitionEvent = {
@@ -122,7 +123,7 @@ export function ListenControl({
         try {
           const response = await fetch('/api/voice', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', Accept: 'application/x-ndjson' },
             body: JSON.stringify({
               prompt,
               currentConfig: api.getConfig(),
@@ -132,8 +133,9 @@ export function ListenControl({
             }),
             signal: abort.signal,
           });
-          const result = await response.json();
-          if (!response.ok) throw Error(result.error || 'Could not interpret that phrase.');
+          const result = await readVoiceResponse(response, message => {
+            if (version === generation.current) setStatus(message);
+          });
           if (version !== generation.current) return;
           if (result.call?.method === 'setConfig') {
             const validated = api.validateConfig(result.call.args[0]);
