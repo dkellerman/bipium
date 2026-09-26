@@ -190,6 +190,7 @@ export function ListenControl({
           'one ee and uh', 'two ee and uh', 'three ee and uh', 'four ee and uh',
           'triplet', 'one triplet', 'two triplet', 'three triplet', 'four triplet',
           'upbeat', 'offbeat',
+          'subdivs', 'subdivisions', 'eighths', 'sixteenths', 'tempo',
           'eighth notes', 'sixteenth notes', 'triplets', 'BPM', 'stop listening',
         ].map(phrase => new Phrase(phrase, 3));
       } catch { /* Optional hints must not prevent normal recognition. */ }
