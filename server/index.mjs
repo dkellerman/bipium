@@ -1,3 +1,4 @@
+import { voice } from './voice.mjs';
 // Server-only entrypoint. Future OpenRouter calls use env.OPENROUTER_API_KEY;
 // never return runtime secrets or inject them into the client bundle.
 const appRoutes = new Set(['/', '/machine', '/apidocs', '/about']);
@@ -9,6 +10,8 @@ export default {
     if (url.pathname === '/api/health' && request.method === 'GET') {
       return Response.json({ status: 'ok' });
     }
+
+    if (url.pathname === '/api/voice') return voice(request, env);
 
     // Removed model routes must never resolve to the SPA shell.
     if (url.pathname.startsWith('/api/')) {

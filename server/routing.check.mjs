@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import worker from './index.mjs';
+import worker from '../dist/server/index.js';
 
 function environment() {
   return {

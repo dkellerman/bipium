@@ -87,6 +87,10 @@ export function useApi(onConfigChange?: (config: ApiConfig) => void) {
   useEffect(() => {
     const audioContext = new AudioContext();
     audioContextRef.current = audioContext;
+    const unlock = () => {
+      void audioContext.resume().catch(() => undefined);
+    };
+    window.addEventListener('bipium:unlock-audio', unlock);
     const clicker = new Clicker({
       audioContext: audioContext as any,
       volume: configRef.current.volume,
@@ -157,6 +161,7 @@ export function useApi(onConfigChange?: (config: ApiConfig) => void) {
       metronomeRef.current = null;
       clickerRef.current = null;
       audioContextRef.current = null;
+      window.removeEventListener('bipium:unlock-audio', unlock);
       void audioContext.close();
       setRuntimeApi(null);
     };

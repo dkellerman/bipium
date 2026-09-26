@@ -150,6 +150,14 @@ function MachinePage() {
   const volumeRef = useRef(volume);
   const loopRepeatsRef = useRef(loopRepeats);
   const startedRef = useRef(started);
+  useEffect(() => {
+    const unlock = () => {
+      void audioContext.current.resume().catch(() => undefined);
+    };
+    window.addEventListener('bipium:unlock-audio', unlock);
+    return () => window.removeEventListener('bipium:unlock-audio', unlock);
+  }, []);
+
   const soundUrlsRef = useRef(API_DEFAULT_CONFIG.soundUrls);
 
   bpm.current = validBpm(float(bpmState));

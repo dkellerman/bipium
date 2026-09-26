@@ -66,7 +66,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "pnpm run typecheck",
     "build:client": "vite build",
-    "test:server": "node --test server/routing.check.mjs"
+    "test:server": "node scripts/build-server.mjs && node --test server/routing.check.mjs"
   },
   "browserslist": {
     "production": [

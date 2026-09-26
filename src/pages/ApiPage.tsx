@@ -1,6 +1,6 @@
+import { ListenControl } from '@/components/ListenControl';
 import { useEffect, useMemo, useState } from 'react';
 import copyToClipboard from 'copy-to-clipboard';
-import { Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { API_DEFAULT_CONFIG, API_DISCOVERY } from '@/core/index';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -604,18 +604,7 @@ export default function ApiPage() {
             <Button type="button" variant="outline" onClick={validateJson}>
               Validate
             </Button>
-            <Button
-              type="button"
-              variant="outline"
-              disabled
-              title="AI is temporarily disabled"
-              aria-label="AI prompt"
-            >
-              <span className="inline-flex items-center gap-2">
-                <Sparkles className="size-4" aria-hidden="true" />
-                AI
-              </span>
-            </Button>
+            <ListenControl />
             <Button type="button" onClick={toggleStartStopLive}>
               {liveStarted ? 'Stop' : 'Start'}
             </Button>

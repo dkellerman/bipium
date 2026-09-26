@@ -1,8 +1,19 @@
+import { build } from 'vite';
 import { copyFile, mkdir, rm, writeFile } from 'node:fs/promises';
 
 await rm('dist/server', { recursive: true, force: true });
 await mkdir('dist/server', { recursive: true });
-await copyFile('server/index.mjs', 'dist/server/index.js');
+await build({
+  configFile: false,
+  publicDir: false,
+  build: {
+    ssr: 'server/index.mjs',
+    outDir: 'dist/server',
+    minify: true,
+    rollupOptions: { output: { entryFileNames: 'index.js' } },
+  },
+  ssr: { noExternal: true },
+});
 await writeFile(
   'dist/server/wrangler.json',
   JSON.stringify(

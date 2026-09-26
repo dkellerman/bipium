@@ -34,24 +34,51 @@ The `src/core` directory contains an app-independent metronome implementation wi
 
 This branch preserves the current classic and machine interfaces, `window.bpm`,
 all 16 native WebMCP tools, URL configuration, and the standalone core library.
-The AI button is disabled. The previous prompt modal, OpenAI request hook, and
-Vercel model endpoint have been removed. No reCAPTCHA code is present.
+The Listen control accepts browser speech recognition and typed prompts. The previous
+OpenAI request flow and Vercel model endpoint are removed. No reCAPTCHA or app login
+is present; the original Vercel deployment is separate.
 
-- `pnpm dev` serves the application locally.
+- `pnpm dev` serves the client. For full local voice requests, build and run the Worker.
 - `pnpm build` builds the client and the Sites Worker.
-- `pnpm test`, `pnpm typecheck`, and `pnpm test:server` verify the retained API and routing.
-- GPT Sites owns deployment and public access. There is no app login.
+- `pnpm test`, `pnpm typecheck`, and `pnpm test:server` verify controls, API, and routing.
 - Production analytics is not loaded in this experimental copy.
 
-### Future voice and Jev integration
+### Voice and Jev
 
-`server/index.mjs` is the server entrypoint. Store `OPENROUTER_API_KEY` only as a
-secret in GPT Sites; the Worker receives it through `env.OPENROUTER_API_KEY`.
-Never use a `VITE_` prefix or expose the key to client code. The client sends
-requests to a same-origin server route; that route will call OpenRouter and
-return only the classification result. No model-calling route is enabled yet.
-Validated results can be applied through the existing `window.bpm.setConfig`
-or corresponding WebMCP tools. The browser still owns timing and playback.
+`POST /api/voice` takes `{ prompt, currentConfig }`. The Worker retrieves four
+references from the full research vector index, then calls OpenRouter Decisions
+with `typesafe/jev-1.13`. It assembles and validates one `call` envelope:
+`{ method: "setConfig", args: [config] }`, plus `playback: "start"`. A stop request
+returns `{ method: "stop", args: [] }`; unsupported/unrelated speech returns no call.
+The client applies the configuration through the existing `window.bpm` API and
+starts playback. The browser still owns audio and timing. Grid adjustments are
+explicitly reported and preserve selected hits; impossible combinations are rejected.
+
+Responses keep the exact prompt, all Jev answers including confidence and choice
+probabilities, the full Jev request, selected source references, usage, and timing.
+Confidence is Jev's distribution summary, not a calibrated accuracy estimate for
+this app. The panel retains the last ten successful responses in browser session
+storage and offers a JSON history download. Prompt history is not persisted on the
+server. Stop listening cancels queued/in-flight interpretations but leaves any
+already-playing beat alone. Spoken "stop playback" stops the player.
+
+Store `OPENROUTER_API_KEY` only as a secret in GPT Sites. For local Worker testing,
+put it in the ignored `dist/server/.dev.vars` after building. Never use a `VITE_`
+prefix or put the key in client code. No other model or speech-service key is used.
+Browser recognition support varies; it can use the browser vendor's remote speech
+service and is not guaranteed offline. Microphone denial/unsupported browsers keep
+the typed prompt available. The Listen click unlocks the player's audio context.
+
+### Research vector database
+
+`data/reference-patterns.sqlite` stores all 673 indexed research references with
+normalized character n-gram TF-IDF vectors, source URLs, notes, and drum patterns.
+`server/reference-index.json` is its read-only runtime export: the Worker searches
+these vectors directly in memory, without a separate paid vector service. The
+SQLite database and source archives remain in source control and are not public
+web assets. They are independent of user prompt history.
+
+See `data/README.md` for provenance, corpus coverage, and refresh instructions.
 
 ## Example code
 

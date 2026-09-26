@@ -1,10 +1,11 @@
+import { ListenControl } from '@/components/ListenControl';
 /*
  * Machine UI — hardware drum-machine interface served at /machine.
  * Green LCD readout, chunky mechanical keys with hard shadows, mono type.
  * Self-contained in src/machine/; the classic UI never imports from here.
  */
 import { useEffect, useRef, useState } from 'react';
-import { Drum, Eraser, Menu, Sparkles, Volume2, VolumeX } from 'lucide-react';
+import { Drum, Eraser, Menu, Volume2, VolumeX } from 'lucide-react';
 import { useApp } from '@/AppContext';
 import { SOUND_PACKS } from '@/hooks';
 import { cn } from '@/lib/utils';
@@ -130,19 +131,7 @@ export function Machine({ extras }: MachineProps) {
             >
               {packLabel(app.soundPack)}
             </button>
-            <button
-              type="button"
-              aria-label="AI prompt"
-              title="AI is temporarily disabled"
-              disabled
-              className={cn(
-                'grid size-10 place-items-center rounded-md border-[3px] border-stone-900',
-                'shadow-[2px_2px_0_#1c1917] active:translate-x-px active:translate-y-px active:shadow-[1px_1px_0_#1c1917]',
-                'bg-[#f6f3ea] disabled:opacity-40 disabled:cursor-not-allowed',
-              )}
-            >
-              <Sparkles className="size-5" />
-            </button>
+            <ListenControl />
             <button
               type="button"
               aria-label="Open menu"

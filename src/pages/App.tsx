@@ -1,9 +1,10 @@
+import { ListenControl } from '@/components/ListenControl';
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import qs from 'query-string';
 import copyToClipboard from 'copy-to-clipboard';
 import { AudioContext } from 'standardized-audio-context';
-import { Drum, Eraser, Settings, Sparkles } from 'lucide-react';
+import { Drum, Eraser, Settings } from 'lucide-react';
 import {
   API_DEFAULT_CONFIG,
   DRUM_LOOP_LANES,
@@ -147,6 +148,14 @@ function App() {
   const volumeRef = useRef(volume);
   const loopRepeatsRef = useRef(loopRepeats);
   const startedRef = useRef(started);
+  useEffect(() => {
+    const unlock = () => {
+      void audioContext.current.resume().catch(() => undefined);
+    };
+    window.addEventListener('bipium:unlock-audio', unlock);
+    return () => window.removeEventListener('bipium:unlock-audio', unlock);
+  }, []);
+
   const soundUrlsRef = useRef(API_DEFAULT_CONFIG.soundUrls);
 
   bpm.current = validBpm(float(bpmState));
@@ -780,17 +789,7 @@ function App() {
 
         <div className="mt-2 flex items-center justify-center gap-3">
           <VolumeControl inline />
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            className="relative z-10 size-11 rounded-full bg-white p-2 shadow-md"
-            title="AI is temporarily disabled"
-            aria-label="AI prompt"
-            disabled
-          >
-            <Sparkles className="size-5" aria-hidden="true" />
-          </Button>
+          <ListenControl />
         </div>
       </main>
     </AppProvider>
