@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal, flushSync } from 'react-dom';
-import { Mic, Square, X, Send } from 'lucide-react';
+import { Mic, Square, LoaderCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import type { ApiConfig, RuntimeApi } from '@/core/api';
 
 type RecognitionEvent = {
@@ -37,7 +38,15 @@ const constructor = () => {
   };
   return w.SpeechRecognition || w.webkitSpeechRecognition;
 };
-export function ListenControl() {
+export function ListenControl({
+  variant = 'classic',
+}: {
+  variant?: 'classic' | 'machine' | 'api';
+}) {
+  const [target, setTarget] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    setTarget(document.getElementById(`voice-text-${variant}`));
+  }, [variant]);
   const [open, setOpen] = useState(false);
   const [listening, setListening] = useState(false);
   const [interim, setInterim] = useState('');
@@ -66,6 +75,7 @@ export function ListenControl() {
     setListening(false);
     setInterim('');
     setBusy(false);
+    setStatus('Listening stopped.');
   };
   useEffect(
     () => () => {
@@ -193,153 +203,137 @@ export function ListenControl() {
     }
   };
   const latest = history.at(-1);
+  const label = listening ? 'Stop listening' : 'Listen';
+  const icon = listening ? (
+    <Square className="size-5" aria-hidden="true" />
+  ) : (
+    <Mic className="size-5" aria-hidden="true" />
+  );
+  const toggle = () => (listening ? stop() : start());
   return (
     <>
-      <button
-        type="button"
-        onClick={() => (listening ? stop() : start())}
-        className={`inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-md border-2 border-stone-800 px-3 text-xs font-bold shadow-sm ${listening ? 'bg-red-700 text-white' : 'bg-[#f6f3ea] text-stone-900'}`}
-      >
-        {listening ? <Square size={14} /> : <Mic size={16} />}{' '}
-        {listening ? 'Stop listening' : 'Listen'}
-      </button>
-      {!open && history.length > 0 && (
-        <button type="button" className="text-xs underline" onClick={() => setOpen(true)}>
-          Last prompt
+      {variant === 'machine' ? (
+        <button
+          type="button"
+          aria-label={label}
+          title={label}
+          onClick={toggle}
+          className="grid size-10 place-items-center rounded-md border-[3px] border-stone-900 bg-[#f6f3ea] shadow-[2px_2px_0_#1c1917] active:translate-x-px active:translate-y-px active:shadow-[1px_1px_0_#1c1917]"
+        >
+          {icon}
         </button>
+      ) : (
+        <Button
+          type="button"
+          variant="outline"
+          size={variant === 'classic' ? 'icon' : 'default'}
+          className={
+            variant === 'classic'
+              ? 'relative z-10 size-11 rounded-full bg-white p-2 shadow-md'
+              : undefined
+          }
+          title={label}
+          aria-label={label}
+          onClick={toggle}
+        >
+          {icon}
+          {variant === 'api' && label}
+        </Button>
       )}
       {open &&
+        target &&
         createPortal(
-          <section
-            aria-label="Beat voice controls"
-            className="fixed bottom-3 right-3 z-50 max-h-[70dvh] w-[min(380px,calc(100vw-24px))] overflow-auto rounded-xl border-2 border-stone-800 bg-[#faf8f2] p-4 text-stone-900 shadow-xl"
-          >
-            <div className="flex items-center justify-between gap-3">
-              <strong className="flex items-center gap-2">
-                <Mic size={17} />
-                {listening ? 'Listening' : 'Describe a beat'}
-              </strong>
-              <button
-                type="button"
-                aria-label="Hide voice panel"
-                onClick={() => setOpen(false)}
-                className="p-1"
-              >
-                <X size={18} />
-              </button>
-            </div>
-            <p className="mt-2 text-sm leading-relaxed">
-              Try “a funky beat at 100 BPM with a little swing,” then “remove the hats.” Say “stop
-              listening” or use the button to finish.
+          <div className="w-full text-sm leading-5">
+            <p role="status" aria-live="polite" className="text-inherit">
+              {interim ? (
+                <span className="inline-flex items-center gap-2">
+                  <LoaderCircle size={14} className="shrink-0 animate-spin" />
+                  <em>{interim}</em>
+                </span>
+              ) : status === 'Listening for your next phrase…' ? (
+                <>
+                  Describe a beat. Try “a funky beat at 100 BPM with a little swing.” Say “stop
+                  listening” or click the button to stop.
+                </>
+              ) : (
+                <span className="inline-flex items-center gap-2">
+                  {busy && <LoaderCircle size={14} className="shrink-0 animate-spin" />}
+                  {status}
+                </span>
+              )}
             </p>
-            <p
-              role="status"
-              aria-live="polite"
-              className="my-3 rounded-md bg-stone-200/60 p-2 text-sm"
-            >
-              {interim || status}
-              {busy && <span className="ml-2 animate-pulse">•••</span>}
-            </p>
-            <form
-              onSubmit={event => {
-                event.preventDefault();
-                window.dispatchEvent(new Event('bipium:unlock-audio'));
-                submit(text);
-              }}
-              className="flex gap-2"
-            >
-              <input
-                aria-label="Beat prompt"
-                placeholder="Or type a beat…"
-                value={text}
-                onChange={event => setText(event.target.value)}
-                maxLength={1000}
-                className="min-w-0 flex-1 rounded-md border border-stone-400 bg-white p-2 text-sm"
-              />
-              <button
-                type="submit"
-                aria-label="Play prompt"
-                disabled={!text.trim()}
-                className="rounded-md bg-stone-900 p-2 text-white disabled:opacity-40"
-              >
-                <Send size={17} />
-              </button>
-            </form>
-            <div className="mt-3 flex items-center justify-between gap-2">
-              <button
-                type="button"
-                onClick={() => (listening ? stop() : start())}
-                className="rounded-md border border-stone-800 px-3 py-2 text-xs font-bold"
-              >
-                {listening ? 'Stop listening' : 'Listen'}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  generation.current++;
-                  controller.current?.abort();
-                  setBusy(false);
-                  runtime()?.stop();
-                  setStatus(
-                    listening ? 'Beat stopped. Listening for your next phrase…' : 'Beat stopped.',
-                  );
-                }}
-                className="rounded-md border border-stone-800 px-3 py-2 text-xs font-bold"
-              >
-                Stop beat
-              </button>
-              <span className="text-xs text-stone-600">
-                {history.length} recent {history.length === 1 ? 'prompt' : 'prompts'}
-              </span>
-            </div>
-            {latest && (
-              <details className="mt-3 border-t border-stone-300 pt-2 text-xs">
-                <summary className="cursor-pointer font-semibold">
-                  Prompt, confidence & references
-                </summary>
-                <p className="my-2">“{latest.prompt}”</p>
-                <dl className="grid grid-cols-2 gap-1">
-                  {Object.entries(latest.confidence).map(([field, value]) => (
-                    <div key={field} className="flex justify-between gap-2">
-                      <dt>{field}</dt>
-                      <dd>{Math.round(value * 100)}%</dd>
-                    </div>
-                  ))}
-                </dl>
-                <p className="my-2 text-stone-600">
-                  Jev confidence describes its choice distribution, not a measured accuracy score.
-                </p>
-                {latest.references.map(ref => (
-                  <a
-                    key={ref.id}
-                    href={ref.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mb-1 block underline"
-                  >
-                    {ref.title}
-                  </a>
-                ))}
-                <button
-                  type="button"
-                  className="mt-2 underline"
-                  onClick={() => {
-                    const url = URL.createObjectURL(
-                      new Blob([JSON.stringify(history, null, 2)], { type: 'application/json' }),
-                    );
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = 'bipium-prompts.json';
-                    link.click();
-                    setTimeout(() => URL.revokeObjectURL(url), 1000);
+            <details className="mt-1 text-xs opacity-80">
+              <summary className="w-fit cursor-pointer">Prompt{latest ? ' & details' : ''}</summary>
+              <div className="mt-2 max-h-36 overflow-auto">
+                <form
+                  onSubmit={event => {
+                    event.preventDefault();
+                    window.dispatchEvent(new Event('bipium:unlock-audio'));
+                    submit(text);
                   }}
+                  className="flex gap-2"
                 >
-                  Download prompt history and full decisions
-                </button>
-              </details>
-            )}
-          </section>,
-          document.body,
+                  <input
+                    aria-label="Beat prompt"
+                    placeholder="Type a beat…"
+                    value={text}
+                    onChange={event => setText(event.target.value)}
+                    maxLength={1000}
+                    className="min-w-0 flex-1 rounded border border-slate-300 bg-white p-2 text-sm text-slate-900"
+                  />
+                  <Button type="submit" aria-label="Play prompt" disabled={!text.trim()}>
+                    Play
+                  </Button>
+                </form>
+                {latest && (
+                  <>
+                    <p className="my-2">“{latest.prompt}”</p>
+                    <dl className="grid grid-cols-2 gap-x-5 gap-y-1">
+                      {Object.entries(latest.confidence).map(([field, value]) => (
+                        <div key={field} className="flex justify-between gap-2">
+                          <dt>{field}</dt>
+                          <dd>{Math.round(value * 100)}%</dd>
+                        </div>
+                      ))}
+                    </dl>
+                    <p className="my-2">
+                      Jev confidence describes its choice distribution, not measured accuracy.
+                    </p>
+                    {latest.references.map(ref => (
+                      <a
+                        key={ref.id}
+                        href={ref.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mb-1 block underline"
+                      >
+                        {ref.title}
+                      </a>
+                    ))}
+                    <button
+                      type="button"
+                      className="mt-2 underline"
+                      onClick={() => {
+                        const url = URL.createObjectURL(
+                          new Blob([JSON.stringify(history, null, 2)], {
+                            type: 'application/json',
+                          }),
+                        );
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = 'bipium-prompts.json';
+                        link.click();
+                        setTimeout(() => URL.revokeObjectURL(url), 1000);
+                      }}
+                    >
+                      Download prompt history and full decisions
+                    </button>
+                  </>
+                )}
+              </div>
+            </details>
+          </div>,
+          target,
         )}
     </>
   );

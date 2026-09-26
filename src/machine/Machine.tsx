@@ -131,7 +131,7 @@ export function Machine({ extras }: MachineProps) {
             >
               {packLabel(app.soundPack)}
             </button>
-            <ListenControl />
+            <ListenControl variant="machine" />
             <button
               type="button"
               aria-label="Open menu"
@@ -145,6 +145,8 @@ export function Machine({ extras }: MachineProps) {
             </button>
           </div>
         </div>
+
+        <div id="voice-text-machine" className="shrink-0 text-stone-700" />
 
         {/* LCD */}
         <div className="rounded-lg border-[3px] border-stone-900 bg-[#0d2113] px-4 pb-1.5 pt-2 shadow-[5px_5px_0_#1c1917]">

@@ -32,7 +32,7 @@ const response = () => ({
 const click = async (label: string) => {
   await act(async () => {
     const button = [...document.querySelectorAll('button')].find(
-      b => b.textContent?.trim() === label,
+      b => b.getAttribute('aria-label') === label || b.textContent?.trim() === label,
     );
     expect(button).toBeTruthy();
     button!.click();
@@ -53,7 +53,14 @@ beforeEach(async () => {
   };
   (window as any).bpm = api;
   (window as any).SpeechRecognition = FakeSpeech;
-  await act(async () => root.render(<ListenControl />));
+  await act(async () =>
+    root.render(
+      <>
+        <ListenControl />
+        <div id="voice-text-classic" />
+      </>,
+    ),
+  );
 });
 afterEach(async () => {
   await act(async () => root.unmount());

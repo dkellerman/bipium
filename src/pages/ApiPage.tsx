@@ -604,7 +604,7 @@ export default function ApiPage() {
             <Button type="button" variant="outline" onClick={validateJson}>
               Validate
             </Button>
-            <ListenControl />
+            <ListenControl variant="api" />
             <Button type="button" onClick={toggleStartStopLive}>
               {liveStarted ? 'Stop' : 'Start'}
             </Button>
@@ -613,6 +613,7 @@ export default function ApiPage() {
             </Button>
           </div>
 
+          <div id="voice-text-api" className="text-slate-600" />
           <textarea
             className="h-[320px] w-full rounded-md border border-slate-300 p-3 font-mono text-xs outline-none"
             value={payload}

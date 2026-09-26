@@ -791,6 +791,10 @@ function App() {
           <VolumeControl inline />
           <ListenControl />
         </div>
+        <div
+          id="voice-text-classic"
+          className="w-full shrink-0 px-5 pt-2 text-center text-slate-600"
+        />
       </main>
     </AppProvider>
   );
