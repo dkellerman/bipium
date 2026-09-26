@@ -52,6 +52,9 @@ references from the full research vector index, then calls OpenRouter Decisions
 with `typesafe/jev-1.13`. It assembles and validates one `call` envelope:
 `{ method: "setConfig", args: [config] }`, plus `playback: "start"`. A stop request
 returns `{ method: "stop", args: [] }`; unsupported/unrelated speech returns no call.
+Regular metronome playback is preferred for generic beat/style requests. Custom
+drum patterns require an explicit drum-loop or instrument-placement request; later
+relative edits preserve the established mode.
 The client applies the configuration through the existing `window.bpm` API and
 starts playback. The browser still owns audio and timing. Grid adjustments are
 explicitly reported and preserve selected hits; impossible combinations are rejected.
@@ -59,7 +62,7 @@ explicitly reported and preserve selected hits; impossible combinations are reje
 Responses keep the exact prompt, all Jev answers including confidence and choice
 probabilities, the full Jev request, selected source references, usage, and timing.
 Confidence is Jev's distribution summary, not a calibrated accuracy estimate for
-this app. Playback requires every decision used to build the beat to exceed 80% confidence.
+this app. Playback requires every decision used to build the beat to exceed 70% confidence.
 A lower or equal score leaves the player unchanged and displays a short rephrasing message.
 The response includes `resultConfidence`, the minimum confidence among the action and requested changes; preserved fields are excluded.
 Recent responses are retained in browser session storage for conversational context.

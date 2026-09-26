@@ -115,7 +115,7 @@ describe('listening controls', () => {
           ...response(),
           call: null,
           playback: undefined,
-          resultConfidence: 0.8,
+          resultConfidence: 0.7,
           message: 'Not confident enough—try rephrasing.',
         }),
       ),

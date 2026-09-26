@@ -57,8 +57,8 @@ describe('voice interpretation and vector retrieval', () => {
     expect(c.loopPattern.snare).toEqual(base.loopPattern.snare);
     expect(c.loopPattern.hat.some(Boolean)).toBe(false);
   });
-  it.each([0.79, 0.8, 0.80001])(
-    'requires strictly over 80 percent, including the weakest decision (%s)',
+  it.each([0.69, 0.7, 0.70001])(
+    'requires strictly over 70 percent, including the weakest decision (%s)',
     confidence => {
       const p = prepare('100 BPM', current);
       const a = decisions(p, { tempo: 'n:100' });
@@ -66,7 +66,7 @@ describe('voice interpretation and vector retrieval', () => {
       const original = structuredClone(current);
       const result = assemble(p, a, current);
       expect(result.resultConfidence).toBe(confidence);
-      if (confidence <= 0.8) {
+      if (confidence <= 0.7) {
         expect(result.call).toBeNull();
         expect(result.playback).toBeUndefined();
         expect(result.message).toBe('Not confident enough—try rephrasing.');
@@ -111,6 +111,15 @@ describe('voice interpretation and vector retrieval', () => {
     const result = assemble(p, a, current);
     expect(result.resultConfidence).toBe(0.95);
     expect(result.call.args[0].bpm).toBe(current.bpm + 10);
+  });
+  it('ignores custom lane choices when ordinary playback was selected', () => {
+    const p = prepare('a beat at 100 BPM', current);
+    const a = decisions(p, { tempo: 'n:100', loopMode: 'off', kick: 'funk', hat: 'sixteenths' });
+    a.kick.confidence = 0.2;
+    const c = assemble(p, a, current).call.args[0];
+    expect(c.loopMode).toBe(false);
+    expect(c.loopPattern).toEqual(current.loopPattern);
+    expect(c.subDivs).toBe(current.subDivs);
   });
   it('rejects out of range numeric values and invalid or incomplete decisions', () => {
     const p = prepare('400 BPM', current);

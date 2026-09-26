@@ -81,11 +81,14 @@ export function prepare(prompt, current, recentTurns = []) {
       keep: 'No repeat change',
       forever: 'Repeat forever',
     }),
-    loopMode: choice('Select mode.', {
-      on: 'Drum beat, groove or drum-lane request',
-      off: 'Plain metronome or click only',
-      keep: 'No mode change',
-    }),
+    loopMode: choice(
+      'Prefer regular metronome playback. A generic beat, groove, genre, tempo, or swing request does not ask for a custom drum pattern. Use custom drum-loop mode only when the user explicitly requests a custom drum pattern, drum loop, or instrument-specific placements. Preserve the current mode for follow-up adjustments like faster, slower, or volume changes.',
+      {
+        on: 'Explicit custom drum pattern, drum loop, or kick/snare/hat placement request',
+        off: 'New ordinary beat or metronome request without explicit custom drums; also plain clicks',
+        keep: 'Follow-up adjustment without a mode change',
+      },
+    ),
     playSubDivs: choice(
       'Choose whether to hear subdivisions. Removing hats alone does not silence all subdivisions.',
       {
@@ -129,7 +132,7 @@ export function prepare(prompt, current, recentTurns = []) {
         `${r.title}: ${lane} source pattern at quarter-note positions ${patterns[lane]['ref' + i].join(', ')} (zero=beat 1). Optional style example.`;
     });
     questions[lane] = choice(
-      `Choose COMPLETE ${lane} pattern. For a newly requested style, select a suitable example or pattern. Explicit placements and removing instruments take precedence. For edits to other fields preserve this lane.`,
+      `Choose COMPLETE ${lane} pattern. Use keep unless the user explicitly requests custom drums, a drum loop, or changes to this instrument. A genre name or generic beat request alone does not request a custom pattern. For explicit custom drums select a suitable example or pattern; explicit placements and removals take precedence. Preserve this lane when editing other fields.`,
       criteria,
     );
   }
@@ -176,12 +179,15 @@ export function assemble(prepared, answers, current) {
     };
   if (selected.action === 'stop')
     return { call: { method: 'stop', args: [] }, message: 'Playback stopped.' };
+  const usesCustomPattern =
+    selected.loopMode === 'on' || (selected.loopMode === 'keep' && current.loopMode);
+  if (!usesCustomPattern) for (const lane of lanes) selected[lane] = 'keep';
   const resultConfidence = Math.min(
     ...Object.keys(prepared.request.questions)
       .filter(field => selected[field] !== 'keep')
       .map(field => answers[field].confidence),
   );
-  if (resultConfidence <= 0.8)
+  if (resultConfidence <= 0.7)
     return {
       call: null,
       resultConfidence,
