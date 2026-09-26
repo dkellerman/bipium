@@ -83,6 +83,15 @@ export function prepare(prompt, current, recentTurns = []) {
       keep: 'No repeat change',
       forever: 'Repeat forever',
     }),
+    soundPack: choice(
+      'Sound changes are rare and must be explicitly requested in the CURRENT request. Default to keep. Do not infer a sound change from genre, a new beat, tempo, swing, regular metronome mode, or stopping custom drum patterns. Do not repeat an earlier sound request from conversation history. Respect negation: do not use beeps means keep the existing sounds unless a replacement is specified.',
+      {
+        keep: 'No explicit request to change sounds, or a sound change is negated; retain the current sound pack',
+        defaults:
+          'Explicit request to switch to electronic beeps, beep sounds, or classic metronome click sounds',
+        drumkit: 'Explicit request to switch back to drum-kit or acoustic drum sounds',
+      },
+    ),
     loopMode: choice(
       'Prefer regular metronome playback. A generic beat, groove, genre, tempo, or swing request does not ask for a custom drum pattern. Use custom drum-loop mode only when the user explicitly requests a custom drum pattern, drum loop, or instrument-specific placements. Preserve the current mode for follow-up adjustments like faster, slower, or volume changes.',
       {
@@ -227,8 +236,7 @@ export function assemble(prepared, answers, current) {
   if (selected.subDivs !== 'keep') c.subDivs = Number(selected.subDivs);
   if (selected.loopMode !== 'keep') c.loopMode = selected.loopMode === 'on';
   if (selected.playSubDivs !== 'keep') c.playSubDivs = selected.playSubDivs === 'on';
-  if (selected.loopMode === 'on') c.soundPack = 'drumkit';
-  if (selected.loopMode === 'off') c.soundPack = 'defaults';
+  if (selected.soundPack !== 'keep') c.soundPack = selected.soundPack;
   const positions = Object.fromEntries(
     lanes.map(lane => [lane, prepared.patterns[lane][selected[lane]].filter(p => p < c.beats)]),
   );

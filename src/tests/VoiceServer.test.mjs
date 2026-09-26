@@ -141,6 +141,24 @@ describe('voice interpretation and vector retrieval', () => {
     a.action.confidence = 0.7;
     expect(assemble(p, a, current).call).toEqual({ method, args: [] });
   });
+  it('keeps drum sounds when returning to ordinary metronome playback', () => {
+    const base = { ...current, loopMode: true, soundPack: 'drumkit' };
+    const p = prepare('a regular beat at 100 BPM', base);
+    expect(
+      assemble(p, decisions(p, { tempo: 'n:100', loopMode: 'off' }), base).call.args[0].soundPack,
+    ).toBe('drumkit');
+  });
+  it.each([0.5, 0.50001])(
+    'only applies an explicit sound selection above 50 percent (%s)',
+    confidence => {
+      const p = prepare('switch to beep sounds', current);
+      const a = decisions(p, { soundPack: 'defaults' });
+      a.soundPack.confidence = confidence;
+      expect(assemble(p, a, current).call.args[0].soundPack).toBe(
+        confidence > 0.5 ? 'defaults' : current.soundPack,
+      );
+    },
+  );
   it('rejects out of range numeric values and invalid or incomplete decisions', () => {
     const p = prepare('400 BPM', current);
     expect(() => assemble(p, decisions(p, { tempo: 'n:400' }), current)).toThrow(/range/);

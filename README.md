@@ -54,7 +54,8 @@ with `typesafe/jev-1.13`. It assembles and validates one `call` envelope:
 returns `{ method: "stop", args: [] }`; unsupported/unrelated speech returns no call.
 Regular metronome playback is preferred for generic beat/style requests. Custom
 drum patterns require an explicit drum-loop or instrument-placement request; later
-relative edits preserve the established mode.
+relative edits preserve the established mode. Sound-pack changes are separate and
+require an explicit request; switching playback mode does not select beeps.
 The client applies the configuration through the existing `window.bpm` API and
 starts playback. The browser still owns audio and timing. Grid adjustments are
 explicitly reported and preserve selected hits; impossible combinations are rejected.
