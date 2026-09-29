@@ -39,6 +39,8 @@ export function prepare(prompt, current, recentTurns = [], alternatives = [], tr
       {
         play: 'Create or change a beat, tempo, metronome, request a named song tempo, or resume playback',
         stop: 'Stop or pause playback',
+        stopListening:
+          'Stop microphone listening or end voice input while leaving playback unchanged',
         clear: 'Clear or empty all drum grid hits, without resetting other settings',
         reset: 'Reset everything or restore default settings',
         unrelated: 'Not a music control request',
@@ -226,7 +228,7 @@ export function prepare(prompt, current, recentTurns = [], alternatives = [], tr
         current_config: current,
         recent_turns: recentTurns,
         context_note:
-          'Current config is the actual player state. Interpret follow-up requests such as faster or slower against that state and recent turns. Turns with applied=false were not executed.',
+          'Current config is the actual player state. Interpret follow-up requests such as faster or slower against that state and recent turns. Turns with applied=false were not executed. Speech arrives in separate utterances that may continue a sentence. Interpret an additive continuation against current_config, using recent_turns to resolve omitted instruments and references. A continuation is a valid request even without a complete standalone sentence. Preserve existing hits when adding another; do not reinterpret an addition as an exclusive placement or a new beat. Leading conjunctions and filler words do not make a request unrelated. If the intended target cannot be resolved from this context, preserve it rather than guessing.',
         speech_note:
           'The request is speech-recognition text and may contain homophones. Alternate transcripts are optional evidence; prefer the reading that fits the current musical request and grid, without inventing controls. A spoken beat may appear as beep, and a subdivision and may appear as end. Beat numbers are one-based. Do not rewrite song titles or interpret unrelated speech as controls. Just/only specifies exclusive placement; removing a hit preserves the other hits.',
         reference_note:
@@ -262,6 +264,8 @@ export function assemble(prepared, answers, current) {
           ? 'Try describing a beat or changing its tempo.'
           : 'That request needs controls this version does not support.',
     };
+  if (selected.action === 'stopListening')
+    return { call: null, listening: 'stop', message: 'Listening stopped.' };
   if (selected.action === 'stop')
     return { call: { method: 'stop', args: [] }, message: 'Playback stopped.' };
   if (selected.action === 'clear' || selected.action === 'reset') {

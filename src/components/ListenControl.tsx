@@ -79,11 +79,6 @@ export function ListenControl({
     prompt = prompt.trim();
     if (!prompt) return;
     setLastHeard(prompt);
-    if (/^stop listening[.!?]*$/i.test(prompt)) {
-      stop();
-      setStatus('Listening stopped.');
-      return;
-    }
     const version = generation.current;
     queue.current = queue.current
       .catch(() => {})
@@ -117,6 +112,7 @@ export function ListenControl({
             if (version === generation.current) setStatus(message);
           });
           if (version !== generation.current) return;
+          if (result.listening === 'stop') stop();
           if (result.call?.method === 'setConfig') {
             const validated = api.validateConfig(result.call.args[0]);
             if (!validated.ok) throw Error('The returned beat could not be played.');

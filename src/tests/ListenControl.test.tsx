@@ -116,21 +116,23 @@ describe('listening controls', () => {
     expect(api.start).toHaveBeenCalled();
     expect(sessionStorage.getItem('bipium-voice-history')).toContain('funk');
   });
-  it('spoken stop listening cancels an in-flight beat without stopping existing playback', async () => {
-    let finish: any;
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(
-        () =>
-          new Promise(resolve => {
-            finish = resolve;
-          }),
-      ),
+  it('passes microphone-stop wording unchanged to the server and executes its decision', async () => {
+    const fetcher = vi.fn(async () =>
+      Response.json({
+        ...response(),
+        call: null,
+        listening: 'stop',
+        message: 'Listening stopped.',
+      }),
     );
+    vi.stubGlobal('fetch', fetcher);
     await click('Listen');
-    await act(async () => FakeSpeech.latest.phrase('funk'));
     await act(async () => FakeSpeech.latest.phrase('stop listening'));
-    await act(async () => finish(Response.json(response())));
+    expect(fetcher).toHaveBeenCalledOnce();
+    expect(
+      JSON.parse((fetcher.mock.calls as unknown as [string, RequestInit][])[0][1].body as string)
+        .prompt,
+    ).toBe('stop listening');
     expect(api.setConfig).not.toHaveBeenCalled();
     expect(api.stop).not.toHaveBeenCalled();
     expect(FakeSpeech.latest.abort).toHaveBeenCalled();

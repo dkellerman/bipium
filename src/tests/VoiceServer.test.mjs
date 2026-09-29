@@ -378,3 +378,12 @@ describe('API voice mode preserves user choice unless a custom pattern is needed
     expect(result.call.args[0].loopPattern).toEqual(base.loopPattern);
   });
 });
+
+it('leaves microphone-stop interpretation to Jev', () => {
+  const p = prepare('that is enough voice input', current);
+  expect(assemble(p, decisions(p, { action: 'stopListening' }), current)).toEqual({
+    call: null,
+    listening: 'stop',
+    message: 'Listening stopped.',
+  });
+});
