@@ -1,7 +1,6 @@
 import { estimateCountOff } from './count-off.mjs';
 import { createSchemas, fitDrumLoopGrid, seedDrumLoopPattern } from '../src/core/api.ts';
 import { retrieve, corpusCount } from './retrieval.mjs';
-import { drumEditContext, positionLabel, applyDrumEdit } from './drum-edits.mjs';
 import { applyChangePolicy } from './change-policy.mjs';
 import { songCandidates, lookupSongTempo } from './song-tempo.mjs';
 const schema = createSchemas(new Set(['drumkit', 'defaults'])).config;
@@ -17,15 +16,7 @@ const nums = (start, end) =>
     Array.from({ length: end - start + 1 }, (_, i) => [String(start + i), String(start + i)]),
   );
 const lanes = ['kick', 'hat', 'snare'];
-function explicitMode(prompt) {
-  const mode = prompt.match(
-    /\b(?:switch|change|go|return|back|use|set|turn)\s+(?:back\s+)?(?:to|into|on)?\s*(?:the\s+)?(drum|beat|metronome|regular|standard|normal)\s+mode\b/i,
-  );
-  if (!mode) return null;
-  return mode[1].toLowerCase() === 'drum' ? 'on' : 'off';
-}
 export function prepare(prompt, current, recentTurns = [], alternatives = [], transcriptionWords) {
-  const editContext = drumEditContext(prompt, current);
   const references = retrieve(
     [
       ...recentTurns
@@ -35,9 +26,8 @@ export function prepare(prompt, current, recentTurns = [], alternatives = [], tr
       prompt,
     ].join(' '),
   );
-  const numeric = Object.fromEntries(
-    [...new Set(prompt.match(/\d+(?:\.\d+)?/g) || [])].slice(0, 30).map(n => ['n:' + n, n]),
-  );
+  const numeric = (start, end) =>
+    Object.fromEntries(Object.entries(nums(start, end)).map(([n]) => ['n:' + n, n]));
   const songs = songCandidates(prompt);
   const questions = {
     songQuery: choice(
@@ -57,9 +47,9 @@ export function prepare(prompt, current, recentTurns = [], alternatives = [], tr
       },
     ),
     tempo: choice(
-      'Choose requested BPM or relative tempo. For a named song BPM lookup choose keep; do not guess the song tempo. Numeric candidates may refer to other settings; only choose one if it describes tempo.',
+      'Choose requested BPM from 20 through 240 or relative tempo. Read both digits and written words. For an exact BPM above 240 choose keep; the separate high-tempo question handles it. Never substitute a relative or approximate choice for an exact value. For a named song BPM lookup choose keep; do not guess the song tempo. Numeric candidates may refer to other settings; only choose one if it describes tempo.',
       {
-        ...numeric,
+        ...numeric(20, 240),
         keep: 'No tempo change stated',
         slow: 'Slow tempo',
         medium: 'Mid tempo',
@@ -69,6 +59,10 @@ export function prepare(prompt, current, recentTurns = [], alternatives = [], tr
         double: 'Double existing BPM',
         half: 'Halve existing BPM',
       },
+    ),
+    tempoHigh: choice(
+      'Select an exact requested BPM from 241 through 320, whether written as digits or words. Choose keep for every other tempo request, including relative adjustments. Never approximate a requested exact value.',
+      { ...numeric(241, 320), keep: 'No exact tempo in this range requested' },
     ),
     beats: choice(
       'Choose pulses per bar. 3/4 waltz=3, 6/8=2 dotted quarter pulses, 12/8=4. Preserve current unless a new style needs a different meter.',
@@ -81,7 +75,7 @@ export function prepare(prompt, current, recentTurns = [], alternatives = [], tr
     swing: choice(
       'Choose swing amount. Little=light. Numeric candidates only apply when they describe swing percentage.',
       {
-        ...numeric,
+        ...numeric(0, 100),
         keep: 'No swing change',
         straight: 'Straight or no swing',
         light: 'A little swing',
@@ -92,14 +86,14 @@ export function prepare(prompt, current, recentTurns = [], alternatives = [], tr
       },
     ),
     volume: choice('Choose master volume percentage or relative change.', {
-      ...numeric,
+      ...numeric(0, 100),
       keep: 'No volume change',
       quieter: 'Lower volume',
       louder: 'Higher volume',
       mute: 'Mute audio',
     }),
     loopRepeats: choice('Choose repeat count. Numeric candidates only if they describe repeats.', {
-      ...numeric,
+      ...numeric(0, 128),
       keep: 'No repeat change',
       forever: 'Repeat forever',
     }),
@@ -109,7 +103,7 @@ export function prepare(prompt, current, recentTurns = [], alternatives = [], tr
       drumkit: 'Acoustic drum-kit sounds',
     }),
     loopMode: choice(
-      'Choose playback mode. Instrument placements and edits require drum loop mode. For a new ordinary beat use regular metronome mode. Preserve mode for tempo-only follow-up edits.',
+      'Choose playback mode. Instrument placements and edits require drum loop mode. Preserve the current mode for ordinary changes. Select off only when the user requests ordinary metronome mode; select on when they request drum mode or a custom pattern.',
       {
         on: 'Custom drum pattern, drum loop, or instrument-specific placements',
         off: 'Regular metronome playback',
@@ -200,32 +194,8 @@ export function prepare(prompt, current, recentTurns = [], alternatives = [], tr
       criteria[`shift-${direction}`] =
         `Move all existing ${lane} hits ${direction} one beat, wrapping within the bar`;
     }
-    // Requested positions exist independently of the currently displayed grid.
-    const targets = [...new Set(editContext.positions.filter(p => p >= 0 && p < current.beats))];
-    const destinations = targets.map(p => [p]);
-    if (targets.length > 1) destinations.push(targets);
-    for (const destination of destinations) {
-      for (const operation of ['add', 'remove', 'replace']) {
-        const key = `edit:${operation}:${destination.join(',')}`;
-        patterns[lane][key] = applyDrumEdit(
-          patterns[lane].keep,
-          { operation, destination },
-          current.beats,
-        );
-        criteria[key] =
-          `${operation === 'replace' ? 'Play ONLY' : operation === 'add' ? 'Add' : 'Remove'} ${lane} on ${destination.map(positionLabel).join(' and ')}; ${operation === 'replace' ? 'replace this lane' : 'preserve every other hit'}`;
-      }
-    }
-    const edit = editContext.edits[lane];
-    if (edit) {
-      patterns[lane][edit.key] = edit.pattern;
-      // One complete operation avoids splitting confidence across equivalent choices.
-      for (const key of Object.keys(criteria)) if (key !== 'keep') delete criteria[key];
-      criteria[edit.key] = edit.description;
-    }
     references.forEach((r, i) => {
       patterns[lane]['ref' + i] = r.pattern[lane].map(s => s / 4);
-      if (edit) return;
       criteria['ref' + i] =
         `${r.title}: ${lane} source pattern at quarter-note positions ${patterns[lane]['ref' + i].join(', ')} (zero=beat 1). Optional style example.`;
     });
@@ -238,14 +208,6 @@ export function prepare(prompt, current, recentTurns = [], alternatives = [], tr
   return {
     references,
     patterns,
-    editContext,
-    explicitGridChange:
-      /\b(?:subdivisions?|subdivs?|grid)\b/i.test(prompt) ||
-      /\b(?:switch|change|set|use|play)\b.*\b(?:eighths|sixteenths|triplets|thirty.seconds)\b/i.test(
-        prompt,
-      ),
-    explicitMode: explicitMode(prompt),
-    instrumentEdit: /\b(kick|snare|hi[ -]?hat|hats?)\b/i.test(prompt),
     request: {
       model: 'typesafe/jev-1.13',
       state: {
@@ -261,7 +223,6 @@ export function prepare(prompt, current, recentTurns = [], alternatives = [], tr
               },
             }
           : {}),
-        musical_reading: editContext.text,
         current_config: current,
         recent_turns: recentTurns,
         context_note:
@@ -293,10 +254,6 @@ export function assemble(prepared, answers, current) {
   const selected = Object.fromEntries(
     Object.entries(answers).map(([k, a]) => [k, a.confidence > 0.5 ? a.choice : 'keep']),
   );
-  if (prepared.explicitMode) selected.loopMode = prepared.explicitMode;
-  else if (prepared.instrumentEdit && lanes.some(lane => selected[lane] !== 'keep'))
-    selected.loopMode = 'on';
-
   if (['unrelated', 'unsupported'].includes(selected.action))
     return {
       call: null,
@@ -316,26 +273,16 @@ export function assemble(prepared, answers, current) {
       message: selected.action === 'clear' ? 'Drum grid cleared.' : 'Reset to defaults.',
     };
   }
-  if (prepared.editContext.issue) return { call: null, message: prepared.editContext.issue };
-  if (prepared.editContext.targeted.length) {
-    if (prepared.explicitMode === 'off')
-      return { call: null, message: 'Drum placements need drum mode. The beat is unchanged.' };
-    if (prepared.editContext.targeted.some(lane => selected[lane] === 'keep'))
-      return {
-        call: null,
-        message:
-          'Couldn’t resolve that drum edit. The beat is unchanged. Try naming the hit and its destination.',
-      };
-    // Mode and grid are prerequisites of an accepted edit, not separate requests.
-    selected.loopMode = 'on';
-    for (const lane of lanes)
-      if (!prepared.editContext.targeted.includes(lane)) selected[lane] = 'keep';
-  }
-  // API/voice automation must not override the user's existing mode for ordinary edits.
-  if (!prepared.explicitMode && current.loopMode) selected.loopMode = 'on';
   const usesCustomPattern =
-    selected.loopMode === 'on' || (selected.loopMode === 'keep' && current.loopMode);
+    selected.loopMode === 'on' ||
+    (selected.loopMode === 'keep' &&
+      (current.loopMode || lanes.some(lane => selected[lane] !== 'keep')));
   if (!usesCustomPattern) for (const lane of lanes) selected[lane] = 'keep';
+  if (selected.tempoHigh !== 'keep') {
+    if (selected.tempo !== 'keep')
+      return { call: null, message: 'Conflicting tempo decisions. Kept the current beat.' };
+    selected.tempo = selected.tempoHigh;
+  }
   const c = structuredClone(current);
   const numeric = (s, old, map) => (s.startsWith('n:') ? Number(s.slice(2)) : (map[s] ?? old));
   c.bpm = numeric(selected.tempo, c.bpm, {
@@ -374,12 +321,7 @@ export function assemble(prepared, answers, current) {
     lanes.map(lane => [lane, prepared.patterns[lane][selected[lane]].filter(p => p < c.beats)]),
   );
   const adjustments = [];
-  if (c.loopMode) {
-    // A positional edit does not authorize the model to enlarge the grid arbitrarily.
-    if (Object.keys(prepared.editContext.edits).length && !prepared.explicitGridChange) {
-      c.subDivs = current.subDivs;
-      c.playSubDivs = current.playSubDivs;
-    }
+  if (usesCustomPattern) {
     try {
       const fitted = fitDrumLoopGrid(c, positions);
       if (fitted.subDivs !== c.subDivs)
@@ -401,7 +343,7 @@ export function assemble(prepared, answers, current) {
       ]),
     );
   }
-  if (!prepared.explicitMode) {
+  if (selected.loopMode === 'keep') {
     const standard = seedDrumLoopPattern({
       beats: c.beats,
       subDivs: c.playSubDivs ? c.subDivs : 1,
@@ -419,14 +361,7 @@ export function assemble(prepared, answers, current) {
     call: { method: 'setConfig', args: [checked.data] },
     playback: 'start',
     adjustments,
-    message: prepared.editContext.targeted.length
-      ? prepared.editContext.targeted
-          .map(
-            lane =>
-              `${lane[0].toUpperCase() + lane.slice(1)}: ${positions[lane].length ? positions[lane].map(positionLabel).join(', ') : 'no hits'}`,
-          )
-          .join(' · ')
-      : `${c.bpm} BPM · ${c.beats} beats · ${c.swing}% swing`,
+    message: `${c.bpm} BPM · ${c.beats} beats · ${c.swing}% swing`,
   };
 }
 async function voiceJson(request, env, progress = () => {}) {
@@ -494,7 +429,7 @@ async function voiceJson(request, env, progress = () => {}) {
     if (countOff)
       return Response.json(
         {
-          interpreterVersion: 3,
+          interpreterVersion: 4,
           prompt: body.prompt,
           call: null,
           message:
@@ -544,7 +479,8 @@ async function voiceJson(request, env, progress = () => {}) {
       result.answers.action.confidence > 0.5 &&
       songAnswer.choice !== 'keep' &&
       songAnswer.confidence > 0.5 &&
-      !result.answers.tempo.choice.startsWith('n:')
+      !result.answers.tempo.choice.startsWith('n:') &&
+      result.answers.tempoHigh.choice === 'keep'
     ) {
       const query = prepared.request.questions.songQuery.criteria[songAnswer.choice];
       progress(`Looking up “${query}”…`);
@@ -571,7 +507,7 @@ async function voiceJson(request, env, progress = () => {}) {
     const confidence = Math.min(...activeAnswers.map(answer => answer.confidence));
     return Response.json(
       {
-        interpreterVersion: 3,
+        interpreterVersion: 4,
         countOff: null,
         id: result.id,
         prompt: body.prompt,

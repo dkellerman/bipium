@@ -11,6 +11,7 @@ const policies = {
   songQuery: { level: 'deliberate' },
   action: { level: 'contextual', choices: { clear: 'rare', reset: 'rare' } },
   tempo: { level: 'contextual' },
+  tempoHigh: { level: 'deliberate' },
   beats: { level: 'contextual' },
   subDivs: { level: 'contextual' },
   swing: { level: 'deliberate' },

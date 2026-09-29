@@ -35,13 +35,13 @@ describe('voice interpretation and vector retrieval', () => {
     const base = { ...structuredClone(current), loopMode: true };
     base.loopPattern.snare = [false, true, true, true];
     const p = prepare('remove snare from the 3', base);
-    const a = decisions(p, { snare: 'edit:remove:2' });
+    const a = decisions(p, { snare: 'remove:2' });
     const c = assemble(p, a, base).call.args[0];
     expect(c.loopPattern.snare).toEqual([false, true, false, true]);
     expect(c.loopPattern.kick).toEqual(base.loopPattern.kick);
     expect(c.loopPattern.hat).toEqual(base.loopPattern.hat);
     a.snare.confidence = 0.5;
-    expect(assemble(p, a, base).call).toBeNull();
+    expect(assemble(p, a, base).call.args[0].loopPattern.snare).toEqual(base.loopPattern.snare);
   });
   it('supports exclusive placement and relative edits on subdivision positions', () => {
     const base = { ...structuredClone(current), loopMode: true, subDivs: 2 };
@@ -65,35 +65,34 @@ describe('voice interpretation and vector retrieval', () => {
     const base = { ...structuredClone(current), loopMode: true };
     base.loopPattern.snare = [false, true, false, true];
     const p = prepare('move the snare on beat four back a beat', base);
-    expect(p.request.questions.snare.criteria['edit:move']).toBeTruthy();
-    const c = assemble(p, decisions(p, { snare: 'edit:move' }), base).call.args[0];
+    expect(p.request.questions.snare.criteria['move-back:3']).toBeTruthy();
+    const c = assemble(p, decisions(p, { snare: 'move-back:3' }), base).call.args[0];
     expect(c.loopPattern.snare).toEqual([false, true, true, false]);
-    expect(() => assemble(p, decisions(p, { snare: 'remove:3' }), base)).toThrow(/incomplete/);
+    expect(p.request.questions.snare.criteria['remove:3']).toBeTruthy();
   });
   it('moves all snare hits back one beat when no source hit is named', () => {
     const base = { ...structuredClone(current), loopMode: true };
     base.loopPattern.snare = [false, true, false, true];
     const p = prepare('move the snare back a beat', base);
-    const c = assemble(p, decisions(p, { snare: 'edit:move' }), base).call.args[0];
+    const c = assemble(p, decisions(p, { snare: 'shift-back' }), base).call.args[0];
     expect(c.loopPattern.snare).toEqual([true, false, true, false]);
   });
   it('enters drum mode for a chosen instrument edit even when mode was kept', () => {
     const p = prepare('add a snare on beat four', current);
-    const c = assemble(p, decisions(p, { snare: 'edit:add:3', loopMode: 'keep' }), current).call
-      .args[0];
+    const c = assemble(p, decisions(p, { snare: 'add:3', loopMode: 'keep' }), current).call.args[0];
     expect(c.loopMode).toBe(true);
     expect(c.loopPattern.snare[3]).toBe(true);
   });
-  it('honors explicit mode switches even when the mode classifier disagrees', () => {
+  it('follows Jev mode decisions without keyword overrides', () => {
     const drums = { ...structuredClone(current), loopMode: true };
     const regular = prepare('switch to beat mode', drums);
     expect(
       assemble(regular, decisions(regular, { loopMode: 'keep' }), drums).call.args[0].loopMode,
-    ).toBe(false);
+    ).toBe(true);
     const drum = prepare('switch to drum mode', current);
     expect(
       assemble(drum, decisions(drum, { loopMode: 'off' }), current).call.args[0].loopMode,
-    ).toBe(true);
+    ).toBe(false);
   });
   it('searches all research entries and returns both sources', () => {
     expect(corpusCount).toBe(673);
@@ -127,7 +126,7 @@ describe('voice interpretation and vector retrieval', () => {
   it('preserves untouched lanes and tempo in a removal edit', () => {
     const base = { ...current, loopMode: true };
     const p = prepare('remove hats', base);
-    const c = assemble(p, decisions(p, { hat: 'edit:remove:0,1,2,3' }), base).call.args[0];
+    const c = assemble(p, decisions(p, { hat: 'silent' }), base).call.args[0];
     expect(c.bpm).toBe(base.bpm);
     expect(c.loopPattern.kick).toEqual(base.loopPattern.kick);
     expect(c.loopPattern.snare).toEqual(base.loopPattern.snare);
@@ -242,7 +241,7 @@ describe('voice interpretation and vector retrieval', () => {
   );
   it('rejects out of range numeric values and invalid or incomplete decisions', () => {
     const p = prepare('400 BPM', current);
-    expect(() => assemble(p, decisions(p, { tempo: 'n:400' }), current)).toThrow(/range/);
+    expect(() => assemble(p, decisions(p, { tempo: 'n:400' }), current)).toThrow(/incomplete/);
     const a = decisions(p);
     delete a.kick.confidence;
     expect(() => assemble(p, a, current)).toThrow(/incomplete/);
@@ -347,34 +346,34 @@ it('a song lookup streams progress and changes only BPM', async () => {
 });
 
 describe('API voice mode preserves user choice unless a custom pattern is needed', () => {
-  it('uses regular mode when the model unnecessarily selects custom mode', () => {
+  it('honors Jev selecting drum mode', () => {
     const p = prepare('a regular beat at 100 BPM', current);
     const result = assemble(p, decisions(p, { tempo: 'n:100', loopMode: 'on' }), current);
-    expect(result.call.args[0].loopMode).toBe(false);
+    expect(result.call.args[0].loopMode).toBe(true);
   });
   it('keeps an ordinary subdivision change in regular mode', () => {
     const p = prepare('play eighth hats', current);
-    const result = assemble(p, decisions(p, { hat: 'eighths', loopMode: 'on' }), current);
+    const result = assemble(p, decisions(p, { hat: 'eighths', loopMode: 'keep' }), current);
     expect(result.call.args[0].subDivs).toBe(2);
     expect(result.call.args[0].loopMode).toBe(false);
   });
   it('does not enter custom mode when a placement matches the standard beat', () => {
     const p = prepare('put the snare only on beat 3', current);
-    const result = assemble(p, decisions(p, { snare: 'edit:replace:2' }), current);
+    const result = assemble(p, decisions(p, { snare: 'only:2' }), current);
     expect(result.call.args[0].loopMode).toBe(false);
   });
   it('keeps the user in drum mode when an edit restores a standard pattern', () => {
     const base = { ...structuredClone(current), loopMode: true };
     base.loopPattern.snare = [false, true, false, false];
     const p = prepare('move the snare to beat 3', base);
-    const result = assemble(p, decisions(p, { snare: 'edit:move' }), base);
+    const result = assemble(p, decisions(p, { snare: 'only:2' }), base);
     expect(result.call.args[0].loopMode).toBe(true);
   });
   it('keeps a custom pattern through tempo changes', () => {
     const base = { ...structuredClone(current), loopMode: true };
     base.loopPattern.snare = [false, true, false, true];
     const p = prepare('faster', base);
-    const result = assemble(p, decisions(p, { tempo: 'faster', loopMode: 'off' }), base);
+    const result = assemble(p, decisions(p, { tempo: 'faster', loopMode: 'keep' }), base);
     expect(result.call.args[0].loopMode).toBe(true);
     expect(result.call.args[0].loopPattern).toEqual(base.loopPattern);
   });
