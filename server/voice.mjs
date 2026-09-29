@@ -1,3 +1,4 @@
+import { estimateCountOff } from './count-off.mjs';
 import { createSchemas, fitDrumLoopGrid, seedDrumLoopPattern } from '../src/core/api.ts';
 import { retrieve, corpusCount } from './retrieval.mjs';
 import { drumEditContext, positionLabel, applyDrumEdit } from './drum-edits.mjs';
@@ -434,11 +435,6 @@ async function voiceJson(request, env, progress = () => {}) {
   )
     return Response.json({ error: 'Origin not allowed' }, { status: 403, headers });
   try {
-    if (!env.OPENROUTER_API_KEY)
-      return Response.json(
-        { error: 'Voice interpretation is not configured.' },
-        { status: 503, headers },
-      );
     const raw = await request.text();
     if (raw.length > 18000)
       return Response.json({ error: 'Request too large' }, { status: 413, headers });
@@ -490,6 +486,30 @@ async function voiceJson(request, env, progress = () => {}) {
     )
       return Response.json({ error: 'Invalid voice context' }, { status: 400, headers });
     const start = Date.now();
+    const countOff = estimateCountOff(body.prompt, transcriptionWords);
+    if (countOff)
+      return Response.json(
+        {
+          interpreterVersion: 3,
+          prompt: body.prompt,
+          call: null,
+          message:
+            countOff.bpm === null
+              ? 'Count-off heard; timing is not clear enough to estimate tempo.'
+              : `Count-off estimate: ${countOff.bpm} BPM`,
+          countOff,
+          confidence: countOff.confidence,
+          confidenceMethod: countOff.confidenceMethod,
+          references: [],
+          timing: { totalMs: Date.now() - start },
+        },
+        { headers },
+      );
+    if (!env.OPENROUTER_API_KEY)
+      return Response.json(
+        { error: 'Voice interpretation is not configured.' },
+        { status: 503, headers },
+      );
     const prepared = prepare(
       body.prompt,
       current.data,
@@ -548,6 +568,7 @@ async function voiceJson(request, env, progress = () => {}) {
     return Response.json(
       {
         interpreterVersion: 3,
+        countOff: null,
         id: result.id,
         prompt: body.prompt,
         ...output,
