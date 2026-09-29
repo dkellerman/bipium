@@ -101,14 +101,42 @@ export function drumEditContext(prompt, current) {
     text,
     targeted: isEdit ? targeted : [],
     positions: isEdit ? namedPositions(text) : [],
-    moves: {},
+    edits: {},
     issue: null,
   };
-  if (!isEdit || !/\b(move|shift|relocate|slide|nudge)\b/i.test(text) || targeted.length !== 1)
-    return result;
+  if (!isEdit || targeted.length !== 1) return result;
   const lane = targeted[0];
   const divisions = current.playSubDivs ? current.subDivs : 1;
   const hits = current.loopPattern[lane].flatMap((hit, i) => (hit ? [i / divisions] : []));
+  const moving = /\b(move|shift|relocate|slide|nudge)\b/i.test(text);
+  if (!moving) {
+    const operation = /\b(only|just)\b/i.test(text)
+      ? 'replace'
+      : /\b(remove|delete)\b/i.test(text)
+        ? 'remove'
+        : /\b(add|put|place)\b/i.test(text)
+          ? 'add'
+          : null;
+    const destination = result.positions.length
+      ? unique(result.positions)
+      : operation === 'remove'
+        ? hits
+        : [];
+    if (!operation || (!destination.length && operation !== 'remove')) return result;
+    const description = `${operation === 'replace' ? 'Play ONLY' : operation === 'add' ? 'Add' : 'Remove'} ${lane} ${destination.length ? 'on ' + destination.map(positionLabel).join(' and ') : 'hits'}; ${operation === 'replace' ? 'replace this lane' : 'preserve every other hit'}`;
+    const edit = { operation, destination };
+    try {
+      result.edits[lane] = {
+        edit,
+        key: `edit:${operation}:${destination.join(',')}`,
+        pattern: applyDrumEdit(hits, edit, current.beats),
+        description,
+      };
+    } catch (error) {
+      result.issue = `${error.message} The beat is unchanged.`;
+    }
+    return result;
+  }
   const to =
     /\bto\s+(?:the\s+)?(?:(?:and|end|e|ee|a|uh)\s+of|beat|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|\d)/i.exec(
       text,
@@ -147,9 +175,18 @@ export function drumEditContext(prompt, current) {
       return result;
     }
     description = `Move ${source.length ? lane + ' from ' + source.map(positionLabel).join(', ') : 'all ' + lane + ' hits'} ${amount < 0 ? 'earlier' : 'later'} by ${Math.abs(amount)} beat(s); preserve other hits and wrap within the bar`;
-  } else return result;
+  } else {
+    result.issue =
+      'Couldn’t resolve the move. Name its source and destination. The beat is unchanged.';
+    return result;
+  }
   try {
-    result.moves[lane] = { edit, pattern: applyDrumEdit(hits, edit, current.beats), description };
+    result.edits[lane] = {
+      edit,
+      key: 'edit:move',
+      pattern: applyDrumEdit(hits, edit, current.beats),
+      description,
+    };
   } catch (error) {
     result.issue = `${error.message} The beat is unchanged.`;
   }

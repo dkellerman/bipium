@@ -126,3 +126,15 @@ describe('drum edit operations', () => {
     expect(result.message).toContain('unchanged');
   });
 });
+
+it.each([
+  ['add a kick on the and of 2', 'kick'],
+  ['remove the hat on beat 2', 'hat'],
+  ['put snare only on beat 4', 'snare'],
+  ['move the snare from beat 4 to the and of 2', 'snare'],
+])('offers one complete edit without duplicate confidence choices: %s', (prompt, lane) => {
+  const p = prepare(prompt, config());
+  const keys = Object.keys(p.request.questions[lane].criteria);
+  expect(keys).toHaveLength(2);
+  expect(keys).toContain('keep');
+});

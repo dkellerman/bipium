@@ -215,16 +215,16 @@ export function prepare(prompt, current, recentTurns = [], alternatives = []) {
           `${operation === 'replace' ? 'Play ONLY' : operation === 'add' ? 'Add' : 'Remove'} ${lane} on ${destination.map(positionLabel).join(' and ')}; ${operation === 'replace' ? 'replace this lane' : 'preserve every other hit'}`;
       }
     }
-    const move = editContext.moves[lane];
-    if (move) {
-      patterns[lane]['edit:move'] = move.pattern;
-      // A directed move is one decision, not independent add/remove guesses.
+    const edit = editContext.edits[lane];
+    if (edit) {
+      patterns[lane][edit.key] = edit.pattern;
+      // One complete operation avoids splitting confidence across equivalent choices.
       for (const key of Object.keys(criteria)) if (key !== 'keep') delete criteria[key];
-      criteria['edit:move'] = move.description;
+      criteria[edit.key] = edit.description;
     }
     references.forEach((r, i) => {
       patterns[lane]['ref' + i] = r.pattern[lane].map(s => s / 4);
-      if (move) return;
+      if (edit) return;
       criteria['ref' + i] =
         `${r.title}: ${lane} source pattern at quarter-note positions ${patterns[lane]['ref' + i].join(', ')} (zero=beat 1). Optional style example.`;
     });
@@ -505,6 +505,7 @@ async function voiceJson(request, env, progress = () => {}) {
     const confidence = Math.min(...activeAnswers.map(answer => answer.confidence));
     return Response.json(
       {
+        interpreterVersion: 2,
         id: result.id,
         prompt: body.prompt,
         ...output,

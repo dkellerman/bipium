@@ -70,15 +70,21 @@ const cases = [
 let failures = 0;
 for (const test of cases) {
   const start = Date.now();
-  const response = await fetch(new URL('/api/voice', origin), {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', origin },
-    body: JSON.stringify({ prompt: test.prompt, currentConfig: test.current }),
-  });
-  const data = await response.json();
+  let response, data;
+  for (let attempt = 0; attempt < 20; attempt++) {
+    response = await fetch(new URL('/api/voice', origin), {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', origin },
+      body: JSON.stringify({ prompt: test.prompt, currentConfig: test.current }),
+    });
+    data = await response.json();
+    if (data.interpreterVersion === 2) break;
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  }
   let error;
   try {
     assert.equal(response.status, 200);
+    assert.equal(data.interpreterVersion, 2, 'New interpreter has not propagated to this request');
     if (test.clarification) {
       assert.equal(data.call, null);
       assert.match(data.message, /which|unchanged/i);
@@ -107,6 +113,7 @@ for (const test of cases) {
   console.log(
     JSON.stringify({
       passed: !error,
+      currentInterpreter: Object.hasOwn(data.jevRequest?.state ?? {}, 'musical_reading'),
       prompt: test.prompt,
       grid: test.current.subDivs,
       mode: test.current.loopMode,

@@ -23,7 +23,7 @@ describe('voice interpretation and vector retrieval', () => {
     const base = { ...structuredClone(current), loopMode: true };
     base.loopPattern.snare = [false, true, true, true];
     const p = prepare('remove snare from the 3', base);
-    const a = decisions(p, { snare: 'remove:2' });
+    const a = decisions(p, { snare: 'edit:remove:2' });
     const c = assemble(p, a, base).call.args[0];
     expect(c.loopPattern.snare).toEqual([false, true, false, true]);
     expect(c.loopPattern.kick).toEqual(base.loopPattern.kick);
@@ -67,7 +67,8 @@ describe('voice interpretation and vector retrieval', () => {
   });
   it('enters drum mode for a chosen instrument edit even when mode was kept', () => {
     const p = prepare('add a snare on beat four', current);
-    const c = assemble(p, decisions(p, { snare: 'add:3', loopMode: 'keep' }), current).call.args[0];
+    const c = assemble(p, decisions(p, { snare: 'edit:add:3', loopMode: 'keep' }), current).call
+      .args[0];
     expect(c.loopMode).toBe(true);
     expect(c.loopPattern.snare[3]).toBe(true);
   });
@@ -114,7 +115,7 @@ describe('voice interpretation and vector retrieval', () => {
   it('preserves untouched lanes and tempo in a removal edit', () => {
     const base = { ...current, loopMode: true };
     const p = prepare('remove hats', base);
-    const c = assemble(p, decisions(p, { hat: 'silent' }), base).call.args[0];
+    const c = assemble(p, decisions(p, { hat: 'edit:remove:0,1,2,3' }), base).call.args[0];
     expect(c.bpm).toBe(base.bpm);
     expect(c.loopPattern.kick).toEqual(base.loopPattern.kick);
     expect(c.loopPattern.snare).toEqual(base.loopPattern.snare);
