@@ -362,7 +362,11 @@ export function assemble(prepared, answers, current) {
   });
   c.loopRepeats = numeric(selected.loopRepeats, c.loopRepeats, { forever: 0 });
   if (selected.beats !== 'keep') c.beats = Number(selected.beats);
-  if (selected.subDivs !== 'keep') c.subDivs = Number(selected.subDivs);
+  if (selected.subDivs !== 'keep') {
+    c.subDivs = Number(selected.subDivs);
+    // An accepted subdivision change must be audible unless explicitly disabled.
+    if (selected.playSubDivs !== 'off') c.playSubDivs = true;
+  }
   if (selected.loopMode !== 'keep') c.loopMode = selected.loopMode === 'on';
   if (selected.playSubDivs !== 'keep') c.playSubDivs = selected.playSubDivs === 'on';
   if (selected.soundPack !== 'keep') c.soundPack = selected.soundPack;

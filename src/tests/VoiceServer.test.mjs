@@ -19,6 +19,18 @@ function decisions(prepared, overrides = {}) {
 }
 afterEach(() => vi.unstubAllGlobals());
 describe('voice interpretation and vector retrieval', () => {
+  it('enables an accepted subdivision change while preserving an explicit off choice', () => {
+    const base = { ...structuredClone(current), playSubDivs: false };
+    const p = prepare('make this eighth notes', base);
+    expect(
+      assemble(p, decisions(p, { subDivs: '2', playSubDivs: 'keep' }), base).call.args[0],
+    ).toMatchObject({ subDivs: 2, playSubDivs: true });
+    expect(
+      assemble(p, decisions(p, { subDivs: '2', playSubDivs: 'off' }), base).call.args[0]
+        .playSubDivs,
+    ).toBe(false);
+  });
+
   it('removes one snare hit without replacing its other hits or other lanes', () => {
     const base = { ...structuredClone(current), loopMode: true };
     base.loopPattern.snare = [false, true, true, true];

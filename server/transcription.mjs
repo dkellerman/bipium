@@ -1,3 +1,4 @@
+import { MUSICAL_KEYTERMS } from './speech-vocabulary.mjs';
 import { PercussionDetector } from './percussion.mjs';
 const origins = new Set([
   'https://bipium.com',
@@ -54,8 +55,7 @@ export async function transcription(request, env) {
     language: 'en',
     endpointing: '400',
   }).forEach(([k, v]) => target.searchParams.set(k, v));
-  for (const term of ['snare', 'kick', 'hi hat', 'and of two', 'beat', 'BPM', 'subdivisions'])
-    target.searchParams.append('keyterm', term);
+  for (const term of MUSICAL_KEYTERMS) target.searchParams.append('keyterm', term);
   let response;
   try {
     response = await fetch(target, {
