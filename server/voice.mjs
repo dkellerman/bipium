@@ -1,5 +1,6 @@
 import { createSchemas } from '../src/core/api.ts';
 import { retrieve, corpusCount } from './retrieval.mjs';
+import { drumEditContext, positionLabel, applyDrumEdit } from './drum-edits.mjs';
 import { applyChangePolicy } from './change-policy.mjs';
 import { songCandidates, lookupSongTempo } from './song-tempo.mjs';
 const schema = createSchemas(new Set(['drumkit', 'defaults'])).config;
@@ -22,45 +23,8 @@ function explicitMode(prompt) {
   if (!mode) return null;
   return mode[1].toLowerCase() === 'drum' ? 'on' : 'off';
 }
-function oneBeatMove(prompt, current, patterns) {
-  if (
-    !/\b(?:move|shift)\b/i.test(prompt) ||
-    /\b(?:don't|do not|never)\s+(?:move|shift)\b/i.test(prompt)
-  )
-    return null;
-  const instrument = prompt.match(/\b(snare|kick|hi[ -]?hat|hat)\b/i)?.[1].toLowerCase();
-  const lane = instrument?.includes('hat') ? 'hat' : instrument;
-  if (!lanes.includes(lane)) return null;
-  const direction = prompt
-    .match(/\b(back|earlier|forward|later)\s+(?:(?:by|a|one|1)\s+){0,2}beat\b/i)?.[1]
-    .toLowerCase();
-  if (!direction) return null;
-  const named = prompt
-    .match(
-      /\b(?:on|from)\s+(?:the\s+)?(?:beat\s+)?(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|\d{1,2})\b/i,
-    )?.[1]
-    .toLowerCase();
-  const numbers = [
-    'one',
-    'two',
-    'three',
-    'four',
-    'five',
-    'six',
-    'seven',
-    'eight',
-    'nine',
-    'ten',
-    'eleven',
-    'twelve',
-  ];
-  const beat = named ? numbers.indexOf(named) + 1 || Number(named) : null;
-  const way = ['back', 'earlier'].includes(direction) ? 'back' : 'forward';
-  const step = beat ? (beat - 1) * (current.playSubDivs ? current.subDivs : 1) : null;
-  const key = step === null ? `shift-${way}` : `move-${way}:${step}`;
-  return patterns[lane][key] ? { lane, key } : null;
-}
 export function prepare(prompt, current, recentTurns = [], alternatives = []) {
+  const editContext = drumEditContext(prompt, current);
   const references = retrieve(
     [
       ...recentTurns
@@ -144,7 +108,7 @@ export function prepare(prompt, current, recentTurns = [], alternatives = []) {
       drumkit: 'Acoustic drum-kit sounds',
     }),
     loopMode: choice(
-      'Choose playback mode. For a new ordinary beat use regular metronome mode. Preserve mode for follow-up edits.',
+      'Choose playback mode. Instrument placements and edits require drum loop mode. For a new ordinary beat use regular metronome mode. Preserve mode for tempo-only follow-up edits.',
       {
         on: 'Custom drum pattern, drum loop, or instrument-specific placements',
         off: 'Regular metronome playback',
@@ -235,13 +199,37 @@ export function prepare(prompt, current, recentTurns = [], alternatives = []) {
       criteria[`shift-${direction}`] =
         `Move all existing ${lane} hits ${direction} one beat, wrapping within the bar`;
     }
+    // Requested positions exist independently of the currently displayed grid.
+    const targets = [...new Set(editContext.positions.filter(p => p >= 0 && p < current.beats))];
+    const destinations = targets.map(p => [p]);
+    if (targets.length > 1) destinations.push(targets);
+    for (const destination of destinations) {
+      for (const operation of ['add', 'remove', 'replace']) {
+        const key = `edit:${operation}:${destination.join(',')}`;
+        patterns[lane][key] = applyDrumEdit(
+          patterns[lane].keep,
+          { operation, destination },
+          current.beats,
+        );
+        criteria[key] =
+          `${operation === 'replace' ? 'Play ONLY' : operation === 'add' ? 'Add' : 'Remove'} ${lane} on ${destination.map(positionLabel).join(' and ')}; ${operation === 'replace' ? 'replace this lane' : 'preserve every other hit'}`;
+      }
+    }
+    const move = editContext.moves[lane];
+    if (move) {
+      patterns[lane]['edit:move'] = move.pattern;
+      // A directed move is one decision, not independent add/remove guesses.
+      for (const key of Object.keys(criteria)) if (key !== 'keep') delete criteria[key];
+      criteria['edit:move'] = move.description;
+    }
     references.forEach((r, i) => {
       patterns[lane]['ref' + i] = r.pattern[lane].map(s => s / 4);
+      if (move) return;
       criteria['ref' + i] =
         `${r.title}: ${lane} source pattern at quarter-note positions ${patterns[lane]['ref' + i].join(', ')} (zero=beat 1). Optional style example.`;
     });
     questions[lane] = choice(
-      `Choose the resulting ${lane} pattern. Add/remove choices edit one position while preserving other hits. Move choices relocate one named hit; shift choices move every hit earlier/back or later/forward by one beat. ONLY choices replace the lane with one hit. Silent removes the ENTIRE lane, never a single specified hit. Within a requested new custom drum pattern, select a suitable example or pattern. Specific placements and removals take precedence. Preserve this lane when editing other instruments.`,
+      `Choose the resulting ${lane} pattern. Add/remove choices edit one position while preserving other hits. Move choices relocate one named hit; shift choices move the specified hits by the stated distance. ONLY choices replace the lane with one hit. Silent removes the ENTIRE lane, never a single specified hit. Within a requested new custom drum pattern, select a suitable example or pattern. Specific placements and removals take precedence. Preserve this lane when editing other instruments.`,
       criteria,
     );
   }
@@ -249,9 +237,7 @@ export function prepare(prompt, current, recentTurns = [], alternatives = []) {
   return {
     references,
     patterns,
-    moveIntent:
-      [prompt, ...alternatives].map(text => oneBeatMove(text, current, patterns)).find(Boolean) ??
-      null,
+    editContext,
     explicitMode: explicitMode(prompt),
     instrumentEdit: /\b(kick|snare|hi[ -]?hat|hats?)\b/i.test(prompt),
     request: {
@@ -259,6 +245,7 @@ export function prepare(prompt, current, recentTurns = [], alternatives = []) {
       state: {
         request: prompt,
         recognition_alternatives: alternatives,
+        musical_reading: editContext.text,
         current_config: current,
         recent_turns: recentTurns,
         context_note:
@@ -293,10 +280,7 @@ export function assemble(prepared, answers, current) {
   if (prepared.explicitMode) selected.loopMode = prepared.explicitMode;
   else if (prepared.instrumentEdit && lanes.some(lane => selected[lane] !== 'keep'))
     selected.loopMode = 'on';
-  if (prepared.moveIntent && prepared.explicitMode !== 'off' && selected.action === 'play') {
-    selected[prepared.moveIntent.lane] = prepared.moveIntent.key;
-    selected.loopMode = 'on';
-  }
+
   if (['unrelated', 'unsupported'].includes(selected.action))
     return {
       call: null,
@@ -315,6 +299,21 @@ export function assemble(prepared, answers, current) {
       },
       message: selected.action === 'clear' ? 'Drum grid cleared.' : 'Reset to defaults.',
     };
+  }
+  if (prepared.editContext.issue) return { call: null, message: prepared.editContext.issue };
+  if (prepared.editContext.targeted.length) {
+    if (prepared.explicitMode === 'off')
+      return { call: null, message: 'Drum placements need drum mode. The beat is unchanged.' };
+    if (prepared.editContext.targeted.some(lane => selected[lane] === 'keep'))
+      return {
+        call: null,
+        message:
+          'Couldn’t resolve that drum edit. The beat is unchanged. Try naming the hit and its destination.',
+      };
+    // Mode and grid are prerequisites of an accepted edit, not separate requests.
+    selected.loopMode = 'on';
+    for (const lane of lanes)
+      if (!prepared.editContext.targeted.includes(lane)) selected[lane] = 'keep';
   }
   const usesCustomPattern =
     selected.loopMode === 'on' || (selected.loopMode === 'keep' && current.loopMode);
@@ -359,18 +358,13 @@ export function assemble(prepared, answers, current) {
       const compatible = [1, 2, 3, 4, 5, 6, 7, 8].find(
         n => n >= c.subDivs && all.every(p => Math.abs(p * n - Math.round(p * n)) < 1e-6),
       );
-      if (answers.subDivs.confidence <= 0.5) {
-        for (const lane of lanes)
-          if (
-            positions[lane].some(p => Math.abs(p * c.subDivs - Math.round(p * c.subDivs)) > 1e-6)
-          ) {
-            positions[lane] = prepared.patterns[lane].keep.filter(p => p < c.beats);
-          }
-      } else {
-        if (!compatible) return { call: null, message: 'Couldn’t make that beat. Try rephrasing.' };
-        c.subDivs = compatible;
-        adjustments.push('Subdivision grid expanded to preserve selected drum hits.');
-      }
+      if (!compatible)
+        return {
+          call: null,
+          message: 'Those positions cannot share a supported grid. The beat is unchanged.',
+        };
+      c.subDivs = compatible;
+      adjustments.push('Subdivision grid expanded to preserve selected drum hits.');
     }
     if (
       Object.values(positions)
@@ -378,14 +372,8 @@ export function assemble(prepared, answers, current) {
         .some(p => p % 1 !== 0) &&
       !c.playSubDivs
     ) {
-      if (answers.playSubDivs.confidence <= 0.5) {
-        for (const lane of lanes)
-          if (positions[lane].some(p => p % 1 !== 0))
-            positions[lane] = prepared.patterns[lane].keep.filter(p => p < c.beats);
-      } else {
-        c.playSubDivs = true;
-        adjustments.push('Subdivision playback enabled for selected drum hits.');
-      }
+      c.playSubDivs = true;
+      adjustments.push('Subdivision playback enabled for selected drum hits.');
     }
   }
   const activeSubDivs = c.playSubDivs ? c.subDivs : 1;
@@ -403,7 +391,14 @@ export function assemble(prepared, answers, current) {
     call: { method: 'setConfig', args: [checked.data] },
     playback: 'start',
     adjustments,
-    message: `${c.bpm} BPM · ${c.beats} beats · ${c.swing}% swing`,
+    message: prepared.editContext.targeted.length
+      ? prepared.editContext.targeted
+          .map(
+            lane =>
+              `${lane[0].toUpperCase() + lane.slice(1)}: ${positions[lane].length ? positions[lane].map(positionLabel).join(', ') : 'no hits'}`,
+          )
+          .join(' · ')
+      : `${c.bpm} BPM · ${c.beats} beats · ${c.swing}% swing`,
   };
 }
 async function voiceJson(request, env, progress = () => {}) {

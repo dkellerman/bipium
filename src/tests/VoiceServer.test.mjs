@@ -29,7 +29,7 @@ describe('voice interpretation and vector retrieval', () => {
     expect(c.loopPattern.kick).toEqual(base.loopPattern.kick);
     expect(c.loopPattern.hat).toEqual(base.loopPattern.hat);
     a.snare.confidence = 0.5;
-    expect(assemble(p, a, base).call.args[0].loopPattern).toEqual(base.loopPattern);
+    expect(assemble(p, a, base).call).toBeNull();
   });
   it('supports exclusive placement and relative edits on subdivision positions', () => {
     const base = { ...structuredClone(current), loopMode: true, subDivs: 2 };
@@ -53,17 +53,16 @@ describe('voice interpretation and vector retrieval', () => {
     const base = { ...structuredClone(current), loopMode: true };
     base.loopPattern.snare = [false, true, false, true];
     const p = prepare('move the snare on beat four back a beat', base);
-    expect(p.request.questions.snare.criteria['move-back:3']).toBeTruthy();
-    const c = assemble(p, decisions(p, { snare: 'move-back:3' }), base).call.args[0];
+    expect(p.request.questions.snare.criteria['edit:move']).toBeTruthy();
+    const c = assemble(p, decisions(p, { snare: 'edit:move' }), base).call.args[0];
     expect(c.loopPattern.snare).toEqual([false, true, true, false]);
-    const mistaken = assemble(p, decisions(p, { snare: 'remove:3' }), base).call.args[0];
-    expect(mistaken.loopPattern.snare).toEqual([false, true, true, false]);
+    expect(() => assemble(p, decisions(p, { snare: 'remove:3' }), base)).toThrow(/incomplete/);
   });
   it('moves all snare hits back one beat when no source hit is named', () => {
     const base = { ...structuredClone(current), loopMode: true };
     base.loopPattern.snare = [false, true, false, true];
     const p = prepare('move the snare back a beat', base);
-    const c = assemble(p, decisions(p, { snare: 'keep' }), base).call.args[0];
+    const c = assemble(p, decisions(p, { snare: 'edit:move' }), base).call.args[0];
     expect(c.loopPattern.snare).toEqual([true, false, true, false]);
   });
   it('enters drum mode for a chosen instrument edit even when mode was kept', () => {
@@ -138,10 +137,10 @@ describe('voice interpretation and vector retrieval', () => {
     a.action.confidence = 0.5;
     expect(assemble(p, a, current).call).toBeNull();
   });
-  it('preserves uncertain timing and incompatible lanes while applying a confident tempo change', () => {
+  it('preserves an uncertain lane while applying a confident tempo change', () => {
     const p = prepare('a custom beat at 100 BPM', current);
     const a = decisions(p, { tempo: 'n:100', loopMode: 'on', hat: 'eighths' });
-    a.subDivs.confidence = 0.5;
+    a.hat.confidence = 0.5;
     const c = assemble(p, a, current).call.args[0];
     expect(c.bpm).toBe(100);
     expect(c.subDivs).toBe(current.subDivs);
