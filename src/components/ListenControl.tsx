@@ -65,7 +65,7 @@ export function ListenControl({
       generation.current++;
       controller.current?.abort();
       sr.current?.abort();
-      },
+    },
     [],
   );
   useEffect(() => {
@@ -143,6 +143,9 @@ export function ListenControl({
     window.dispatchEvent(new Event('bipium:unlock-audio'));
     const recognition = new GrokRecognition();
     sr.current = recognition;
+    recognition.onanalysis = result => {
+      if (active.current && sr.current === recognition) setStatus(result.message);
+    };
     recognition.onready = () => {
       if (active.current && sr.current === recognition)
         setStatus('Listening for your next phrase…');

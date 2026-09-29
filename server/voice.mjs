@@ -495,8 +495,8 @@ async function voiceJson(request, env, progress = () => {}) {
           call: null,
           message:
             countOff.bpm === null
-              ? '[count-off] Count-off heard; timing is not clear enough to estimate tempo.'
-              : `[count-off] Count-off estimate: ${countOff.bpm} BPM`,
+              ? '[count-off] No changes made · Count-off timing is not clear enough to estimate tempo.'
+              : `[count-off] No changes made · Count-off estimate: ${countOff.bpm} BPM`,
           countOff,
           confidence: countOff.confidence,
           confidenceMethod: countOff.confidenceMethod,
@@ -572,7 +572,7 @@ async function voiceJson(request, env, progress = () => {}) {
         id: result.id,
         prompt: body.prompt,
         ...output,
-        message: `[${result.answers.action.choice}] ${output.message}`,
+        message: `[${result.answers.action.choice}] ${output.call === null ? 'No changes made · ' : ''}${output.message}`,
         confidence,
         confidenceMethod: 'minimum_active_decision_confidence',
         decisions: result.answers,

@@ -1,3 +1,4 @@
+import { PercussionDetector } from './percussion.mjs';
 const origins = new Set([
   'https://bipium.com',
   'https://www.bipium.com',
@@ -70,6 +71,7 @@ export async function transcription(request, env) {
   server.binaryType = 'arraybuffer';
   upstream.accept();
   server.accept();
+  const percussion = new PercussionDetector();
   let ended = false;
   const close = () => {
     if (ended) return;
@@ -91,6 +93,19 @@ export async function transcription(request, env) {
     }
     try {
       upstream.send(event.data);
+      for (const estimate of percussion.push(event.data)) {
+        server.send(
+          JSON.stringify({
+            type: 'analysis.result',
+            result: {
+              call: null,
+              classification: 'percussion',
+              percussion: estimate,
+              message: `[percussion] No changes made · ~${estimate.bpm} BPM${estimate.subdivisionEvidence === 'repeating_accents_tentative' ? ` · possibly ${estimate.subdivisions} subdivisions` : ' · beat grouping uncertain'}`,
+            },
+          }),
+        );
+      }
     } catch {
       close();
     }
@@ -98,6 +113,12 @@ export async function transcription(request, env) {
   upstream.addEventListener('message', event => {
     if (!ended)
       try {
+        if (typeof event.data === 'string') {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.type === 'transcript.partial' && data.text?.trim()) percussion.markSpeech();
+          } catch {}
+        }
         server.send(event.data);
       } catch {
         close();

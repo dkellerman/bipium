@@ -12,6 +12,7 @@ export class GrokRecognition {
   onresult: ((event: RecognitionEvent) => void) | null = null;
   onerror: ((event: { error: string }) => void) | null = null;
   onready: (() => void) | null = null;
+  onanalysis: ((result: { message: string }) => void) | null = null;
   private cancelled = false;
   private stream?: MediaStream;
   private context?: AudioContext;
@@ -91,6 +92,8 @@ export class GrokRecognition {
                 },
               ],
             });
+          } else if (data.type === 'analysis.result' && typeof data.result?.message === 'string') {
+            this.onanalysis?.(data.result);
           } else if (data.type === 'error') this.fail('connection');
         } catch {
           this.fail('connection');

@@ -21,6 +21,7 @@ class FakeSpeech {
   onend: any;
   onerror: any;
   onready: any;
+  onanalysis: any;
   start = vi.fn(() => this.onready?.());
   abort = vi.fn();
   constructor() {
@@ -92,6 +93,16 @@ afterEach(async () => {
   delete (window as any).SpeechRecognitionPhrase;
 });
 describe('listening controls', () => {
+  it('displays server percussion estimates without applying a command', async () => {
+    await click('Listen');
+    await act(async () =>
+      FakeSpeech.latest.onanalysis({ message: '[percussion] ~120 BPM · No changes made.' }),
+    );
+    expect(document.body.textContent).toContain('[percussion] ~120 BPM · No changes made.');
+    expect(api.setConfig).not.toHaveBeenCalled();
+    expect(api.start).not.toHaveBeenCalled();
+  });
+
   it('shows examples, sends only final phrases, and applies the returned API config', async () => {
     const fetcher = vi.fn(async () => Response.json(response()));
     vi.stubGlobal('fetch', fetcher);
