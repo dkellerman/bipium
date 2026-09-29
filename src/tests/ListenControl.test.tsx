@@ -3,6 +3,13 @@ import { createRoot, type Root } from 'react-dom/client';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ListenControl } from '../components/ListenControl';
 import { API_DEFAULT_CONFIG } from '../core/api';
+vi.mock('../lib/grok-recognition', () => ({
+  GrokRecognition: class {
+    constructor() {
+      return new FakeSpeech();
+    }
+  },
+}));
 class FakeSpeech {
   static latest: FakeSpeech;
   continuous = false;
@@ -13,7 +20,8 @@ class FakeSpeech {
   onresult: any;
   onend: any;
   onerror: any;
-  start = vi.fn();
+  onready: any;
+  start = vi.fn(() => this.onready?.());
   abort = vi.fn();
   constructor() {
     FakeSpeech.latest = this;
@@ -84,29 +92,6 @@ afterEach(async () => {
   delete (window as any).SpeechRecognitionPhrase;
 });
 describe('listening controls', () => {
-  it('adds musical vocabulary hints and restarts without them if unsupported', async () => {
-    (window as any).SpeechRecognitionPhrase = class {
-      constructor(
-        public phrase: string,
-        public boost: number,
-      ) {}
-    };
-    await click('Listen');
-    expect(FakeSpeech.latest.phrases.some(p => p.phrase === 'on the four')).toBe(true);
-    const original = FakeSpeech.latest;
-    await act(async () => {
-      original.onerror({ error: 'phrases-not-supported' });
-    });
-    await act(async () => new Promise(resolve => setTimeout(resolve, 180)));
-    expect(FakeSpeech.latest).not.toBe(original);
-    expect(FakeSpeech.latest.phrases).toEqual([]);
-    expect(FakeSpeech.latest.start).toHaveBeenCalledOnce();
-    expect(original.abort).toHaveBeenCalledOnce();
-    expect(document.body.textContent).not.toContain('phrases-not-supported');
-    await click('Stop listening');
-    await click('Listen');
-    expect(FakeSpeech.latest.phrases).toEqual([]);
-  });
   it('shows examples, sends only final phrases, and applies the returned API config', async () => {
     const fetcher = vi.fn(async () => Response.json(response()));
     vi.stubGlobal('fetch', fetcher);
@@ -181,11 +166,10 @@ describe('listening controls', () => {
     expect(request.prompt).toBe('faster');
     expect(request.recentTurns).toEqual([{ prompt: 'funk', applied: true }]);
   });
-  it('sends alternate transcripts and shows what the browser heard in two compact lines', async () => {
+  it('sends alternate transcripts and shows the transcript in two compact lines', async () => {
     const fetcher = vi.fn(async () => Response.json(response()));
     vi.stubGlobal('fetch', fetcher);
     await click('Listen');
-    expect(FakeSpeech.latest.maxAlternatives).toBe(3);
     await act(async () =>
       FakeSpeech.latest.phrase('move the snare end one beat', true, [
         'move the snare and one beat',

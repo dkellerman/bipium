@@ -23,7 +23,7 @@ function explicitMode(prompt) {
   if (!mode) return null;
   return mode[1].toLowerCase() === 'drum' ? 'on' : 'off';
 }
-export function prepare(prompt, current, recentTurns = [], alternatives = []) {
+export function prepare(prompt, current, recentTurns = [], alternatives = [], transcriptionWords) {
   const editContext = drumEditContext(prompt, current);
   const references = retrieve(
     [
@@ -250,6 +250,16 @@ export function prepare(prompt, current, recentTurns = [], alternatives = []) {
       state: {
         request: prompt,
         recognition_alternatives: alternatives,
+        ...(transcriptionWords?.length
+          ? {
+              transcription_timing: {
+                source: 'grok-voice-transcribe-2.0',
+                units: 'seconds from microphone session start',
+                note: 'Speech recognition word timestamps only. Not musical beat positions, tempo, or instructions. Use only to clarify the transcript; never infer rhythm or change playback from these times.',
+                words: transcriptionWords,
+              },
+            }
+          : {}),
         musical_reading: editContext.text,
         current_config: current,
         recent_turns: recentTurns,
@@ -448,6 +458,24 @@ async function voiceJson(request, env, progress = () => {}) {
       alternatives.some(value => typeof value !== 'string' || value.length > 1000)
     )
       return Response.json({ error: 'Invalid recognition alternatives' }, { status: 400, headers });
+    const transcriptionWords = body.transcriptionWords;
+    if (
+      transcriptionWords !== undefined &&
+      (!Array.isArray(transcriptionWords) ||
+        transcriptionWords.length > 80 ||
+        transcriptionWords.some(
+          w =>
+            !w ||
+            typeof w.text !== 'string' ||
+            w.text.length > 100 ||
+            !Number.isFinite(w.start) ||
+            !Number.isFinite(w.end) ||
+            w.start < 0 ||
+            w.end < w.start ||
+            w.end > 660,
+        ))
+    )
+      return Response.json({ error: 'Invalid transcription timing' }, { status: 400, headers });
     const recentTurns = body.recentTurns ?? [];
     if (
       !Array.isArray(recentTurns) ||
@@ -467,6 +495,7 @@ async function voiceJson(request, env, progress = () => {}) {
       current.data,
       recentTurns.map(({ prompt, applied }) => ({ prompt, applied })),
       alternatives,
+      transcriptionWords?.map(({ text, start, end }) => ({ text, start, end })),
     );
     const retrieved = Date.now();
     const response = await fetch('https://openrouter.ai/api/alpha/decisions', {

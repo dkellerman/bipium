@@ -1,3 +1,4 @@
+import { transcription } from './transcription.mjs';
 import { voice } from './voice.mjs';
 // Server-only entrypoint. Future OpenRouter calls use env.OPENROUTER_API_KEY;
 // never return runtime secrets or inject them into the client bundle.
@@ -10,6 +11,9 @@ export default {
     if (url.pathname === '/api/health' && request.method === 'GET') {
       return Response.json({ status: 'ok' });
     }
+
+    if (['/api/transcription/session', '/api/transcription/stream'].includes(url.pathname))
+      return transcription(request, env);
 
     if (url.pathname === '/api/voice') return voice(request, env);
 

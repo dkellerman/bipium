@@ -3,27 +3,9 @@ import { createPortal, flushSync } from 'react-dom';
 import { Mic, Square, LoaderCircle, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { readVoiceResponse } from '@/lib/voice-response';
+import { GrokRecognition, type TranscriptWord } from '@/lib/grok-recognition';
 import type { ApiConfig, RuntimeApi } from '@/core/api';
 
-type RecognitionEvent = {
-  resultIndex: number;
-  results: {
-    length: number;
-    [index: number]: { isFinal: boolean; length: number; [index: number]: { transcript: string } };
-  };
-};
-type Recognition = {
-  continuous: boolean;
-  interimResults: boolean;
-  lang: string;
-  maxAlternatives: number;
-  phrases?: { phrase: string; boost: number }[];
-  start(): void;
-  abort(): void;
-  onresult: ((event: RecognitionEvent) => void) | null;
-  onend: (() => void) | null;
-  onerror: ((event: { error: string }) => void) | null;
-};
 type VoiceResult = {
   prompt: string;
   message: string;
@@ -37,19 +19,6 @@ type VoiceResult = {
   [key: string]: unknown;
 };
 const runtime = () => (window as unknown as { bpm: RuntimeApi }).bpm;
-const constructor = () => {
-  const w = window as unknown as {
-    SpeechRecognition?: new () => Recognition;
-    webkitSpeechRecognition?: new () => Recognition;
-  };
-  return w.SpeechRecognition || w.webkitSpeechRecognition;
-};
-const isIOS = () =>
-  /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-const duckAudio = (listening: boolean) => {
-  if (!isIOS()) window.dispatchEvent(new CustomEvent('bipium:voice-duck', { detail: listening }));
-};
 export function ListenControl({
   variant = 'classic',
 }: {
@@ -75,20 +44,16 @@ export function ListenControl({
     }
   });
   const historyRef = useRef(history);
-  const unsupportedPhrases = useRef(false);
   const active = useRef(false),
-    sr = useRef<Recognition | null>(null),
+    sr = useRef<GrokRecognition | null>(null),
     generation = useRef(0),
     controller = useRef<AbortController | null>(null),
-    queue = useRef(Promise.resolve()),
-    restart = useRef<ReturnType<typeof setTimeout> | null>(null);
+    queue = useRef(Promise.resolve());
   const stop = () => {
     active.current = false;
     generation.current++;
     controller.current?.abort();
-    if (restart.current) clearTimeout(restart.current);
     sr.current?.abort();
-    duckAudio(false);
     setListening(false);
     setInterim('');
     setBusy(false);
@@ -100,9 +65,7 @@ export function ListenControl({
       generation.current++;
       controller.current?.abort();
       sr.current?.abort();
-      duckAudio(false);
-      if (restart.current) clearTimeout(restart.current);
-    },
+      },
     [],
   );
   useEffect(() => {
@@ -112,7 +75,7 @@ export function ListenControl({
       /* Session history is optional when storage is full. */
     }
   }, [history]);
-  const submit = (prompt: string, alternatives: string[] = []) => {
+  const submit = (prompt: string, alternatives: string[] = [], words?: TranscriptWord[]) => {
     prompt = prompt.trim();
     if (!prompt) return;
     setLastHeard(prompt);
@@ -142,6 +105,7 @@ export function ListenControl({
             body: JSON.stringify({
               prompt,
               alternatives,
+              transcriptionWords: words,
               currentConfig: api.getConfig(),
               recentTurns: historyRef.current
                 .slice(-6)
@@ -177,75 +141,12 @@ export function ListenControl({
   const start = () => {
     setOpen(true);
     window.dispatchEvent(new Event('bipium:unlock-audio'));
-    const SR = constructor();
-    if (!SR) {
-      setStatus(
-        'Voice recognition is unavailable in this browser. Try a browser that supports it.',
-      );
-      return;
-    }
-    const recognition = new SR();
+    const recognition = new GrokRecognition();
     sr.current = recognition;
-    recognition.continuous = !isIOS();
-    recognition.interimResults = true;
-    recognition.lang = 'en-US';
-    recognition.maxAlternatives = 3;
-    const Phrase = (
-      window as unknown as {
-        SpeechRecognitionPhrase?: new (
-          phrase: string,
-          boost: number,
-        ) => { phrase: string; boost: number };
-      }
-    ).SpeechRecognitionPhrase;
-    if (!unsupportedPhrases.current && Phrase && 'phrases' in recognition) {
-      try {
-        recognition.phrases = [
-          'kick',
-          'snare',
-          'hi hat',
-          'beat one',
-          'beat two',
-          'beat three',
-          'beat four',
-          'on the one',
-          'on the two',
-          'on the three',
-          'on the four',
-          'and',
-          'ee',
-          'uh',
-          'e and a',
-          'and of one',
-          'and of two',
-          'and of three',
-          'and of four',
-          'one ee and uh',
-          'two ee and uh',
-          'three ee and uh',
-          'four ee and uh',
-          'triplet',
-          'one triplet',
-          'two triplet',
-          'three triplet',
-          'four triplet',
-          'upbeat',
-          'offbeat',
-          'subdivs',
-          'subdivisions',
-          'eighths',
-          'sixteenths',
-          'tempo',
-          'eighth notes',
-          'sixteenth notes',
-          'triplets',
-          'BPM',
-          'stop listening',
-        ].map(phrase => new Phrase(phrase, 3));
-      } catch {
-        /* Optional hints must not prevent normal recognition. */
-      }
-    }
+    recognition.onready = () => {
+      if (active.current && sr.current === recognition)
+        setStatus('Listening for your next phrase…');
+    };
     recognition.onresult = event => {
       if (sr.current !== recognition) return;
       let unfinished = '';
@@ -258,6 +159,7 @@ export function ListenControl({
             Array.from({ length: Math.min(result.length - 1, 2) }, (_, j) =>
               result[j + 1].transcript.trim(),
             ).filter(transcript => transcript && transcript !== result[0].transcript.trim()),
+            event.words,
           );
         else unfinished += result[0].transcript;
       }
@@ -265,19 +167,6 @@ export function ListenControl({
     };
     recognition.onerror = event => {
       if (sr.current !== recognition) return;
-      if (['no-speech', 'aborted'].includes(event.error)) return;
-      if (event.error === 'phrases-not-supported' && !unsupportedPhrases.current) {
-        unsupportedPhrases.current = true;
-        recognition.onend = null;
-        recognition.onerror = null;
-        recognition.abort();
-        // Some browsers keep a failed hints configuration even after clearing it.
-        // Retry once with a fresh recognizer that has never received hints.
-        restart.current = setTimeout(() => {
-          if (active.current && sr.current === recognition) start();
-        }, 150);
-        return;
-      }
       stop();
       setStatus(
         event.error === 'not-allowed'
@@ -285,24 +174,11 @@ export function ListenControl({
           : 'Could not continue listening. Tap the microphone to try again.',
       );
     };
-    recognition.onend = () => {
-      if (active.current && sr.current === recognition)
-        restart.current = setTimeout(() => {
-          if (active.current && sr.current === recognition)
-            try {
-              recognition.start();
-            } catch {
-              stop();
-              setStatus('Listening ended. Tap Listen to try again.');
-            }
-        }, 150);
-    };
     active.current = true;
     setListening(true);
-    setStatus('Listening for your next phrase…');
+    setStatus('Connecting microphone…');
     try {
       recognition.start();
-      duckAudio(true);
     } catch {
       stop();
       setStatus('Could not start the microphone. Please try again.');
