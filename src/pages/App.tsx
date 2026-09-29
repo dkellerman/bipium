@@ -101,10 +101,8 @@ function isEmptyLoopPattern(pattern: DrumLoopPattern) {
   return DRUM_LOOP_LANES.every(lane => pattern[lane].every(step => !step));
 }
 
-function shouldUseLoopVisualizer(
-  config: Pick<ApiConfig, 'loopPattern' | 'beats' | 'subDivs' | 'playSubDivs' | 'swing'>,
-) {
-  return !isSeedLoopPattern(config.loopPattern, getLoopTimingFromConfig(config));
+function shouldUseLoopVisualizer(config: Pick<ApiConfig, 'loopMode'>) {
+  return config.loopMode;
 }
 
 function App() {
@@ -139,7 +137,8 @@ function App() {
   const forceRender = () => setUpdate(value => !value);
 
   const previousSwingRef = useRef(swing || 0);
-  const audioContext = useRef(new AudioContext());
+  const [audioContextInstance] = useState(() => new AudioContext());
+  const audioContext = useRef(audioContextInstance);
   const beatsRef = useRef(beats);
   const subDivsRef = useRef(subDivs);
   const playSubDivsRef = useRef(playSubDivs);
@@ -235,6 +234,7 @@ function App() {
   }, []);
 
   const start = useCallback(() => {
+    void audioContext.current.resume().catch(() => undefined);
     setStarted(true);
   }, []);
 
@@ -243,6 +243,7 @@ function App() {
   }, []);
 
   const toggle = useCallback(() => {
+    void audioContext.current.resume().catch(() => undefined);
     setStarted(value => !value);
   }, []);
 
@@ -449,6 +450,7 @@ function App() {
       getConfig: getApiConfig,
       applyConfig: applyApiConfig,
       startPlayback: () => {
+        void audioContext.current.resume().catch(() => undefined);
         setStarted(true);
       },
       stopPlayback: () => {

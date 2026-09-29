@@ -156,7 +156,10 @@ export function DefaultVisualizer({
       } = renderStateRef.current;
 
       nowLineRef.current.visible = shouldShowNow;
-      nowLineRef.current.x = v.current.progress * currentWidth;
+      nowLineRef.current.x = Math.max(
+        1,
+        Math.min(currentWidth - 2, Math.round(v.current.progress * currentWidth)),
+      );
 
       countRef.current.text = shouldShowCount ? v.current.count.join('-') : '';
       centerTextAt(countRef.current, currentWidth / 2, currentHeight / 2 - 10);
@@ -264,7 +267,7 @@ export function DefaultVisualizer({
               if (!showNow) {
                 return;
               }
-              g.setStrokeStyle({ width: 1, color: nowLineColor, alpha: 1 });
+              g.setStrokeStyle({ width: 2, color: nowLineColor, alpha: 1 });
               g.moveTo(0, 0);
               g.lineTo(0, height);
               g.stroke();

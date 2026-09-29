@@ -101,6 +101,9 @@ export function useApi(onConfigChange?: (config: ApiConfig) => void) {
       ),
     });
     clickerRef.current = clicker;
+    const onVoiceDucking = (event: Event) =>
+      clicker.setVoiceDucking((event as CustomEvent<boolean>).detail);
+    window.addEventListener('bipium:voice-duck', onVoiceDucking);
     const metronome = new Metronome({
       timerFn: () => audioContext.currentTime,
       clicker,
@@ -155,6 +158,7 @@ export function useApi(onConfigChange?: (config: ApiConfig) => void) {
     const uninstallWindowBpm = installWindowBpm(runtime);
 
     return () => {
+      window.removeEventListener('bipium:voice-duck', onVoiceDucking);
       metronomeRef.current?.stop();
       startedRef.current = false;
       uninstallWindowBpm();

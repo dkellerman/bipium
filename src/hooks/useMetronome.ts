@@ -1,8 +1,8 @@
-import { useRef } from 'react';
+import { useState } from 'react';
 import { Metronome } from '@/core/index';
 import type { MetronomeSettings } from '@/types';
 
 export function useMetronome(settings: MetronomeSettings) {
-  const m = useRef(new Metronome(settings));
-  return m.current;
+  const [metronome] = useState(() => new Metronome(settings));
+  return metronome;
 }

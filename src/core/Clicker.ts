@@ -18,9 +18,10 @@ export interface ClickerOptions {
 export class Clicker {
   audioContext: InstanceType<typeof AudioContext>;
   volume: number;
-  loading: boolean;
+  voiceDucking = false;
   gainNode: InstanceType<typeof GainNode>;
   sounds: SoundPack = {};
+  private soundRequest = 0;
   resolveScheduledSounds?: ClickerOptions['resolveScheduledSounds'];
 
   constructor({
@@ -31,40 +32,50 @@ export class Clicker {
   }: ClickerOptions) {
     this.audioContext = audioContext;
     this.volume = volume;
-    this.loading = false;
     this.gainNode = this.audioContext.createGain();
     this.gainNode.connect(this.audioContext.destination);
     this.resolveScheduledSounds = resolveScheduledSounds;
+    // Numeric fallback clicks are available immediately, even while samples load.
+    this.sounds = Object.fromEntries(
+      Object.entries(DEFAULT_SOUNDS).map(([key, value]) =>
+        key === 'name' ? [key, value] : [key, [value, 1.0, 0.05]],
+      ),
+    );
     this.setSounds(sounds);
   }
 
   async setSounds(sounds: SoundPack) {
-    this.sounds = await this.fetchSounds(sounds);
+    const request = ++this.soundRequest;
+    const loaded = await this.fetchSounds(sounds);
+    if (request === this.soundRequest) this.sounds = loaded;
   }
 
   async fetchSounds(sounds: SoundPack): Promise<SoundPack> {
-    this.loading = true;
+    const loaded: SoundPack = { ...sounds };
     for (const k in sounds) {
       if (k === 'name') continue;
       let sound;
       if (!Array.isArray(sounds[k])) {
         sound = sounds[k] as Sound;
-        sounds[k] = [sound, 1.0, 0.05];
+        loaded[k] = [sound, 1.0, 0.05];
       } else {
         sound = (sounds[k] as any)[0];
+        loaded[k] = [...(sounds[k] as FinalSoundSpec)];
       }
       if (typeof sound === 'string') {
         const buf = await fetchAudioBuffer(this.audioContext, sound);
-        (sounds[k] as any[])[0] = buf;
+        (loaded[k] as any[])[0] = buf;
       }
     }
-    this.loading = false;
-
-    return sounds;
+    return loaded;
   }
 
   setVolume(volume: number) {
     this.volume = volume;
+  }
+
+  setVoiceDucking(enabled: boolean) {
+    this.voiceDucking = enabled;
   }
 
   setResolveScheduledSounds(resolveScheduledSounds?: ClickerOptions['resolveScheduledSounds']) {
@@ -84,8 +95,6 @@ export class Clicker {
     beats: number;
   } & Click) {
     // console.log('sch click', beat, subDiv, this.volume);
-    if (this.loading) return;
-
     const resolved = this.resolveScheduledSounds?.(
       {
         time,
@@ -158,7 +167,10 @@ export class Clicker {
       audioNode.start(time, 0, clickLength);
     }
 
-    this.gainNode.gain.setValueAtTime((this.volume * relativeVolume) / 100, time);
+    this.gainNode.gain.setValueAtTime(
+      (this.volume * (this.voiceDucking ? 0.25 : 1) * relativeVolume) / 100,
+      time,
+    );
     return audioNode;
   }
 

@@ -99,10 +99,8 @@ function isEmptyLoopPattern(pattern: DrumLoopPattern) {
   return DRUM_LOOP_LANES.every(lane => pattern[lane].every(step => !step));
 }
 
-function shouldUseLoopVisualizer(
-  config: Pick<ApiConfig, 'loopPattern' | 'beats' | 'subDivs' | 'playSubDivs' | 'swing'>,
-) {
-  return !isSeedLoopPattern(config.loopPattern, getLoopTimingFromConfig(config));
+function shouldUseLoopVisualizer(config: Pick<ApiConfig, 'loopMode'>) {
+  return config.loopMode;
 }
 
 function MachinePage() {

@@ -8,6 +8,7 @@ class FakeSpeech {
   continuous = false;
   interimResults = false;
   lang = '';
+  maxAlternatives = 1;
   phrases: { phrase: string; boost: number }[] = [];
   onresult: any;
   onend: any;
@@ -17,8 +18,17 @@ class FakeSpeech {
   constructor() {
     FakeSpeech.latest = this;
   }
-  phrase(text: string, final = true) {
-    this.onresult({ resultIndex: 0, results: [{ isFinal: final, 0: { transcript: text } }] });
+  phrase(text: string, final = true, alternatives: string[] = []) {
+    this.onresult({
+      resultIndex: 0,
+      results: [
+        {
+          isFinal: final,
+          length: 1 + alternatives.length,
+          ...[text, ...alternatives].map(transcript => ({ transcript })),
+        },
+      ],
+    });
   }
 }
 let root: Root, host: HTMLDivElement, api: any;
@@ -75,7 +85,10 @@ afterEach(async () => {
 describe('listening controls', () => {
   it('adds musical vocabulary hints and restarts without them if unsupported', async () => {
     (window as any).SpeechRecognitionPhrase = class {
-      constructor(public phrase: string, public boost: number) {}
+      constructor(
+        public phrase: string,
+        public boost: number,
+      ) {}
     };
     await click('Listen');
     expect(FakeSpeech.latest.phrases.some(p => p.phrase === 'on the four')).toBe(true);
@@ -92,7 +105,7 @@ describe('listening controls', () => {
     const fetcher = vi.fn(async () => Response.json(response()));
     vi.stubGlobal('fetch', fetcher);
     await click('Listen');
-    expect(document.body.textContent).toContain('a funky beat at 100 BPM');
+    expect(document.body.textContent).toContain('snare on beat four');
     await act(async () => FakeSpeech.latest.phrase('funk', false));
     expect(fetcher).not.toHaveBeenCalled();
     await act(async () => FakeSpeech.latest.phrase('funk'));
@@ -162,6 +175,40 @@ describe('listening controls', () => {
     expect(request.prompt).toBe('faster');
     expect(request.recentTurns).toEqual([{ prompt: 'funk', applied: true }]);
   });
+  it('sends alternate transcripts and shows what the browser heard in two compact lines', async () => {
+    const fetcher = vi.fn(async () => Response.json(response()));
+    vi.stubGlobal('fetch', fetcher);
+    await click('Listen');
+    expect(FakeSpeech.latest.maxAlternatives).toBe(3);
+    await act(async () =>
+      FakeSpeech.latest.phrase('move the snare end one beat', true, [
+        'move the snare and one beat',
+      ]),
+    );
+    const request = JSON.parse(
+      (fetcher.mock.calls as unknown as [string, RequestInit][])[0][1].body as string,
+    );
+    expect(request.alternatives).toEqual(['move the snare and one beat']);
+    expect(document.querySelector('[role="status"]')?.textContent).toContain(
+      'Heard: move the snare end one beat',
+    );
+  });
+  it('resets the player and clears voice context from the visible control', async () => {
+    const fetcher = vi.fn(async () => Response.json(response()));
+    vi.stubGlobal('fetch', fetcher);
+    await click('Listen');
+    await act(async () => FakeSpeech.latest.phrase('funk'));
+    await click('Reset beat and voice context');
+    expect(api.resetToDefaults).toHaveBeenCalledOnce();
+    expect(FakeSpeech.latest.abort).toHaveBeenCalled();
+    expect(sessionStorage.getItem('bipium-voice-history')).toBe('[]');
+    await click('Listen');
+    await act(async () => FakeSpeech.latest.phrase('slower'));
+    const request = JSON.parse(
+      (fetcher.mock.calls as unknown as [string, RequestInit][])[1][1].body as string,
+    );
+    expect(request.recentTurns).toEqual([]);
+  });
   it.each(['clearLoopPattern', 'resetToDefaults'])(
     'executes %s without starting playback',
     async method => {
@@ -197,13 +244,26 @@ describe('listening controls', () => {
 it('shows streamed lookup status before applying the final beat', async () => {
   let streamController: ReadableStreamDefaultController;
   const encoder = new TextEncoder();
-  vi.stubGlobal('fetch', vi.fn(async () => new Response(new ReadableStream({
-    start(c) { streamController = c; },
-  }), { headers: { 'Content-Type': 'application/x-ndjson' } })));
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(
+      async () =>
+        new Response(
+          new ReadableStream({
+            start(c) {
+              streamController = c;
+            },
+          }),
+          { headers: { 'Content-Type': 'application/x-ndjson' } },
+        ),
+    ),
+  );
   await click('Listen');
   await act(async () => FakeSpeech.latest.phrase('Billie Jean'));
   await act(async () => {
-    streamController.enqueue(encoder.encode(JSON.stringify({ type: 'status', message: 'Looking up Billie Jean…' }) + '\n'));
+    streamController.enqueue(
+      encoder.encode(JSON.stringify({ type: 'status', message: 'Looking up Billie Jean…' }) + '\n'),
+    );
   });
   expect(document.body.textContent).toContain('Looking up Billie Jean');
   expect(api.setConfig).not.toHaveBeenCalled();

@@ -133,4 +133,65 @@ describe('Clicker multi-hit scheduling', () => {
     expect(Array.isArray(scheduled)).toBe(true);
     expect(scheduled).toHaveLength(2);
   });
+
+  it('keeps the previous sound active while a replacement downloads', async () => {
+    const clicker = new Clicker({ audioContext: audioContext as any, sounds: DEFAULT_SOUNDS });
+    await clicker.setSounds(DEFAULT_SOUNDS);
+    let finish!: (response: Response) => void;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        () =>
+          new Promise<Response>(resolve => {
+            finish = resolve;
+          }),
+      ),
+    );
+    const loading = clicker.setSounds({ ...DEFAULT_SOUNDS, bar: '/audio/new.mp3' });
+    const play = vi.spyOn(clicker, 'playSoundAt');
+    clicker.scheduleClickSound({ bar: 1, beat: 1, beats: 4, subDiv: 1, subDivs: 1, time: 0 });
+    expect(play).toHaveBeenCalledOnce();
+    finish(new Response(new ArrayBuffer(8)));
+    await loading;
+  });
+  it('keeps the newest sound pack when downloads finish out of order', async () => {
+    const clicker = new Clicker({ audioContext: audioContext as any, sounds: DEFAULT_SOUNDS });
+    const finish: ((response: Response) => void)[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        () =>
+          new Promise<Response>(resolve => {
+            finish.push(resolve);
+          }),
+      ),
+    );
+    const first = clicker.setSounds({ ...DEFAULT_SOUNDS, name: 'first', bar: '/audio/first.mp3' });
+    const second = clicker.setSounds({
+      ...DEFAULT_SOUNDS,
+      name: 'second',
+      bar: '/audio/second.mp3',
+    });
+    finish[1](new Response(new ArrayBuffer(8)));
+    await second;
+    finish[0](new Response(new ArrayBuffer(8)));
+    await first;
+    expect(clicker.sounds.name).toBe('second');
+  });
+  it('temporarily ducks voice playback without changing the chosen volume', async () => {
+    const clicker = new Clicker({
+      audioContext: audioContext as any,
+      sounds: DEFAULT_SOUNDS,
+      volume: 40,
+    });
+    await clicker.setSounds(DEFAULT_SOUNDS);
+    const gain = vi.spyOn(clicker.gainNode.gain, 'setValueAtTime');
+    clicker.setVoiceDucking(true);
+    clicker.scheduleClickSound({ bar: 1, beat: 1, beats: 4, subDiv: 1, subDivs: 1, time: 0 });
+    expect(gain).toHaveBeenCalledWith(0.1, 0);
+    clicker.setVoiceDucking(false);
+    clicker.scheduleClickSound({ bar: 1, beat: 1, beats: 4, subDiv: 1, subDivs: 1, time: 1 });
+    expect(gain).toHaveBeenCalledWith(0.4, 1);
+    expect(clicker.volume).toBe(40);
+  });
 });

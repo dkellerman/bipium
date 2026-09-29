@@ -15,7 +15,52 @@ const nums = (start, end) =>
     Array.from({ length: end - start + 1 }, (_, i) => [String(start + i), String(start + i)]),
   );
 const lanes = ['kick', 'hat', 'snare'];
-export function prepare(prompt, current, recentTurns = []) {
+function explicitMode(prompt) {
+  const mode = prompt.match(
+    /\b(?:switch|change|go|return|back|use|set|turn)\s+(?:back\s+)?(?:to|into|on)?\s*(?:the\s+)?(drum|beat|metronome|regular|standard|normal)\s+mode\b/i,
+  );
+  if (!mode) return null;
+  return mode[1].toLowerCase() === 'drum' ? 'on' : 'off';
+}
+function oneBeatMove(prompt, current, patterns) {
+  if (
+    !/\b(?:move|shift)\b/i.test(prompt) ||
+    /\b(?:don't|do not|never)\s+(?:move|shift)\b/i.test(prompt)
+  )
+    return null;
+  const instrument = prompt.match(/\b(snare|kick|hi[ -]?hat|hat)\b/i)?.[1].toLowerCase();
+  const lane = instrument?.includes('hat') ? 'hat' : instrument;
+  if (!lanes.includes(lane)) return null;
+  const direction = prompt
+    .match(/\b(back|earlier|forward|later)\s+(?:(?:by|a|one|1)\s+){0,2}beat\b/i)?.[1]
+    .toLowerCase();
+  if (!direction) return null;
+  const named = prompt
+    .match(
+      /\b(?:on|from)\s+(?:the\s+)?(?:beat\s+)?(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|\d{1,2})\b/i,
+    )?.[1]
+    .toLowerCase();
+  const numbers = [
+    'one',
+    'two',
+    'three',
+    'four',
+    'five',
+    'six',
+    'seven',
+    'eight',
+    'nine',
+    'ten',
+    'eleven',
+    'twelve',
+  ];
+  const beat = named ? numbers.indexOf(named) + 1 || Number(named) : null;
+  const way = ['back', 'earlier'].includes(direction) ? 'back' : 'forward';
+  const step = beat ? (beat - 1) * (current.playSubDivs ? current.subDivs : 1) : null;
+  const key = step === null ? `shift-${way}` : `move-${way}:${step}`;
+  return patterns[lane][key] ? { lane, key } : null;
+}
+export function prepare(prompt, current, recentTurns = [], alternatives = []) {
   const references = retrieve(
     [
       ...recentTurns
@@ -31,18 +76,21 @@ export function prepare(prompt, current, recentTurns = []) {
   const songs = songCandidates(prompt);
   const questions = {
     songQuery: choice(
-      "Select the song title and artist phrase ONLY when the current request asks for a named song tempo or a beat like that song. A song title spoken alone is a fresh lookup request, including when repeated from an earlier turn. Select the requested title even if unfamiliar; the catalog checks whether it exists. Choose the full title plus by artist when stated, excluding command words. Do not look up generic genres, ordinary adjustments, unrelated speech, negated requests, or when an explicit BPM already supplies the tempo. Do not repeat song requests from history. Use keep if no song lookup is needed. Song lookup supplies only BPM, never infer other settings from the song.",
-      { keep: "No song lookup needed", ...songs },
+      'Select the song title and artist phrase ONLY when the current request asks for a named song tempo or a beat like that song. A song title spoken alone is a fresh lookup request, including when repeated from an earlier turn. Select the requested title even if unfamiliar; the catalog checks whether it exists. Choose the full title plus by artist when stated, excluding command words. Do not look up generic genres, ordinary adjustments, unrelated speech, negated requests, or when an explicit BPM already supplies the tempo. Do not repeat song requests from history. Use keep if no song lookup is needed. Song lookup supplies only BPM, never infer other settings from the song.',
+      { keep: 'No song lookup needed', ...songs },
     ),
-    action: choice('Classify the requested operation in a voice-controlled metronome. A song title offered on its own requests its tempo and counts as play. Unrelated speech must not create a beat.', {
-      play: 'Create or change a beat, tempo, metronome, request a named song tempo, or resume playback',
-      stop: 'Stop or pause playback',
-      clear: 'Clear or empty all drum grid hits, without resetting other settings',
-      reset: 'Reset everything or restore default settings',
-      unrelated: 'Not a music control request',
-      unsupported:
-        'Requires unsupported audio export, velocities, additional drum lanes, tempo ramps, or conflicting instructions',
-    }),
+    action: choice(
+      'Classify the requested operation in a voice-controlled metronome. A song title offered on its own requests its tempo and counts as play. Unrelated speech must not create a beat.',
+      {
+        play: 'Create or change a beat, tempo, metronome, request a named song tempo, or resume playback',
+        stop: 'Stop or pause playback',
+        clear: 'Clear or empty all drum grid hits, without resetting other settings',
+        reset: 'Reset everything or restore default settings',
+        unrelated: 'Not a music control request',
+        unsupported:
+          'Requires unsupported audio export, velocities, additional drum lanes, tempo ramps, or conflicting instructions',
+      },
+    ),
     tempo: choice(
       'Choose requested BPM or relative tempo. For a named song BPM lookup choose keep; do not guess the song tempo. Numeric candidates may refer to other settings; only choose one if it describes tempo.',
       {
@@ -90,14 +138,11 @@ export function prepare(prompt, current, recentTurns = []) {
       keep: 'No repeat change',
       forever: 'Repeat forever',
     }),
-    soundPack: choice(
-      'Choose the sound palette.',
-      {
-        keep: 'Retain current sound palette',
-        defaults: 'Electronic beeps or classic metronome clicks',
-        drumkit: 'Acoustic drum-kit sounds',
-      },
-    ),
+    soundPack: choice('Choose the sound palette.', {
+      keep: 'Retain current sound palette',
+      defaults: 'Electronic beeps or classic metronome clicks',
+      drumkit: 'Acoustic drum-kit sounds',
+    }),
     loopMode: choice(
       'Choose playback mode. For a new ordinary beat use regular metronome mode. Preserve mode for follow-up edits.',
       {
@@ -146,10 +191,14 @@ export function prepare(prompt, current, recentTurns = []) {
       const position = step / divisions;
       const beat = Math.floor(position) + 1;
       const part = step % divisions;
-      const label = part === 0 ? `beat ${beat}`
-        : part / divisions === 0.5 ? `the and of beat ${beat}`
-        : divisions === 4 ? `the ${part === 1 ? 'e' : 'a'} of beat ${beat}`
-        : `subdivision ${part + 1} of ${divisions} on beat ${beat}`;
+      const label =
+        part === 0
+          ? `beat ${beat}`
+          : part / divisions === 0.5
+            ? `the and of beat ${beat}`
+            : divisions === 4
+              ? `the ${part === 1 ? 'e' : 'a'} of beat ${beat}`
+              : `subdivision ${part + 1} of ${divisions} on beat ${beat}`;
       patterns[lane][`only:${step}`] = [position];
       criteria[`only:${step}`] = `Play ${lane} ONLY on ${label}; remove its other hits`;
       // Relative choices carry the complete edited lane, retaining every other hit.
@@ -158,7 +207,33 @@ export function prepare(prompt, current, recentTurns = []) {
       patterns[lane][key] = exists
         ? patterns[lane].keep.filter(p => p !== position)
         : [...patterns[lane].keep, position].sort((a, b) => a - b);
-      criteria[key] = `${exists ? 'Remove' : 'Add'} ${lane} on ${label} only; preserve all its other hits`;
+      criteria[key] =
+        `${exists ? 'Remove' : 'Add'} ${lane} on ${label} only; preserve all its other hits`;
+      if (exists) {
+        for (const [direction, delta] of [
+          ['back', -divisions],
+          ['forward', divisions],
+        ]) {
+          const destination =
+            (step + delta + current.beats * divisions) % (current.beats * divisions);
+          patterns[lane][`move-${direction}:${step}`] = [
+            ...patterns[lane].keep.filter(p => p !== position),
+            destination / divisions,
+          ].sort((a, b) => a - b);
+          criteria[`move-${direction}:${step}`] =
+            `Move ${lane} from ${label} ${direction} one beat; preserve its other hits`;
+        }
+      }
+    }
+    for (const [direction, delta] of [
+      ['back', -1],
+      ['forward', 1],
+    ]) {
+      patterns[lane][`shift-${direction}`] = patterns[lane].keep.map(
+        p => (p + delta + current.beats) % current.beats,
+      );
+      criteria[`shift-${direction}`] =
+        `Move all existing ${lane} hits ${direction} one beat, wrapping within the bar`;
     }
     references.forEach((r, i) => {
       patterns[lane]['ref' + i] = r.pattern[lane].map(s => s / 4);
@@ -166,7 +241,7 @@ export function prepare(prompt, current, recentTurns = []) {
         `${r.title}: ${lane} source pattern at quarter-note positions ${patterns[lane]['ref' + i].join(', ')} (zero=beat 1). Optional style example.`;
     });
     questions[lane] = choice(
-      `Choose the resulting ${lane} pattern. Add/remove choices edit one position while preserving other hits. ONLY choices replace the lane with one hit. Silent removes the ENTIRE lane, never a single specified hit. Within a requested new custom drum pattern, select a suitable example or pattern. Specific placements and removals take precedence. Preserve this lane when editing other instruments.`,
+      `Choose the resulting ${lane} pattern. Add/remove choices edit one position while preserving other hits. Move choices relocate one named hit; shift choices move every hit earlier/back or later/forward by one beat. ONLY choices replace the lane with one hit. Silent removes the ENTIRE lane, never a single specified hit. Within a requested new custom drum pattern, select a suitable example or pattern. Specific placements and removals take precedence. Preserve this lane when editing other instruments.`,
       criteria,
     );
   }
@@ -174,16 +249,22 @@ export function prepare(prompt, current, recentTurns = []) {
   return {
     references,
     patterns,
+    moveIntent:
+      [prompt, ...alternatives].map(text => oneBeatMove(text, current, patterns)).find(Boolean) ??
+      null,
+    explicitMode: explicitMode(prompt),
+    instrumentEdit: /\b(kick|snare|hi[ -]?hat|hats?)\b/i.test(prompt),
     request: {
       model: 'typesafe/jev-1.13',
       state: {
         request: prompt,
+        recognition_alternatives: alternatives,
         current_config: current,
         recent_turns: recentTurns,
         context_note:
           'Current config is the actual player state. Interpret follow-up requests such as faster or slower against that state and recent turns. Turns with applied=false were not executed.',
         speech_note:
-          'The request is speech-recognition text and may contain homophones. Use musical context and the current grid to interpret likely transcription errors in beat counts and instrument names (for example floor/for/four, to/two, won/one). Beat numbers are one-based. Do not rewrite song titles or interpret unrelated speech as controls. Just/only specifies exclusive placement; removing a hit preserves the other hits.',
+          'The request is speech-recognition text and may contain homophones. Alternate transcripts are optional evidence; prefer the reading that fits the current musical request and grid, without inventing controls. A spoken beat may appear as beep, and a subdivision and may appear as end. Beat numbers are one-based. Do not rewrite song titles or interpret unrelated speech as controls. Just/only specifies exclusive placement; removing a hit preserves the other hits.',
         reference_note:
           'Fallible outside examples, not requirements. Explicit instructions override examples.',
         reference_examples: references,
@@ -209,6 +290,13 @@ export function assemble(prepared, answers, current) {
   const selected = Object.fromEntries(
     Object.entries(answers).map(([k, a]) => [k, a.confidence > 0.5 ? a.choice : 'keep']),
   );
+  if (prepared.explicitMode) selected.loopMode = prepared.explicitMode;
+  else if (prepared.instrumentEdit && lanes.some(lane => selected[lane] !== 'keep'))
+    selected.loopMode = 'on';
+  if (prepared.moveIntent && prepared.explicitMode !== 'off' && selected.action === 'play') {
+    selected[prepared.moveIntent.lane] = prepared.moveIntent.key;
+    selected.loopMode = 'on';
+  }
   if (['unrelated', 'unsupported'].includes(selected.action))
     return {
       call: null,
@@ -345,6 +433,13 @@ async function voiceJson(request, env, progress = () => {}) {
     const current = schema.safeParse(body.currentConfig);
     if (!current.success)
       return Response.json({ error: 'Invalid current configuration' }, { status: 400, headers });
+    const alternatives = body.alternatives ?? [];
+    if (
+      !Array.isArray(alternatives) ||
+      alternatives.length > 2 ||
+      alternatives.some(value => typeof value !== 'string' || value.length > 1000)
+    )
+      return Response.json({ error: 'Invalid recognition alternatives' }, { status: 400, headers });
     const recentTurns = body.recentTurns ?? [];
     if (
       !Array.isArray(recentTurns) ||
@@ -363,6 +458,7 @@ async function voiceJson(request, env, progress = () => {}) {
       body.prompt,
       current.data,
       recentTurns.map(({ prompt, applied }) => ({ prompt, applied })),
+      alternatives,
     );
     const retrieved = Date.now();
     const response = await fetch('https://openrouter.ai/api/alpha/decisions', {
@@ -382,19 +478,32 @@ async function voiceJson(request, env, progress = () => {}) {
     const result = await response.json();
     let output = assemble(prepared, result.answers, current.data);
     const songAnswer = result.answers.songQuery;
-    if (result.answers.action.choice === 'play' && result.answers.action.confidence > 0.5 &&
-        songAnswer.choice !== 'keep' && songAnswer.confidence > 0.5 &&
-        !result.answers.tempo.choice.startsWith('n:')) {
+    if (
+      result.answers.action.choice === 'play' &&
+      result.answers.action.confidence > 0.5 &&
+      songAnswer.choice !== 'keep' &&
+      songAnswer.confidence > 0.5 &&
+      !result.answers.tempo.choice.startsWith('n:')
+    ) {
       const query = prepared.request.questions.songQuery.criteria[songAnswer.choice];
       progress(`Looking up “${query}”…`);
       try {
         const song = await lookupSongTempo(query, request.signal);
         const config = schema.parse({ ...current.data, bpm: song.bpm });
-        output = { call: { method: 'setConfig', args: [config] }, playback: 'start', song,
-          message: `${song.title} · ${song.artist} · ${song.bpm} BPM` };
+        output = {
+          call: { method: 'setConfig', args: [config] },
+          playback: 'start',
+          song,
+          message: `${song.title} · ${song.artist} · ${song.bpm} BPM`,
+        };
       } catch (error) {
-        output = { call: null, message: error.name === 'TimeoutError'
-          ? 'Song lookup took too long. Kept the current beat.' : error.message };
+        output = {
+          call: null,
+          message:
+            error.name === 'TimeoutError'
+              ? 'Song lookup took too long. Kept the current beat.'
+              : error.message,
+        };
       }
     }
     const activeAnswers = Object.values(result.answers).filter(answer => answer.choice !== 'keep');
@@ -433,16 +542,27 @@ async function voiceJson(request, env, progress = () => {}) {
 
 // Existing API callers retain JSON; the voice UI can opt into progress events.
 export function voice(request, env) {
-  if (!request.headers.get('Accept')?.includes('application/x-ndjson')) return voiceJson(request, env);
+  if (!request.headers.get('Accept')?.includes('application/x-ndjson'))
+    return voiceJson(request, env);
   const encoder = new TextEncoder();
-  return new Response(new ReadableStream({
-    async start(controller) {
-      const send = value => { if (!request.signal.aborted) controller.enqueue(encoder.encode(JSON.stringify(value) + '\n')); };
-      try {
-        const response = await voiceJson(request, env, message => send({ type: 'status', message }));
-        const result = await response.json();
-        send(response.ok ? { type: 'result', result } : { type: 'error', error: result.error });
-      } finally { controller.close(); }
-    },
-  }), { headers: { 'Content-Type': 'application/x-ndjson', 'Cache-Control': 'no-store' } });
+  return new Response(
+    new ReadableStream({
+      async start(controller) {
+        const send = value => {
+          if (!request.signal.aborted)
+            controller.enqueue(encoder.encode(JSON.stringify(value) + '\n'));
+        };
+        try {
+          const response = await voiceJson(request, env, message =>
+            send({ type: 'status', message }),
+          );
+          const result = await response.json();
+          send(response.ok ? { type: 'result', result } : { type: 'error', error: result.error });
+        } finally {
+          controller.close();
+        }
+      },
+    }),
+    { headers: { 'Content-Type': 'application/x-ndjson', 'Cache-Control': 'no-store' } },
+  );
 }

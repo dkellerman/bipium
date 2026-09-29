@@ -33,14 +33,55 @@ describe('voice interpretation and vector retrieval', () => {
   });
   it('supports exclusive placement and relative edits on subdivision positions', () => {
     const base = { ...structuredClone(current), loopMode: true, subDivs: 2 };
-    base.loopPattern = { kick: Array(8).fill(false), hat: Array(8).fill(true), snare: [false, false, true, false, true, false, true, false] };
+    base.loopPattern = {
+      kick: Array(8).fill(false),
+      hat: Array(8).fill(true),
+      snare: [false, false, true, false, true, false, true, false],
+    };
     const p = prepare('snare just on the floor', base);
-    expect(assemble(p, decisions(p, { snare: 'only:6' }), base).call.args[0].loopPattern.snare)
-      .toEqual([false, false, false, false, false, false, true, false]);
-    expect(assemble(p, decisions(p, { snare: 'add:5' }), base).call.args[0].loopPattern.snare)
-      .toEqual([false, false, true, false, true, true, true, false]);
-    expect(assemble(p, decisions(p, { snare: 'remove:4' }), base).call.args[0].loopPattern.snare)
-      .toEqual([false, false, true, false, false, false, true, false]);
+    expect(
+      assemble(p, decisions(p, { snare: 'only:6' }), base).call.args[0].loopPattern.snare,
+    ).toEqual([false, false, false, false, false, false, true, false]);
+    expect(
+      assemble(p, decisions(p, { snare: 'add:5' }), base).call.args[0].loopPattern.snare,
+    ).toEqual([false, false, true, false, true, true, true, false]);
+    expect(
+      assemble(p, decisions(p, { snare: 'remove:4' }), base).call.args[0].loopPattern.snare,
+    ).toEqual([false, false, true, false, false, false, true, false]);
+  });
+  it('can move an existing snare hit back one beat and preserve other hits', () => {
+    const base = { ...structuredClone(current), loopMode: true };
+    base.loopPattern.snare = [false, true, false, true];
+    const p = prepare('move the snare on beat four back a beat', base);
+    expect(p.request.questions.snare.criteria['move-back:3']).toBeTruthy();
+    const c = assemble(p, decisions(p, { snare: 'move-back:3' }), base).call.args[0];
+    expect(c.loopPattern.snare).toEqual([false, true, true, false]);
+    const mistaken = assemble(p, decisions(p, { snare: 'remove:3' }), base).call.args[0];
+    expect(mistaken.loopPattern.snare).toEqual([false, true, true, false]);
+  });
+  it('moves all snare hits back one beat when no source hit is named', () => {
+    const base = { ...structuredClone(current), loopMode: true };
+    base.loopPattern.snare = [false, true, false, true];
+    const p = prepare('move the snare back a beat', base);
+    const c = assemble(p, decisions(p, { snare: 'keep' }), base).call.args[0];
+    expect(c.loopPattern.snare).toEqual([true, false, true, false]);
+  });
+  it('enters drum mode for a chosen instrument edit even when mode was kept', () => {
+    const p = prepare('add a snare on beat four', current);
+    const c = assemble(p, decisions(p, { snare: 'add:3', loopMode: 'keep' }), current).call.args[0];
+    expect(c.loopMode).toBe(true);
+    expect(c.loopPattern.snare[3]).toBe(true);
+  });
+  it('honors explicit mode switches even when the mode classifier disagrees', () => {
+    const drums = { ...structuredClone(current), loopMode: true };
+    const regular = prepare('switch to beat mode', drums);
+    expect(
+      assemble(regular, decisions(regular, { loopMode: 'keep' }), drums).call.args[0].loopMode,
+    ).toBe(false);
+    const drum = prepare('switch to drum mode', current);
+    expect(
+      assemble(drum, decisions(drum, { loopMode: 'off' }), current).call.args[0].loopMode,
+    ).toBe(true);
   });
   it('searches all research entries and returns both sources', () => {
     expect(corpusCount).toBe(673);
@@ -120,6 +161,11 @@ describe('voice interpretation and vector retrieval', () => {
     expect(assemble(slower, decisions(slower, { tempo: 'slower' }), faster).call.args[0].bpm).toBe(
       100,
     );
+  });
+  it('provides recognition alternatives to Jev without changing the original prompt', () => {
+    const p = prepare('make a beep at 100', current, [], ['make a beat at 100']);
+    expect(p.request.state.request).toBe('make a beep at 100');
+    expect(p.request.state.recognition_alternatives).toEqual(['make a beat at 100']);
   });
   it('prepares all required playback settings without asking the user to enable them', () => {
     const base = { ...current, playSubDivs: false };
@@ -245,17 +291,45 @@ it('a song lookup streams progress and changes only BPM', async () => {
   const fetcher = vi.fn(async (url, options) => {
     if (String(url).includes('openrouter')) {
       const request = JSON.parse(options.body);
-      const songChoice = Object.entries(request.questions.songQuery.criteria).find(([,v]) => v === 'Test Song by Test Artist')[0];
-      return Response.json({ answers: decisions({ request }, { songQuery: songChoice, tempo: 'keep', soundPack: 'defaults', loopMode: 'off' }) });
+      const songChoice = Object.entries(request.questions.songQuery.criteria).find(
+        ([, v]) => v === 'Test Song by Test Artist',
+      )[0];
+      return Response.json({
+        answers: decisions(
+          { request },
+          { songQuery: songChoice, tempo: 'keep', soundPack: 'defaults', loopMode: 'off' },
+        ),
+      });
     }
-    if (String(url).includes('/search?')) return Response.json({content:[{id:'12345678-1111-1111-1111-111111111111',trackTitle:'Test Song',artists:[{name:'Test Artist'}],popularity:80,href:'https://open.spotify.com/track/test'}]});
-    return Response.json({tempo:119.6});
+    if (String(url).includes('/search?'))
+      return Response.json({
+        content: [
+          {
+            id: '12345678-1111-1111-1111-111111111111',
+            trackTitle: 'Test Song',
+            artists: [{ name: 'Test Artist' }],
+            popularity: 80,
+            href: 'https://open.spotify.com/track/test',
+          },
+        ],
+      });
+    return Response.json({ tempo: 119.6 });
   });
   vi.stubGlobal('fetch', fetcher);
-  const response = await voice(new Request('https://example.test/api/voice', {method:'POST',headers:{Accept:'application/x-ndjson'},body:JSON.stringify({prompt:'play Test Song by Test Artist',currentConfig:base})}), {OPENROUTER_API_KEY:'test'});
-  const events = (await response.text()).trim().split('\n').map(line=>JSON.parse(line));
-  expect(events[0]).toMatchObject({type:'status'});
-  expect(events[1].result.call.args[0]).toEqual({...base,bpm:120});
+  const response = await voice(
+    new Request('https://example.test/api/voice', {
+      method: 'POST',
+      headers: { Accept: 'application/x-ndjson' },
+      body: JSON.stringify({ prompt: 'play Test Song by Test Artist', currentConfig: base }),
+    }),
+    { OPENROUTER_API_KEY: 'test' },
+  );
+  const events = (await response.text())
+    .trim()
+    .split('\n')
+    .map(line => JSON.parse(line));
+  expect(events[0]).toMatchObject({ type: 'status' });
+  expect(events[1].result.call.args[0]).toEqual({ ...base, bpm: 120 });
   expect(events[1].result.playback).toBe('start');
   expect(fetcher).toHaveBeenCalledTimes(3);
 });

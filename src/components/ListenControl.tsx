@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal, flushSync } from 'react-dom';
-import { Mic, Square, LoaderCircle } from 'lucide-react';
+import { Mic, Square, LoaderCircle, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { readVoiceResponse } from '@/lib/voice-response';
 import type { ApiConfig, RuntimeApi } from '@/core/api';
@@ -9,13 +9,14 @@ type RecognitionEvent = {
   resultIndex: number;
   results: {
     length: number;
-    [index: number]: { isFinal: boolean; [index: number]: { transcript: string } };
+    [index: number]: { isFinal: boolean; length: number; [index: number]: { transcript: string } };
   };
 };
 type Recognition = {
   continuous: boolean;
   interimResults: boolean;
   lang: string;
+  maxAlternatives: number;
   phrases?: { phrase: string; boost: number }[];
   start(): void;
   abort(): void;
@@ -43,6 +44,12 @@ const constructor = () => {
   };
   return w.SpeechRecognition || w.webkitSpeechRecognition;
 };
+const isIOS = () =>
+  /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const duckAudio = (listening: boolean) => {
+  if (!isIOS()) window.dispatchEvent(new CustomEvent('bipium:voice-duck', { detail: listening }));
+};
 export function ListenControl({
   variant = 'classic',
 }: {
@@ -55,6 +62,7 @@ export function ListenControl({
   const [open, setOpen] = useState(false);
   const [listening, setListening] = useState(false);
   const [interim, setInterim] = useState('');
+  const [lastHeard, setLastHeard] = useState('');
   const [status, setStatus] = useState('Describe a beat to get started.');
   const [busy, setBusy] = useState(false);
   const [history, setHistory] = useState<VoiceResult[]>(() => {
@@ -77,6 +85,7 @@ export function ListenControl({
     controller.current?.abort();
     if (restart.current) clearTimeout(restart.current);
     sr.current?.abort();
+    duckAudio(false);
     setListening(false);
     setInterim('');
     setBusy(false);
@@ -88,6 +97,7 @@ export function ListenControl({
       generation.current++;
       controller.current?.abort();
       sr.current?.abort();
+      duckAudio(false);
       if (restart.current) clearTimeout(restart.current);
     },
     [],
@@ -99,9 +109,10 @@ export function ListenControl({
       /* Session history is optional when storage is full. */
     }
   }, [history]);
-  const submit = (prompt: string) => {
+  const submit = (prompt: string, alternatives: string[] = []) => {
     prompt = prompt.trim();
     if (!prompt) return;
+    setLastHeard(prompt);
     if (/^stop listening[.!?]*$/i.test(prompt)) {
       stop();
       setStatus('Listening stopped.');
@@ -127,6 +138,7 @@ export function ListenControl({
             headers: { 'Content-Type': 'application/json', Accept: 'application/x-ndjson' },
             body: JSON.stringify({
               prompt,
+              alternatives,
               currentConfig: api.getConfig(),
               recentTurns: historyRef.current
                 .slice(-6)
@@ -171,29 +183,65 @@ export function ListenControl({
     }
     const recognition = new SR();
     sr.current = recognition;
-    const ios =
-      /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    recognition.continuous = !ios;
+    recognition.continuous = !isIOS();
     recognition.interimResults = true;
     recognition.lang = 'en-US';
-    const Phrase = (window as unknown as {
-      SpeechRecognitionPhrase?: new (phrase: string, boost: number) => { phrase: string; boost: number };
-    }).SpeechRecognitionPhrase;
+    recognition.maxAlternatives = 3;
+    const Phrase = (
+      window as unknown as {
+        SpeechRecognitionPhrase?: new (
+          phrase: string,
+          boost: number,
+        ) => { phrase: string; boost: number };
+      }
+    ).SpeechRecognitionPhrase;
     if (Phrase && 'phrases' in recognition) {
       try {
         recognition.phrases = [
-          'kick', 'snare', 'hi hat', 'beat one', 'beat two', 'beat three', 'beat four',
-          'on the one', 'on the two', 'on the three', 'on the four',
-          'and', 'ee', 'uh', 'e and a',
-          'and of one', 'and of two', 'and of three', 'and of four',
-          'one ee and uh', 'two ee and uh', 'three ee and uh', 'four ee and uh',
-          'triplet', 'one triplet', 'two triplet', 'three triplet', 'four triplet',
-          'upbeat', 'offbeat',
-          'subdivs', 'subdivisions', 'eighths', 'sixteenths', 'tempo',
-          'eighth notes', 'sixteenth notes', 'triplets', 'BPM', 'stop listening',
+          'kick',
+          'snare',
+          'hi hat',
+          'beat one',
+          'beat two',
+          'beat three',
+          'beat four',
+          'on the one',
+          'on the two',
+          'on the three',
+          'on the four',
+          'and',
+          'ee',
+          'uh',
+          'e and a',
+          'and of one',
+          'and of two',
+          'and of three',
+          'and of four',
+          'one ee and uh',
+          'two ee and uh',
+          'three ee and uh',
+          'four ee and uh',
+          'triplet',
+          'one triplet',
+          'two triplet',
+          'three triplet',
+          'four triplet',
+          'upbeat',
+          'offbeat',
+          'subdivs',
+          'subdivisions',
+          'eighths',
+          'sixteenths',
+          'tempo',
+          'eighth notes',
+          'sixteenth notes',
+          'triplets',
+          'BPM',
+          'stop listening',
         ].map(phrase => new Phrase(phrase, 3));
-      } catch { /* Optional hints must not prevent normal recognition. */ }
+      } catch {
+        /* Optional hints must not prevent normal recognition. */
+      }
     }
     recognition.onresult = event => {
       if (sr.current !== recognition) return;
@@ -201,7 +249,13 @@ export function ListenControl({
       for (let i = event.resultIndex; i < event.results.length; i++) {
         if (!active.current) break;
         const result = event.results[i];
-        if (result.isFinal) submit(result[0].transcript);
+        if (result.isFinal)
+          submit(
+            result[0].transcript,
+            Array.from({ length: Math.min(result.length - 1, 2) }, (_, j) =>
+              result[j + 1].transcript.trim(),
+            ).filter(transcript => transcript && transcript !== result[0].transcript.trim()),
+          );
         else unfinished += result[0].transcript;
       }
       setInterim(unfinished);
@@ -238,6 +292,7 @@ export function ListenControl({
     setStatus('Listening for your next phrase…');
     try {
       recognition.start();
+      duckAudio(true);
     } catch {
       stop();
       setStatus('Could not start the microphone. Please try again.');
@@ -250,6 +305,47 @@ export function ListenControl({
     <Mic className="size-5" aria-hidden="true" />
   );
   const toggle = () => (listening ? stop() : start());
+  const reset = () => {
+    stop();
+    historyRef.current = [];
+    setHistory([]);
+    setLastHeard('');
+    const api = runtime();
+    if (api) {
+      flushSync(() => api.resetToDefaults());
+      setStatus('Beat and voice context reset.');
+    } else {
+      setStatus('The player is still loading. Try again shortly.');
+    }
+    setOpen(true);
+  };
+  const resetButton =
+    variant === 'machine' ? (
+      <button
+        type="button"
+        aria-label="Reset beat and voice context"
+        title="Reset beat and voice context"
+        onClick={reset}
+        className="grid size-10 place-items-center rounded-md border-[3px] border-stone-900 bg-[#f6f3ea] shadow-[2px_2px_0_#1c1917] active:translate-x-px active:translate-y-px active:shadow-[1px_1px_0_#1c1917]"
+      >
+        <RotateCcw className="size-5" aria-hidden="true" />
+      </button>
+    ) : (
+      <Button
+        type="button"
+        variant="outline"
+        size={variant === 'classic' ? 'icon' : 'default'}
+        className={
+          variant === 'classic' ? 'size-11 rounded-full bg-white p-2 shadow-md' : undefined
+        }
+        title="Reset beat and voice context"
+        aria-label="Reset beat and voice context"
+        onClick={reset}
+      >
+        <RotateCcw className="size-5" aria-hidden="true" />
+        {variant === 'api' && 'Reset'}
+      </Button>
+    );
   return (
     <>
       {variant === 'machine' ? (
@@ -280,28 +376,35 @@ export function ListenControl({
           {variant === 'api' && label}
         </Button>
       )}
+      {resetButton}
       {open &&
         target &&
         createPortal(
-          <div className="w-full text-sm leading-5">
-            <p role="status" aria-live="polite" className="text-inherit">
-              {interim ? (
-                <span className="inline-flex items-center gap-2">
-                  <LoaderCircle size={14} className="shrink-0 animate-spin" />
-                  <em>{interim}</em>
-                </span>
-              ) : status === 'Listening for your next phrase…' ? (
-                <>
-                  Describe a beat. Try “a funky beat at 100 BPM with a little swing.” Say “stop
-                  listening” or click the button to stop.
-                </>
-              ) : (
-                <span className="inline-flex items-center gap-2">
-                  {busy && <LoaderCircle size={14} className="shrink-0 animate-spin" />}
-                  {status}
-                </span>
+          <div
+            role="status"
+            aria-live="polite"
+            className="h-8 w-full min-w-0 overflow-hidden text-xs leading-4"
+            title={`${lastHeard ? `Heard: ${lastHeard}\n` : ''}${status}`}
+          >
+            <div className="truncate">
+              {interim
+                ? `Hearing: ${interim}`
+                : lastHeard
+                  ? `Heard: ${lastHeard}`
+                  : listening
+                    ? 'Listening…'
+                    : ''}
+            </div>
+            <div className="flex items-center justify-center gap-1 truncate">
+              {busy && (
+                <LoaderCircle size={12} className="shrink-0 animate-spin" aria-hidden="true" />
               )}
-            </p>
+              <span className="truncate">
+                {status === 'Listening for your next phrase…'
+                  ? 'Try “snare on beat four.”'
+                  : status}
+              </span>
+            </div>
           </div>,
           target,
         )}

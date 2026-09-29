@@ -4,7 +4,7 @@
  * tweak (edge-hugging grid lines skipped), kept here so the classic UI's
  * version stays untouched. The now-line behaves exactly as in classic.
  */
-import React, { useRef, useEffect, useCallback } from 'react';
+import React, { useRef, useEffect, useCallback, useLayoutEffect } from 'react';
 import { Application, extend } from '@pixi/react';
 import { Graphics, Text as PixiText } from 'pixi.js';
 import { Visualizer } from '@/core/index';
@@ -68,6 +68,7 @@ export function MachineVisualizer({
   const v = useRef(new Visualizer({ metronome: mAny }));
   const frameRef = useRef<number | null>(null);
   const appRef = useRef<any>(null);
+  const gridRef = useRef<any>(null);
   const nowLineRef = useRef<any>(null);
   const countRef = useRef<any>(null);
   const descRef = useRef<any>(null);
@@ -113,10 +114,6 @@ export function MachineVisualizer({
     const app = holder?.getApplication?.() ?? holder;
     app?.renderer?.resize?.(sizeRef.current.width, sizeRef.current.height);
   }, []);
-
-  useEffect(() => {
-    applySize();
-  }, [applySize, width, height]);
 
   useEffect(() => {
     countRef.current?.anchor?.set?.(0);
@@ -180,7 +177,10 @@ export function MachineVisualizer({
       } = renderStateRef.current;
 
       nowLineRef.current.visible = shouldShowNow;
-      nowLineRef.current.x = v.current.progress * currentWidth;
+      nowLineRef.current.x = Math.max(
+        1,
+        Math.min(currentWidth - 2, Math.round(v.current.progress * currentWidth)),
+      );
 
       countRef.current.text = shouldShowCount ? v.current.count.join('-') : '';
       centerTextAt(countRef.current, currentWidth / 2, currentHeight / 2 - 10);
@@ -257,6 +257,26 @@ export function MachineVisualizer({
     [showGrid, width, height, barTime, subDivs, gridTimes],
   );
 
+  const drawNow = useCallback(
+    (g: any) => {
+      if (!g) return;
+      g.clear();
+      if (!showNow) return;
+      g.setStrokeStyle({ width: 2, color: nowLineColor, alpha: 1 });
+      g.moveTo(0, 0);
+      g.lineTo(0, height);
+      g.stroke();
+    },
+    [height, showNow],
+  );
+
+  // Resizing Pixi's canvas does not reliably rerun Graphics.draw on iOS.
+  useLayoutEffect(() => {
+    applySize();
+    drawGrid(gridRef.current);
+    drawNow(nowLineRef.current);
+  }, [applySize, drawGrid, drawNow]);
+
   return (
     <>
       {mAny && (
@@ -271,7 +291,7 @@ export function MachineVisualizer({
           roundPixels
           backgroundAlpha={0}
         >
-          <pixiGraphics draw={drawGrid} />
+          <pixiGraphics ref={gridRef} draw={drawGrid} />
 
           {drumLoopPattern ? (
             <DrumLoopOverlay
@@ -284,19 +304,7 @@ export function MachineVisualizer({
             />
           ) : null}
 
-          <pixiGraphics
-            ref={nowLineRef}
-            draw={g => {
-              g.clear();
-              if (!showNow) {
-                return;
-              }
-              g.setStrokeStyle({ width: 1, color: nowLineColor, alpha: 1 });
-              g.moveTo(0, 0);
-              g.lineTo(0, height);
-              g.stroke();
-            }}
-          />
+          <pixiGraphics ref={nowLineRef} draw={drawNow} />
 
           {React.createElement('pixiText' as any, {
             ref: countRef,
