@@ -66,6 +66,8 @@ export async function transcription(request, env) {
   const upstream = response.webSocket;
   if (!upstream) return new Response('Voice recognition is unavailable', { status: 502 });
   const [client, server] = Object.values(new WebSocketPair());
+  upstream.binaryType = 'arraybuffer';
+  server.binaryType = 'arraybuffer';
   upstream.accept();
   server.accept();
   let ended = false;
@@ -102,7 +104,7 @@ export async function transcription(request, env) {
       }
   });
   for (const socket of [server, upstream]) {
-    socket.addEventListener('close', event => { console.info('transcription socket closed', socket === upstream ? 'upstream' : 'client', event.code, event.reason); close(); });
+    socket.addEventListener('close', close);
     socket.addEventListener('error', close);
   }
   return new Response(null, { status: 101, webSocket: client });
