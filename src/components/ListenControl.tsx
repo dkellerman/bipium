@@ -56,8 +56,10 @@ export function ListenControl({
   variant?: 'classic' | 'machine' | 'api';
 }) {
   const [target, setTarget] = useState<HTMLElement | null>(null);
+  const [resetTarget, setResetTarget] = useState<HTMLElement | null>(null);
   useEffect(() => {
     setTarget(document.getElementById(`voice-text-${variant}`));
+    setResetTarget(document.getElementById(`reset-control-${variant}`));
   }, [variant]);
   const [open, setOpen] = useState(false);
   const [listening, setListening] = useState(false);
@@ -73,6 +75,7 @@ export function ListenControl({
     }
   });
   const historyRef = useRef(history);
+  const unsupportedPhrases = useRef(false);
   const active = useRef(false),
     sr = useRef<Recognition | null>(null),
     generation = useRef(0),
@@ -195,7 +198,7 @@ export function ListenControl({
         ) => { phrase: string; boost: number };
       }
     ).SpeechRecognitionPhrase;
-    if (Phrase && 'phrases' in recognition) {
+    if (!unsupportedPhrases.current && Phrase && 'phrases' in recognition) {
       try {
         recognition.phrases = [
           'kick',
@@ -263,16 +266,23 @@ export function ListenControl({
     recognition.onerror = event => {
       if (sr.current !== recognition) return;
       if (['no-speech', 'aborted'].includes(event.error)) return;
-      if (event.error === 'phrases-not-supported' && recognition.phrases?.length) {
-        recognition.phrases = [];
-        // The normal onend handler restarts without unsupported hints.
+      if (event.error === 'phrases-not-supported' && !unsupportedPhrases.current) {
+        unsupportedPhrases.current = true;
+        recognition.onend = null;
+        recognition.onerror = null;
+        recognition.abort();
+        // Some browsers keep a failed hints configuration even after clearing it.
+        // Retry once with a fresh recognizer that has never received hints.
+        restart.current = setTimeout(() => {
+          if (active.current && sr.current === recognition) start();
+        }, 150);
         return;
       }
       stop();
       setStatus(
         event.error === 'not-allowed'
           ? 'Microphone permission was denied. Allow microphone access to use voice mode.'
-          : `Listening stopped (${event.error}). Tap the microphone to try again.`,
+          : 'Could not continue listening. Tap the microphone to try again.',
       );
     };
     recognition.onend = () => {
@@ -313,18 +323,19 @@ export function ListenControl({
     const api = runtime();
     if (api) {
       flushSync(() => api.resetToDefaults());
-      setStatus('Beat and voice context reset.');
+      setStatus('');
+      setOpen(false);
     } else {
       setStatus('The player is still loading. Try again shortly.');
+      setOpen(true);
     }
-    setOpen(true);
   };
   const resetButton =
     variant === 'machine' ? (
       <button
         type="button"
-        aria-label="Reset beat and voice context"
-        title="Reset beat and voice context"
+        aria-label="Reset"
+        title="Reset"
         onClick={reset}
         className="grid size-10 place-items-center rounded-md border-[3px] border-stone-900 bg-[#f6f3ea] shadow-[2px_2px_0_#1c1917] active:translate-x-px active:translate-y-px active:shadow-[1px_1px_0_#1c1917]"
       >
@@ -333,13 +344,11 @@ export function ListenControl({
     ) : (
       <Button
         type="button"
-        variant="outline"
+        variant={variant === 'classic' ? 'ghost' : 'outline'}
         size={variant === 'classic' ? 'icon' : 'default'}
-        className={
-          variant === 'classic' ? 'size-11 rounded-full bg-white p-2 shadow-md' : undefined
-        }
-        title="Reset beat and voice context"
-        aria-label="Reset beat and voice context"
+        className={variant === 'classic' ? 'size-9' : undefined}
+        title="Reset"
+        aria-label="Reset"
         onClick={reset}
       >
         <RotateCcw className="size-5" aria-hidden="true" />
@@ -376,7 +385,7 @@ export function ListenControl({
           {variant === 'api' && label}
         </Button>
       )}
-      {resetButton}
+      {resetTarget ? createPortal(resetButton, resetTarget) : variant === 'api' && resetButton}
       {open &&
         target &&
         createPortal(

@@ -658,6 +658,7 @@ function App() {
         )}
       >
         <NavBar>
+          <div id="reset-control-classic" className="absolute right-12 top-1" />
           <Button
             type="button"
             variant="ghost"

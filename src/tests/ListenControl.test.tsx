@@ -71,6 +71,7 @@ beforeEach(async () => {
       <>
         <ListenControl />
         <div id="voice-text-classic" />
+        <div id="reset-control-classic" />
       </>,
     ),
   );
@@ -92,14 +93,19 @@ describe('listening controls', () => {
     };
     await click('Listen');
     expect(FakeSpeech.latest.phrases.some(p => p.phrase === 'on the four')).toBe(true);
+    const original = FakeSpeech.latest;
     await act(async () => {
-      FakeSpeech.latest.onerror({ error: 'phrases-not-supported' });
-      FakeSpeech.latest.onend();
+      original.onerror({ error: 'phrases-not-supported' });
     });
-    expect(FakeSpeech.latest.phrases).toEqual([]);
     await act(async () => new Promise(resolve => setTimeout(resolve, 180)));
-    expect(FakeSpeech.latest.start).toHaveBeenCalledTimes(2);
-    expect(FakeSpeech.latest.abort).not.toHaveBeenCalled();
+    expect(FakeSpeech.latest).not.toBe(original);
+    expect(FakeSpeech.latest.phrases).toEqual([]);
+    expect(FakeSpeech.latest.start).toHaveBeenCalledOnce();
+    expect(original.abort).toHaveBeenCalledOnce();
+    expect(document.body.textContent).not.toContain('phrases-not-supported');
+    await click('Stop listening');
+    await click('Listen');
+    expect(FakeSpeech.latest.phrases).toEqual([]);
   });
   it('shows examples, sends only final phrases, and applies the returned API config', async () => {
     const fetcher = vi.fn(async () => Response.json(response()));
@@ -198,7 +204,8 @@ describe('listening controls', () => {
     vi.stubGlobal('fetch', fetcher);
     await click('Listen');
     await act(async () => FakeSpeech.latest.phrase('funk'));
-    await click('Reset beat and voice context');
+    await click('Reset');
+    expect(document.querySelector('[role="status"]')).toBeNull();
     expect(api.resetToDefaults).toHaveBeenCalledOnce();
     expect(FakeSpeech.latest.abort).toHaveBeenCalled();
     expect(sessionStorage.getItem('bipium-voice-history')).toBe('[]');

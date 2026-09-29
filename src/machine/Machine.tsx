@@ -132,6 +132,7 @@ export function Machine({ extras }: MachineProps) {
               {packLabel(app.soundPack)}
             </button>
             <ListenControl variant="machine" />
+            <div id="reset-control-machine" />
             <button
               type="button"
               aria-label="Open menu"
