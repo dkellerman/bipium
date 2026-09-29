@@ -78,13 +78,13 @@ for (const test of cases) {
       body: JSON.stringify({ prompt: test.prompt, currentConfig: test.current }),
     });
     data = await response.json();
-    if (data.interpreterVersion === 2) break;
+    if (data.interpreterVersion === 3) break;
     await new Promise(resolve => setTimeout(resolve, 1000));
   }
   let error;
   try {
     assert.equal(response.status, 200);
-    assert.equal(data.interpreterVersion, 2, 'New interpreter has not propagated to this request');
+    assert.equal(data.interpreterVersion, 3, 'New interpreter has not propagated to this request');
     if (test.clarification) {
       assert.equal(data.call, null);
       assert.match(data.message, /which|unchanged/i);

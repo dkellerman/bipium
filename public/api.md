@@ -93,10 +93,14 @@ Swing guidance for AI/tooling:
 - Values above `50` should be extremely rare.
 - "A little swing" usually means clearly below `33`.
 
-`loopPattern` lane lengths must match the active step count:
+Stored `loopPattern` lane lengths match the active step count:
 
 - `beats * subDivs` when `playSubDivs === true`
 - `beats` when `playSubDivs === false`
+
+When `setLoopPattern`, `setConfig`, or `validateConfig` receives equal-length lanes on a different supported grid, their length defines the input resolution (`lane.length / beats`). Core code preserves the exact hit positions and chooses the smallest compatible grid at least as fine as the current active grid. It enables subdivisions when required. An inactive subdivision setting does not force an unnecessarily fine grid. Unequal lane lengths and positions that cannot share a supported grid are rejected; hits are never rounded by this fitting rule.
+
+Voice placements use the same deterministic `fitDrumLoopGrid` function. The model does not choose the required expansion. An explicitly requested grid remains respected. API/voice automation preserves the current playback mode unless a requested pattern requires custom drum mode; it does not automatically switch an existing drum-mode session back to regular mode. Direct user mode selections remain available.
 
 When timing changes through `setConfig`, `start`, or query import and no new `loopPattern` is supplied, the existing pattern is remapped to the new grid automatically.
 

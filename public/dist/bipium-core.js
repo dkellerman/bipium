@@ -766,39 +766,50 @@
       sounds = DEFAULT_SOUNDS,
       resolveScheduledSounds
     }) {
+      this.voiceDucking = false;
       this.sounds = {};
+      this.soundRequest = 0;
       this.audioContext = audioContext;
       this.volume = volume;
-      this.loading = false;
       this.gainNode = this.audioContext.createGain();
       this.gainNode.connect(this.audioContext.destination);
       this.resolveScheduledSounds = resolveScheduledSounds;
+      this.sounds = Object.fromEntries(
+        Object.entries(DEFAULT_SOUNDS).map(
+          ([key, value]) => key === "name" ? [key, value] : [key, [value, 1, 0.05]]
+        )
+      );
       this.setSounds(sounds);
     }
     async setSounds(sounds) {
-      this.sounds = await this.fetchSounds(sounds);
+      const request = ++this.soundRequest;
+      const loaded = await this.fetchSounds(sounds);
+      if (request === this.soundRequest) this.sounds = loaded;
     }
     async fetchSounds(sounds) {
-      this.loading = true;
+      const loaded = { ...sounds };
       for (const k in sounds) {
         if (k === "name") continue;
         let sound;
         if (!Array.isArray(sounds[k])) {
           sound = sounds[k];
-          sounds[k] = [sound, 1, 0.05];
+          loaded[k] = [sound, 1, 0.05];
         } else {
           sound = sounds[k][0];
+          loaded[k] = [...sounds[k]];
         }
         if (typeof sound === "string") {
           const buf = await fetchAudioBuffer(this.audioContext, sound);
-          sounds[k][0] = buf;
+          loaded[k][0] = buf;
         }
       }
-      this.loading = false;
-      return sounds;
+      return loaded;
     }
     setVolume(volume) {
       this.volume = volume;
+    }
+    setVoiceDucking(enabled) {
+      this.voiceDucking = enabled;
     }
     setResolveScheduledSounds(resolveScheduledSounds) {
       this.resolveScheduledSounds = resolveScheduledSounds;
@@ -810,7 +821,6 @@
       beats,
       ...click
     }) {
-      if (this.loading) return;
       const resolved = this.resolveScheduledSounds?.(
         {
           time: time2,
@@ -868,7 +878,10 @@
         audioNode.connect(this.gainNode);
         audioNode.start(time2, 0, clickLength);
       }
-      this.gainNode.gain.setValueAtTime(this.volume * relativeVolume / 100, time2);
+      this.gainNode.gain.setValueAtTime(
+        this.volume * (this.voiceDucking ? 0.25 : 1) * relativeVolume / 100,
+        time2
+      );
       return audioNode;
     }
     click(t = 0) {
@@ -6158,6 +6171,26 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
       snare: createLane(stepCount)
     };
   }
+  function fitDrumLoopGrid(config2, positions) {
+    const all = DRUM_LOOP_LANES.flatMap((lane) => positions[lane]);
+    if (all.some((p) => !Number.isFinite(p) || p < 0 || p >= config2.beats)) {
+      throw new Error("Drum positions must be within the bar.");
+    }
+    const active = config2.playSubDivs ? config2.subDivs : 1;
+    const fits = (divisions2) => all.every((p) => Math.abs(p * divisions2 - Math.round(p * divisions2)) < 1e-6);
+    const divisions = Array.from({ length: 8 }, (_, i) => i + 1).find((n) => n >= active && fits(n));
+    if (!divisions) throw new Error("Those positions cannot share a supported grid.");
+    const playSubDivs = config2.playSubDivs || divisions > 1;
+    const loopPattern = createEmptyDrumLoopPattern({
+      beats: config2.beats,
+      subDivs: divisions
+    });
+    for (const lane of DRUM_LOOP_LANES) {
+      for (const position of positions[lane])
+        loopPattern[lane][Math.round(position * divisions)] = true;
+    }
+    return { subDivs: playSubDivs ? divisions : config2.subDivs, playSubDivs, loopPattern };
+  }
   function getStepIndex({ beat, subDiv, subDivs }) {
     return (beat - 1) * subDivs + (subDiv - 1);
   }
@@ -6463,6 +6496,20 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
     if (timingChanged && !Object.prototype.hasOwnProperty.call(patchResult.data, "loopPattern")) {
       merged.loopPattern = remapDrumLoopPattern(base.loopPattern, baseTiming, mergedTiming);
     }
+    if (patchResult.data.loopPattern) {
+      const count = merged.loopPattern.kick.length;
+      const incomingDivisions = count / merged.beats;
+      const uniform = DRUM_LOOP_LANES.every((lane) => merged.loopPattern[lane].length === count);
+      if (uniform && Number.isInteger(incomingDivisions) && incomingDivisions >= 1 && incomingDivisions <= 8 && count !== validateLoopPatternLength(merged)) {
+        const positions = Object.fromEntries(
+          DRUM_LOOP_LANES.map((lane) => [
+            lane,
+            merged.loopPattern[lane].flatMap((hit, i) => hit ? [i / incomingDivisions] : [])
+          ])
+        );
+        Object.assign(merged, fitDrumLoopGrid(merged, positions));
+      }
+    }
     const mergedResult = schemas.config.safeParse(merged);
     if (!mergedResult.success) {
       throw new Error(formatZodError(mergedResult.error));
@@ -6726,6 +6773,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
   exports.createMetronome = createMetronome;
   exports.createRuntimeApi = createRuntimeApi;
   exports.createSchemas = createSchemas;
+  exports.fitDrumLoopGrid = fitDrumLoopGrid;
   exports.fromQuery = fromQuery;
   exports.installWindowBpm = installWindowBpm;
   exports.mergeConfig = mergeConfig;

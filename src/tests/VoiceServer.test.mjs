@@ -333,3 +333,37 @@ it('a song lookup streams progress and changes only BPM', async () => {
   expect(events[1].result.playback).toBe('start');
   expect(fetcher).toHaveBeenCalledTimes(3);
 });
+
+describe('API voice mode preserves user choice unless a custom pattern is needed', () => {
+  it('uses regular mode when the model unnecessarily selects custom mode', () => {
+    const p = prepare('a regular beat at 100 BPM', current);
+    const result = assemble(p, decisions(p, { tempo: 'n:100', loopMode: 'on' }), current);
+    expect(result.call.args[0].loopMode).toBe(false);
+  });
+  it('keeps an ordinary subdivision change in regular mode', () => {
+    const p = prepare('play eighth hats', current);
+    const result = assemble(p, decisions(p, { hat: 'eighths', loopMode: 'on' }), current);
+    expect(result.call.args[0].subDivs).toBe(2);
+    expect(result.call.args[0].loopMode).toBe(false);
+  });
+  it('does not enter custom mode when a placement matches the standard beat', () => {
+    const p = prepare('put the snare only on beat 3', current);
+    const result = assemble(p, decisions(p, { snare: 'edit:replace:2' }), current);
+    expect(result.call.args[0].loopMode).toBe(false);
+  });
+  it('keeps the user in drum mode when an edit restores a standard pattern', () => {
+    const base = { ...structuredClone(current), loopMode: true };
+    base.loopPattern.snare = [false, true, false, false];
+    const p = prepare('move the snare to beat 3', base);
+    const result = assemble(p, decisions(p, { snare: 'edit:move' }), base);
+    expect(result.call.args[0].loopMode).toBe(true);
+  });
+  it('keeps a custom pattern through tempo changes', () => {
+    const base = { ...structuredClone(current), loopMode: true };
+    base.loopPattern.snare = [false, true, false, true];
+    const p = prepare('faster', base);
+    const result = assemble(p, decisions(p, { tempo: 'faster', loopMode: 'off' }), base);
+    expect(result.call.args[0].loopMode).toBe(true);
+    expect(result.call.args[0].loopPattern).toEqual(base.loopPattern);
+  });
+});

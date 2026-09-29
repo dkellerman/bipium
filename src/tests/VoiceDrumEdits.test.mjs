@@ -138,3 +138,16 @@ it.each([
   expect(keys).toHaveLength(2);
   expect(keys).toContain('keep');
 });
+
+it('derives the minimum grid from positions even when the model suggests excessive subdivisions', () => {
+  const base = config(1, false, [2]);
+  const p = prepare('move the snare to the and of 2', base);
+  const c = assemble(p, answers(p, { snare: 'edit:move', subDivs: '8' }), base).call.args[0];
+  expect(c.subDivs).toBe(2);
+});
+it('honors an explicitly requested subdivision grid alongside a placement', () => {
+  const base = config(1, false, [2]);
+  const p = prepare('move the snare to the and of 2 and use sixteenths', base);
+  const c = assemble(p, answers(p, { snare: 'edit:move', subDivs: '4' }), base).call.args[0];
+  expect(c.subDivs).toBe(4);
+});

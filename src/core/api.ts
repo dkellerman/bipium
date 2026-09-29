@@ -117,6 +117,35 @@ export function createEmptyDrumLoopPattern(timing: DrumLoopTiming): DrumLoopPatt
   };
 }
 
+export type DrumLoopPositions = Record<keyof DrumLoopPattern, number[]>;
+
+/** Fit exact musical positions without rounding hits or consulting an interpreter. */
+export function fitDrumLoopGrid(
+  config: Pick<ApiConfig, 'beats' | 'subDivs' | 'playSubDivs'>,
+  positions: DrumLoopPositions,
+): Pick<ApiConfig, 'subDivs' | 'playSubDivs' | 'loopPattern'> {
+  const all = DRUM_LOOP_LANES.flatMap(lane => positions[lane]);
+  if (all.some(p => !Number.isFinite(p) || p < 0 || p >= config.beats)) {
+    throw new Error('Drum positions must be within the bar.');
+  }
+  const active = config.playSubDivs ? config.subDivs : 1;
+  const fits = (divisions: number) =>
+    all.every(p => Math.abs(p * divisions - Math.round(p * divisions)) < 1e-6);
+  const divisions = Array.from({ length: 8 }, (_, i) => i + 1).find(n => n >= active && fits(n));
+  if (!divisions) throw new Error('Those positions cannot share a supported grid.');
+  const playSubDivs = config.playSubDivs || divisions > 1;
+  const loopPattern = createEmptyDrumLoopPattern({
+    beats: config.beats,
+    subDivs: divisions,
+    swing: 0,
+  });
+  for (const lane of DRUM_LOOP_LANES) {
+    for (const position of positions[lane])
+      loopPattern[lane][Math.round(position * divisions)] = true;
+  }
+  return { subDivs: playSubDivs ? divisions : config.subDivs, playSubDivs, loopPattern };
+}
+
 function getStepIndex({ beat, subDiv, subDivs }: Pick<Click, 'beat' | 'subDiv' | 'subDivs'>) {
   return (beat - 1) * subDivs + (subDiv - 1);
 }
@@ -515,6 +544,27 @@ export function mergeConfig(
 
   if (timingChanged && !Object.prototype.hasOwnProperty.call(patchResult.data, 'loopPattern')) {
     merged.loopPattern = remapDrumLoopPattern(base.loopPattern, baseTiming, mergedTiming);
+  }
+
+  if (patchResult.data.loopPattern) {
+    const count = merged.loopPattern.kick.length;
+    const incomingDivisions = count / merged.beats;
+    const uniform = DRUM_LOOP_LANES.every(lane => merged.loopPattern[lane].length === count);
+    if (
+      uniform &&
+      Number.isInteger(incomingDivisions) &&
+      incomingDivisions >= 1 &&
+      incomingDivisions <= 8 &&
+      count !== validateLoopPatternLength(merged)
+    ) {
+      const positions = Object.fromEntries(
+        DRUM_LOOP_LANES.map(lane => [
+          lane,
+          merged.loopPattern[lane].flatMap((hit, i) => (hit ? [i / incomingDivisions] : [])),
+        ]),
+      ) as DrumLoopPositions;
+      Object.assign(merged, fitDrumLoopGrid(merged, positions));
+    }
   }
 
   const mergedResult = schemas.config.safeParse(merged);

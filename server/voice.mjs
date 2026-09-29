@@ -1,4 +1,4 @@
-import { createSchemas } from '../src/core/api.ts';
+import { createSchemas, fitDrumLoopGrid, seedDrumLoopPattern } from '../src/core/api.ts';
 import { retrieve, corpusCount } from './retrieval.mjs';
 import { drumEditContext, positionLabel, applyDrumEdit } from './drum-edits.mjs';
 import { applyChangePolicy } from './change-policy.mjs';
@@ -238,6 +238,11 @@ export function prepare(prompt, current, recentTurns = [], alternatives = []) {
     references,
     patterns,
     editContext,
+    explicitGridChange:
+      /\b(?:subdivisions?|subdivs?|grid)\b/i.test(prompt) ||
+      /\b(?:switch|change|set|use|play)\b.*\b(?:eighths|sixteenths|triplets|thirty.seconds)\b/i.test(
+        prompt,
+      ),
     explicitMode: explicitMode(prompt),
     instrumentEdit: /\b(kick|snare|hi[ -]?hat|hats?)\b/i.test(prompt),
     request: {
@@ -315,6 +320,8 @@ export function assemble(prepared, answers, current) {
     for (const lane of lanes)
       if (!prepared.editContext.targeted.includes(lane)) selected[lane] = 'keep';
   }
+  // API/voice automation must not override the user's existing mode for ordinary edits.
+  if (!prepared.explicitMode && current.loopMode) selected.loopMode = 'on';
   const usesCustomPattern =
     selected.loopMode === 'on' || (selected.loopMode === 'keep' && current.loopMode);
   if (!usesCustomPattern) for (const lane of lanes) selected[lane] = 'keep';
@@ -353,38 +360,44 @@ export function assemble(prepared, answers, current) {
   );
   const adjustments = [];
   if (c.loopMode) {
-    const all = Object.values(positions).flat();
-    if (all.some(p => Math.abs(p * c.subDivs - Math.round(p * c.subDivs)) > 1e-6)) {
-      const compatible = [1, 2, 3, 4, 5, 6, 7, 8].find(
-        n => n >= c.subDivs && all.every(p => Math.abs(p * n - Math.round(p * n)) < 1e-6),
-      );
-      if (!compatible)
-        return {
-          call: null,
-          message: 'Those positions cannot share a supported grid. The beat is unchanged.',
-        };
-      c.subDivs = compatible;
-      adjustments.push('Subdivision grid expanded to preserve selected drum hits.');
+    // A positional edit does not authorize the model to enlarge the grid arbitrarily.
+    if (Object.keys(prepared.editContext.edits).length && !prepared.explicitGridChange) {
+      c.subDivs = current.subDivs;
+      c.playSubDivs = current.playSubDivs;
     }
-    if (
-      Object.values(positions)
-        .flat()
-        .some(p => p % 1 !== 0) &&
-      !c.playSubDivs
-    ) {
-      c.playSubDivs = true;
-      adjustments.push('Subdivision playback enabled for selected drum hits.');
+    try {
+      const fitted = fitDrumLoopGrid(c, positions);
+      if (fitted.subDivs !== c.subDivs)
+        adjustments.push('Subdivision grid expanded to preserve selected drum hits.');
+      if (fitted.playSubDivs && !c.playSubDivs)
+        adjustments.push('Subdivision playback enabled for selected drum hits.');
+      Object.assign(c, fitted);
+    } catch (error) {
+      return { call: null, message: `${error.message} The beat is unchanged.` };
     }
+  } else {
+    const activeSubDivs = c.playSubDivs ? c.subDivs : 1;
+    c.loopPattern = Object.fromEntries(
+      lanes.map(lane => [
+        lane,
+        Array.from({ length: c.beats * activeSubDivs }, (_, i) =>
+          positions[lane].some(p => Math.abs(p * activeSubDivs - i) < 1e-6),
+        ),
+      ]),
+    );
   }
-  const activeSubDivs = c.playSubDivs ? c.subDivs : 1;
-  c.loopPattern = Object.fromEntries(
-    lanes.map(lane => [
-      lane,
-      Array.from({ length: c.beats * activeSubDivs }, (_, i) =>
-        positions[lane].some(p => Math.abs(p * activeSubDivs - i) < 1e-6),
-      ),
-    ]),
-  );
+  if (!prepared.explicitMode) {
+    const standard = seedDrumLoopPattern({
+      beats: c.beats,
+      subDivs: c.playSubDivs ? c.subDivs : 1,
+      swing: c.swing,
+    });
+    const needsCustomPattern = lanes.some(lane =>
+      c.loopPattern[lane].some((hit, i) => hit !== standard[lane][i]),
+    );
+    const changedPattern = lanes.some(lane => selected[lane] !== 'keep');
+    c.loopMode = current.loopMode || (changedPattern && needsCustomPattern);
+  }
   const checked = schema.safeParse(c);
   if (!checked.success) throw Error('The requested settings are outside Bipium’s supported range.');
   return {
@@ -505,7 +518,7 @@ async function voiceJson(request, env, progress = () => {}) {
     const confidence = Math.min(...activeAnswers.map(answer => answer.confidence));
     return Response.json(
       {
-        interpreterVersion: 2,
+        interpreterVersion: 3,
         id: result.id,
         prompt: body.prompt,
         ...output,
