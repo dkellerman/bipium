@@ -59,7 +59,6 @@ export async function transcription(request, env) {
   try {
     response = await fetch(target, {
       headers: { Upgrade: 'websocket', Authorization: `Bearer ${env.XAI_API_KEY}` },
-      signal: AbortSignal.timeout(10000),
     });
   } catch {
     return new Response('Could not connect to voice recognition', { status: 502 });
@@ -103,7 +102,7 @@ export async function transcription(request, env) {
       }
   });
   for (const socket of [server, upstream]) {
-    socket.addEventListener('close', close);
+    socket.addEventListener('close', event => { console.info('transcription socket closed', socket === upstream ? 'upstream' : 'client', event.code, event.reason); close(); });
     socket.addEventListener('error', close);
   }
   return new Response(null, { status: 101, webSocket: client });
