@@ -202,7 +202,7 @@ export function prepare(prompt, current, recentTurns = [], alternatives = [], tr
         `${r.title}: ${lane} source pattern at quarter-note positions ${patterns[lane]['ref' + i].join(', ')} (zero=beat 1). Optional style example.`;
     });
     questions[lane] = choice(
-      `Choose the resulting ${lane} pattern. Add/remove choices edit one position while preserving other hits. Move choices relocate one named hit; shift choices move the specified hits by the stated distance. ONLY choices replace the lane with one hit. Silent removes the ENTIRE lane, never a single specified hit. Within a requested new custom drum pattern, select a suitable example or pattern. Specific placements and removals take precedence. Preserve this lane when editing other instruments.`,
+      `Choose the resulting ${lane} pattern. Add/remove choices edit one position while preserving other hits. Move choices relocate one named hit; shift choices move the specified hits by the stated distance. ONLY choices replace the lane with one hit. Silent removes the ENTIRE lane, never a single specified hit. Within a requested new custom drum pattern, select a suitable example or pattern. Specific placements and removals take precedence. Preserve this lane when editing other instruments. For a continuation that omits the instrument, resolve the instrument from the most recent relevant user request. Apply the continuation ONLY to that instrument and choose keep for every other lane. Do not treat omitted instrument names as permission to add the same hit to multiple lanes. For example, after a request about the snare, an additional placement without an instrument still targets only the snare.`,
       criteria,
     );
   }
