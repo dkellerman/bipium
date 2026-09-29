@@ -52,6 +52,7 @@ export async function transcription(request, env) {
     encoding: 'pcm',
     sample_rate: '48000',
     interim_results: 'true',
+    filler_words: 'true',
     language: 'en',
     endpointing: '400',
   }).forEach(([k, v]) => target.searchParams.set(k, v));
