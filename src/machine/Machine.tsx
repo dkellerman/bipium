@@ -5,7 +5,7 @@ import { ListenControl } from '@/components/ListenControl';
  * Self-contained in src/machine/; the classic UI never imports from here.
  */
 import { useEffect, useRef, useState } from 'react';
-import { Drum, Eraser, Menu, Volume2, VolumeX } from 'lucide-react';
+import { Drum, Eraser, Menu } from 'lucide-react';
 import { useApp } from '@/AppContext';
 import { SOUND_PACKS } from '@/hooks';
 import { cn } from '@/lib/utils';
@@ -351,31 +351,6 @@ export function Machine({ extras }: MachineProps) {
               Stop
             </Key>
           )}
-        </div>
-
-        {/* volume strip */}
-        <div className="mt-2 flex items-center gap-3 px-1">
-          <button
-            type="button"
-            aria-label={app.muted ? 'Unmute' : 'Mute'}
-            aria-pressed={app.muted}
-            className={cn(
-              'grid size-10 shrink-0 place-items-center rounded-md border-[3px] border-stone-900',
-              'shadow-[2px_2px_0_#1c1917] active:translate-x-px active:translate-y-px active:shadow-[1px_1px_0_#1c1917]',
-              app.muted ? 'bg-yellow-300' : 'bg-[#f6f3ea]',
-            )}
-            onClick={() => app.setMuted(value => !value)}
-          >
-            {app.muted ? <VolumeX className="size-5" /> : <Volume2 className="size-5" />}
-          </button>
-          <MachineRange
-            label="Volume"
-            min={0}
-            max={100}
-            value={app.volume}
-            onChange={value => app.setVolume(Math.round(value))}
-            className={cn(RANGE_PANEL, 'h-8')}
-          />
         </div>
       </div>
     </main>

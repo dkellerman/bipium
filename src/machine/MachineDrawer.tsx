@@ -1,8 +1,8 @@
 /*
  * Machine UI — slide-out menu for the /machine route. Slimmed copy of
- * components/SettingsDrawer: volume and sounds live on the faceplate, so this
- * is just links and actions.
+ * components/SettingsDrawer with volume, theme, links, and actions.
  */
+import { VolumeControl } from '@/components/VolumeControl';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -23,6 +23,10 @@ export function MachineDrawer() {
         }
       >
         <div className="mt-2 space-y-6">
+          <div className="space-y-2">
+            <p className="font-medium">Volume</p>
+            <VolumeControl compact />
+          </div>
           <div className="space-y-2">
             <label className="font-medium">Theme</label>
             <select
