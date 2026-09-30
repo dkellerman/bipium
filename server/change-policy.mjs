@@ -10,6 +10,10 @@ const levels = {
 const policies = {
   songQuery: { level: 'deliberate' },
   action: { level: 'contextual', choices: { clear: 'rare', reset: 'rare' } },
+  countFirst: { level: 'deliberate' },
+  countLast: { level: 'deliberate' },
+  countIntervals: { level: 'deliberate' },
+  countDivisions: { level: 'deliberate' },
   tempo: { level: 'contextual' },
   tempoHigh: { level: 'deliberate' },
   beats: { level: 'contextual' },

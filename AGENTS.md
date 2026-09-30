@@ -1,16 +1,31 @@
 # Bipium agent instructions
 
-## Mandatory: language interpretation belongs to the model
+## Mandatory: this is an AI app; interpretation belongs to Jev
 
-NEVER add hardcoded natural-language interpretation without asking the user first and receiving explicit approval. This is a mandatory architectural constraint, including fixes and emergency work.
+NEVER add hardcoded interpretation or intent-driven behavior without the user's explicit approval for that exact behavior. This applies to new features, fixes, emergency work, fallbacks, and optimizations. Being useful, passing tests, or resembling an existing exception is NOT approval.
 
-- Do not introduce keyword lists, phrase matching, regular expressions, handwritten grammars, number-word parsers, transcript corrections, or special-case substitutions to infer a user's musical command.
-- Do not use those techniques to narrow the decisions offered to Jev, override its answers, reject a command, or infer mode, instrument targets, positions, amounts, or exact values.
-- Jev interprets the user's language and chooses semantic actions and values. Preserve the original transcript. Provide sufficient choices independently of how the user spells or phrases the request.
-- Ordinary code may validate model output and execute selected operations, including arithmetic, audio processing, supported ranges, and minimum subdivision-grid fitting.
-- If the model/API cannot express a requested operation reliably, explain the limitation and ask before introducing any hardcoded language workaround. Never silently approximate an exact requested value.
-- The user explicitly approved the existing count-off analysis, song-request handling, and instrument/percussion detection. Preserve these exceptions; they do not authorize new command-parsing shortcuts.
-- Tests must verify this boundary: changing command wording must not cause local code to select or override the model's command decisions.
+### Required approval process
+
+1. Before implementing an exception, explain the exact proposed hardcoded behavior and ask the user for explicit permission.
+2. After approval, record it in the approved-exceptions register below BEFORE implementing it: exact behavior, scope/files, user's approving words, and limitations.
+3. No matching record means no permission. Do not infer permission from a broad feature request, earlier exceptions, or the existence of old code. Existing unrecorded heuristics must be surfaced and removed or explicitly approved; never silently grandfather them.
+4. Expanding an exception requires a new approval and an updated record. Revoked permission must be removed from the active register.
+
+### Interpretation boundary
+
+- Jev interprets language and decides semantic actions and values. Preserve the original transcript and provide choices independently of wording.
+- No keyword lists, phrase matching, regex/handwritten grammars, number-word parsers, transcript rewrites, or wording-based overrides that infer, constrain, reject, or redirect user intent without a matching approval record.
+- No implicit local fallback when the model is uncertain or unavailable. Report the limitation and ask before proposing any hardcoded interpretation.
+- Ordinary validation, transport, state management, execution of model-selected operations, arithmetic, audio signal processing, and grid calculations are implementation mechanics, not permission to infer intent.
+- Count-offs go through Jev. Jev selects timing anchors and musical spacing; server code may perform the resulting arithmetic. The former count-off grammar exception was explicitly REVOKED on 2026-09-29. No number/syllable grammar or pre-model count-off bypass is permitted.
+- Tests must prove that different wording cannot make code bypass Jev or override its decisions.
+
+### Approved-exceptions register (existing behavior only)
+
+- **Song-request handling:** User explicitly said “song request is fine” when reviewing existing hardcoded paths. Scope: the existing `server/song-tempo.mjs` candidate preparation, title/artist lookup and matching, plus execution of Jev-selected song lookups in `server/voice.mjs`, as present at commit `2084898`. This is not approval to add new phrase rules, song triggers, or semantic shortcuts.
+- **Audio-only instrument/percussion analysis:** User explicitly said “instrument is fine” and previously “ok, no jev then” about arithmetic/audio detection. Scope: the existing PCM onset detection, timing estimation, and tentative accent grouping in `server/percussion.mjs`, as present at commit `2084898`. This does not authorize transcript parsing, instrument-word matching, or new automatic playback decisions.
+
+No other hardcoded interpretation exception is recorded. Do not add one on the user's behalf.
 
 ## Delivery
 

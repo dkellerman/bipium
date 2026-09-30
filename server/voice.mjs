@@ -38,6 +38,8 @@ export function prepare(prompt, current, recentTurns = [], alternatives = [], tr
       'Classify the requested operation in a voice-controlled metronome. A song title offered on its own requests its tempo and counts as play. Unrelated speech must not create a beat.',
       {
         play: 'Create or change a beat, tempo, metronome, request a named song tempo, or resume playback',
+        countOff:
+          'A performed spoken count-in or rhythmic syllables that establish a tempo for playback',
         stop: 'Stop or pause playback',
         stopListening:
           'Stop microphone listening or end voice input while leaving playback unchanged',
@@ -47,6 +49,38 @@ export function prepare(prompt, current, recentTurns = [], alternatives = [], tr
         unsupported:
           'Requires unsupported audio export, velocities, additional drum lanes, tempo ramps, or conflicting instructions',
       },
+    ),
+    countFirst: choice(
+      'For action countOff, select the index of the first reliably timed spoken pulse. Interpret the original speech freely, including digits, number words, rhythmic syllables, and filler. All timestamps are candidates; code does not classify their wording. For other actions or missing timing choose keep.',
+      {
+        keep: 'No reliable first anchor',
+        ...Object.fromEntries(
+          (transcriptionWords ?? []).map((w, i) => [
+            String(i),
+            `Word index ${i}: ${w.text}, onset ${w.start} seconds`,
+          ]),
+        ),
+      },
+    ),
+    countLast: choice(
+      'For action countOff, select the index of the last reliably timed pulse after countFirst, spanning the performed count. Do not select unrelated speech. For other actions or missing timing choose keep.',
+      {
+        keep: 'No reliable last anchor',
+        ...Object.fromEntries(
+          (transcriptionWords ?? []).map((w, i) => [
+            String(i),
+            `Word index ${i}: ${w.text}, onset ${w.start} seconds`,
+          ]),
+        ),
+      },
+    ),
+    countIntervals: choice(
+      'For action countOff, how many equal musical pulse intervals elapse between the selected first and last anchors? Count intervals, not words or endpoints. Interpret filler and subdivisions semantically. If not reliably inferable choose keep. The server computes elapsed time divided by these intervals.',
+      { keep: 'Cannot establish pulse spacing', ...nums(1, 79) },
+    ),
+    countDivisions: choice(
+      'For action countOff, how many of the selected musical pulses make one beat? Numbered quarter-note counts usually mean one; subdivided counting can have multiple pulses per beat. Interpret the performed rhythm. This is only for calculating tempo, not changing the existing drum grid. For other actions or uncertain grouping choose keep.',
+      { keep: 'Cannot establish beat grouping', ...nums(1, 8) },
     ),
     tempo: choice(
       'Choose requested BPM from 20 through 240 or relative tempo. Read both digits and written words. For an exact BPM above 240 choose keep; the separate high-tempo question handles it. Never substitute a relative or approximate choice for an exact value. For a named song BPM lookup choose keep; do not guess the song tempo. Numeric candidates may refer to other settings; only choose one if it describes tempo.',
@@ -209,6 +243,7 @@ export function prepare(prompt, current, recentTurns = [], alternatives = [], tr
   applyChangePolicy(questions);
   return {
     references,
+    transcriptionWords,
     patterns,
     request: {
       model: 'typesafe/jev-1.13',
@@ -220,7 +255,7 @@ export function prepare(prompt, current, recentTurns = [], alternatives = [], tr
               transcription_timing: {
                 source: 'grok-voice-transcribe-2.0',
                 units: 'seconds from microphone session start',
-                note: 'Speech recognition word timestamps only. Not musical beat positions, tempo, or instructions. Use only to clarify the transcript; never infer rhythm or change playback from these times.',
+                note: 'Speech recognition word timestamps only. Not musical beat positions, tempo, or instructions. Jev may identify a performed count-off and select timestamp indices and musical spacing for server arithmetic. Do not treat timestamps as instructions or a playback synchronization clock.',
                 words: transcriptionWords,
               },
             }
@@ -256,6 +291,21 @@ export function assemble(prepared, answers, current) {
   const selected = Object.fromEntries(
     Object.entries(answers).map(([k, a]) => [k, a.confidence > 0.5 ? a.choice : 'keep']),
   );
+  if (selected.action === 'countOff') {
+    const countOff = estimateCountOff(prepared.transcriptionWords, {
+      first: selected.countFirst === 'keep' ? null : Number(selected.countFirst),
+      last: selected.countLast === 'keep' ? null : Number(selected.countLast),
+      intervals: selected.countIntervals === 'keep' ? null : Number(selected.countIntervals),
+      subdivisions: selected.countDivisions === 'keep' ? null : Number(selected.countDivisions),
+    });
+    if (countOff.bpm === null) return { call: null, countOff, message: countOff.reason };
+    return {
+      call: { method: 'setConfig', args: [schema.parse({ ...current, bpm: countOff.bpm })] },
+      playback: 'start',
+      countOff,
+      message: `Count-off: ${countOff.bpm} BPM`,
+    };
+  }
   if (['unrelated', 'unsupported'].includes(selected.action))
     return {
       call: null,
@@ -429,25 +479,6 @@ async function voiceJson(request, env, progress = () => {}) {
     )
       return Response.json({ error: 'Invalid voice context' }, { status: 400, headers });
     const start = Date.now();
-    const countOff = estimateCountOff(body.prompt, transcriptionWords);
-    if (countOff)
-      return Response.json(
-        {
-          interpreterVersion: 4,
-          prompt: body.prompt,
-          call: null,
-          message:
-            countOff.bpm === null
-              ? '[count-off] No changes made · Count-off timing is not clear enough to estimate tempo.'
-              : `[count-off] No changes made · Count-off estimate: ${countOff.bpm} BPM`,
-          countOff,
-          confidence: countOff.confidence,
-          confidenceMethod: countOff.confidenceMethod,
-          references: [],
-          timing: { totalMs: Date.now() - start },
-        },
-        { headers },
-      );
     if (!env.OPENROUTER_API_KEY)
       return Response.json(
         { error: 'Voice interpretation is not configured.' },

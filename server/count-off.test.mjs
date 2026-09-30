@@ -1,91 +1,129 @@
 // @vitest-environment node
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { estimateCountOff } from './count-off.mjs';
-import { voice } from './voice.mjs';
+import { prepare, assemble, voice } from './voice.mjs';
 import { API_DEFAULT_CONFIG } from '../src/core/api.ts';
-const words = (text, step = 0.5, offset = 8) =>
-  text
-    .split(' ')
-    .map((text, i) => ({ text, start: offset + i * step, end: offset + i * step + 0.1 }));
+const words = text =>
+  text.split(' ').map((text, i) => ({ text, start: 8 + i * 0.5, end: 8.1 + i * 0.5 }));
+const decisions = (questions, overrides) =>
+  Object.fromEntries(
+    Object.entries(questions).map(([key, q]) => {
+      const choice = overrides[key] ?? (Object.hasOwn(q.criteria, 'keep') ? 'keep' : 'play');
+      return [key, { choice, confidence: 0.95, probabilities: { [choice]: 1 } }];
+    }),
+  );
+const countDecision = {
+  action: 'countOff',
+  countFirst: '0',
+  countLast: '3',
+  countIntervals: '3',
+  countDivisions: '1',
+};
 afterEach(() => vi.unstubAllGlobals());
-describe('server count-off estimates', () => {
-  it('estimates numbered pulse timing without inferring meter or hidden subdivisions', () => {
-    expect(estimateCountOff('One, two, three, four!', words('one two three four'))).toMatchObject({
-      status: 'estimated',
-      bpm: 120,
-      subdivisions: 1,
-      beatsPerBar: null,
-      beatTimesSeconds: [8, 8.5, 9, 9.5],
-    });
-  });
-  it('uses number anchors, not every spoken word, for subdivided counting', () => {
+describe('model interpreted count-offs', () => {
+  it('calculates timing without reading or classifying any words', () => {
+    const anchors = words('arbitrary text with punctuation');
+    for (const word of anchors)
+      Object.defineProperty(word, 'text', {
+        get() {
+          throw Error('Arithmetic must not read text');
+        },
+      });
     expect(
-      estimateCountOff('count off: 1 and 2 and 3 and 4', words('1 and 2 and 3 and 4', 0.25)),
-    ).toMatchObject({ bpm: 120, subdivisions: 2 });
+      estimateCountOff(anchors, { first: 0, last: 3, intervals: 3, subdivisions: 1 }),
+    ).toMatchObject({ bpm: 120 });
   });
-  it('keeps tempo but declines subdivisions when intervening words are uneven', () => {
-    const w = words('one and two and three and four', 0.25);
-    w[1].start = 8.1;
-    expect(estimateCountOff('one and two and three and four', w)).toMatchObject({
-      bpm: 120,
-      subdivisions: null,
-    });
-  });
-  it('accepts repeated cycles without claiming they establish meter', () => {
-    expect(estimateCountOff('1 2 3 1 2 3', words('1 2 3 1 2 3'))).toMatchObject({
-      bpm: 120,
-      countCycleLength: 3,
-      beatsPerBar: null,
-    });
+  it('uses the musical spacing selected by Jev for subdivided pulses', () => {
+    expect(
+      estimateCountOff(words('1 ee and uh'), { first: 0, last: 3, intervals: 3, subdivisions: 4 }),
+    ).toMatchObject({ bpm: 30 });
   });
   it.each([
-    'put the snare on two and four',
-    'set tempo to 120',
-    'one two three apples',
-    'one three four',
-    'one and and two three',
-  ])('ignores ordinary commands and invalid sequences: %s', prompt => {
-    expect(estimateCountOff(prompt, words(prompt))).toBeNull();
+    { first: null, last: 3, intervals: 3, subdivisions: 1 },
+    { first: 0, last: 30, intervals: 3, subdivisions: 1 },
+    { first: 3, last: 0, intervals: 3, subdivisions: 1 },
+    { first: 0, last: 3, intervals: 0, subdivisions: 1 },
+  ])('rejects invalid timing selections without inventing tempo: %j', selection => {
+    expect(estimateCountOff(words('1 2 3 4'), selection).bpm).toBeNull();
   });
-  it('declines missing, merged, and nonmonotonic timestamps', () => {
-    expect(estimateCountOff('one two three', undefined).bpm).toBeNull();
-    expect(estimateCountOff('one two', words('one two')).bpm).toBeNull();
-    expect(
-      estimateCountOff('one two three', [{ text: 'one two three', start: 0, end: 2 }]).bpm,
-    ).toBeNull();
-    const w = words('one two three');
-    w[2].start = w[1].start;
-    expect(estimateCountOff('one two three', w).bpm).toBeNull();
-  });
-  it('declines inconsistent timing and implausible tempos', () => {
-    const w = words('one two three four');
-    w[3].start += 1;
-    w[3].end += 1;
-    expect(estimateCountOff('one two three four', w).status).toBe('uncertain');
-    expect(estimateCountOff('one two three four', words('one two three four', 0.1)).bpm).toBeNull();
-  });
-  it.each([false, true])(
-    'returns an estimate and no command without calling Jev (stream=%s)',
-    async stream => {
-      const fetcher = vi.fn();
-      vi.stubGlobal('fetch', fetcher);
-      const request = new Request('https://www.bipium.com/api/voice', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(stream ? { Accept: 'application/x-ndjson' } : {}),
-        },
-        body: JSON.stringify({
-          prompt: 'one two three four',
-          transcriptionWords: words('one two three four'),
-          currentConfig: API_DEFAULT_CONFIG,
-        }),
+  it.each(['1,2,3,4', 'one two three four', '1 ee and uh', 'ready and a here we go'])(
+    'always asks Jev to interpret %s',
+    async prompt => {
+      const fetcher = vi.fn(async (_url, init) => {
+        const request = JSON.parse(init.body);
+        expect(request.state.request).toBe(prompt);
+        return Response.json({ answers: decisions(request.questions, { action: 'unrelated' }) });
       });
-      const response = await voice(request, {});
-      const raw = await response.text();
-      const body = stream ? JSON.parse(raw.trim()).result : JSON.parse(raw);
-      expect(body).toMatchObject({ call: null, countOff: { bpm: 120, subdivisions: 1 } });
-      expect(fetcher).not.toHaveBeenCalled();
+      vi.stubGlobal('fetch', fetcher);
+      const response = await voice(
+        new Request('https://www.bipium.com/api/voice', {
+          method: 'POST',
+          body: JSON.stringify({
+            prompt,
+            transcriptionWords: words('1 2 3 4'),
+            currentConfig: API_DEFAULT_CONFIG,
+          }),
+        }),
+        { OPENROUTER_API_KEY: 'test' },
+      );
+      expect(response.status).toBe(200);
+      const result = await response.json();
+      expect(fetcher).toHaveBeenCalledOnce();
+      expect(result.call).toBeNull();
+      expect(result.countOff).toBeNull();
     },
   );
+  it.each([false, true])(
+    'executes only the model-selected count-off via the fixed API (stream=%s)',
+    async stream => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (_url, init) =>
+          Response.json({ answers: decisions(JSON.parse(init.body).questions, countDecision) }),
+        ),
+      );
+      const current = { ...API_DEFAULT_CONFIG, swing: 27, volume: 63 };
+      const response = await voice(
+        new Request('https://www.bipium.com/api/voice', {
+          method: 'POST',
+          headers: stream ? { Accept: 'application/x-ndjson' } : {},
+          body: JSON.stringify({
+            prompt: 'arbitrary wording selected by model',
+            transcriptionWords: words('a b c d'),
+            currentConfig: current,
+          }),
+        }),
+        { OPENROUTER_API_KEY: 'test' },
+      );
+      const raw = await response.text();
+      const result = stream ? JSON.parse(raw.trim()).result : JSON.parse(raw);
+      expect(result).toMatchObject({
+        playback: 'start',
+        countOff: { bpm: 120 },
+        call: { method: 'setConfig', args: [{ ...current, bpm: 120 }] },
+      });
+    },
+  );
+  it('preserves playback when Jev selects count-off without usable timing', () => {
+    const prepared = prepare('one two three four', API_DEFAULT_CONFIG);
+    const result = assemble(
+      prepared,
+      decisions(prepared.request.questions, { action: 'countOff' }),
+      API_DEFAULT_CONFIG,
+    );
+    expect(result.call).toBeNull();
+    expect(result.playback).toBeUndefined();
+  });
+  it('does not use low-confidence timing decisions', () => {
+    const prepared = prepare(
+      'one two three four',
+      API_DEFAULT_CONFIG,
+      [],
+      [],
+      words('one two three four'),
+    );
+    const answers = decisions(prepared.request.questions, countDecision);
+    answers.countIntervals.confidence = 0.4;
+    expect(assemble(prepared, answers, API_DEFAULT_CONFIG).call).toBeNull();
+  });
 });
