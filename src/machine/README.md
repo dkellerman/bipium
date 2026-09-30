@@ -9,7 +9,7 @@ Design principles it upholds:
 - fits on one mobile screen with no scrolling
 - all buttons big and easy to press
 - options progressively revealed (subdiv strip, swing slider)
-- the pixi visualizer is its own component
+- both themes use the shared Pixi `DefaultVisualizer`
 
 ## Isolation rules
 
@@ -18,9 +18,9 @@ unaffected:
 
 - Nothing outside `src/machine/` imports from this folder except the `/machine`
   route in `main.tsx`.
-- Components that needed Machine-specific changes are **copies**, not edits to
-  the shared ones: `MachineVisualizer` (now-line hidden while stopped,
-  edge-hugging grid lines skipped), `DrumLaneLabels` (full-word lane labels),
+- The visualizer is shared with classic; `skipEdgeGridLines` controls its only
+  theme-specific drawing difference. Never copy the visualizer.
+- Separate presentation components include `DrumLaneLabels` (full-word lane labels),
   `MachineDrawer` (menu only — volume/sounds live on the faceplate).
 - Shared infrastructure is imported read-only: `AppContext`, hooks
   (`useClicker`, `useMetronome`, `useTapBPM`, `SOUND_PACKS`), `core/`,

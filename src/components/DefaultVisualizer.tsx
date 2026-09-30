@@ -1,14 +1,15 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import React, { useRef, useEffect, useCallback } from 'react';
+import React, { useRef, useEffect, useCallback, useLayoutEffect } from 'react';
 import { Application, extend } from '@pixi/react';
 import { Graphics, Text as PixiText } from 'pixi.js';
 import { Visualizer } from '@/core/index';
 import type { DrumLoopLane, DrumLoopPattern, Metronome } from '@/core/index';
 import { isEditableEventTarget } from '@/lib/utils';
-import { DrumLoopOverlay } from './DrumLoopOverlay';
+import { DrumLoopOverlay } from '@/components/DrumLoopOverlay';
 
 interface DefaultVisualizerProps {
   id?: string;
+  skipEdgeGridLines?: boolean;
   metronome: Metronome;
   width?: number;
   height?: number;
@@ -49,6 +50,7 @@ extend({ Graphics, Text: PixiText });
 
 export function DefaultVisualizer({
   metronome: m,
+  skipEdgeGridLines = false,
   width = 350,
   height = 100,
   showGrid = true,
@@ -62,6 +64,8 @@ export function DefaultVisualizer({
   const mAny = m as any;
   const v = useRef(new Visualizer({ metronome: mAny }));
   const frameRef = useRef<number | null>(null);
+  const appRef = useRef<any>(null);
+  const gridRef = useRef<any>(null);
   const nowLineRef = useRef<any>(null);
   const countRef = useRef<any>(null);
   const descRef = useRef<any>(null);
@@ -93,6 +97,20 @@ export function DefaultVisualizer({
     textNode.x = Math.round(centerX - (bounds.x + bounds.width / 2));
     textNode.y = Math.round(centerY - (bounds.y + bounds.height / 2));
   };
+
+  // The Application mounts once and never remounts (remounting mid-playback
+  // kills the renderer on mobile), so size changes are applied to the live
+  // renderer here instead. Init is async, so the current size is also applied
+  // in onInit — without it the first measured size lands before the renderer
+  // exists and is lost.
+  const sizeRef = useRef({ width, height });
+  sizeRef.current = { width, height };
+
+  const applySize = useCallback((application?: any) => {
+    const holder = application ?? (appRef.current as any);
+    const app = holder?.getApplication?.() ?? holder;
+    app?.renderer?.resize?.(sizeRef.current.width, sizeRef.current.height);
+  }, []);
 
   useEffect(() => {
     countRef.current?.anchor?.set?.(0);
@@ -224,6 +242,8 @@ export function DefaultVisualizer({
       if (!barTime) return;
       gridTimes.forEach((t: number, i: number) => {
         const x = (t / barTime) * width;
+        // Skip lines hugging the canvas edges — they read as a stray border.
+        if (skipEdgeGridLines && (x < 1 || x > width - 1)) return;
         const isSubDiv = i % subDivs > 0;
         g.setStrokeStyle({ width: 1, color: isSubDiv ? subDivColor : divColor });
         g.moveTo(x, 0);
@@ -231,14 +251,35 @@ export function DefaultVisualizer({
         g.stroke();
       });
     },
-    [showGrid, width, height, barTime, subDivs, gridTimes],
+    [showGrid, width, height, barTime, subDivs, gridTimes, skipEdgeGridLines],
   );
+
+  const drawNow = useCallback(
+    (g: any) => {
+      if (!g) return;
+      g.clear();
+      if (!showNow) return;
+      g.setStrokeStyle({ width: 2, color: nowLineColor, alpha: 1 });
+      g.moveTo(0, 0);
+      g.lineTo(0, height);
+      g.stroke();
+    },
+    [height, showNow],
+  );
+
+  // Resizing Pixi's canvas does not reliably rerun Graphics.draw on iOS.
+  useLayoutEffect(() => {
+    applySize();
+    drawGrid(gridRef.current);
+    drawNow(nowLineRef.current);
+  }, [applySize, drawGrid, drawNow]);
 
   return (
     <>
       {mAny && (
         <Application
-          key={gridSignature}
+          ref={appRef}
+          onInit={applySize}
           width={width}
           height={height}
           antialias={false}
@@ -247,7 +288,7 @@ export function DefaultVisualizer({
           roundPixels
           backgroundAlpha={0}
         >
-          <pixiGraphics draw={drawGrid} />
+          <pixiGraphics ref={gridRef} draw={drawGrid} />
 
           {drumLoopPattern ? (
             <DrumLoopOverlay
@@ -260,19 +301,7 @@ export function DefaultVisualizer({
             />
           ) : null}
 
-          <pixiGraphics
-            ref={nowLineRef}
-            draw={g => {
-              g.clear();
-              if (!showNow) {
-                return;
-              }
-              g.setStrokeStyle({ width: 2, color: nowLineColor, alpha: 1 });
-              g.moveTo(0, 0);
-              g.lineTo(0, height);
-              g.stroke();
-            }}
-          />
+          <pixiGraphics ref={nowLineRef} draw={drawNow} />
 
           {React.createElement('pixiText' as any, {
             ref: countRef,

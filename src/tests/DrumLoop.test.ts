@@ -178,7 +178,7 @@ describe('Clicker multi-hit scheduling', () => {
     await first;
     expect(clicker.sounds.name).toBe('second');
   });
-  it('temporarily ducks voice playback without changing the chosen volume', async () => {
+  it('uses the selected playback volume with no voice multiplier', async () => {
     const clicker = new Clicker({
       audioContext: audioContext as any,
       sounds: DEFAULT_SOUNDS,
@@ -186,12 +186,10 @@ describe('Clicker multi-hit scheduling', () => {
     });
     await clicker.setSounds(DEFAULT_SOUNDS);
     const gain = vi.spyOn(clicker.gainNode.gain, 'setValueAtTime');
-    clicker.setVoiceDucking(true);
-    clicker.scheduleClickSound({ bar: 1, beat: 1, beats: 4, subDiv: 1, subDivs: 1, time: 0 });
-    expect(gain).toHaveBeenCalledWith(0.1, 0);
-    clicker.setVoiceDucking(false);
-    clicker.scheduleClickSound({ bar: 1, beat: 1, beats: 4, subDiv: 1, subDivs: 1, time: 1 });
-    expect(gain).toHaveBeenCalledWith(0.4, 1);
+    for (const time of [0, 1]) {
+      clicker.scheduleClickSound({ bar: 1, beat: 1, beats: 4, subDiv: 1, subDivs: 1, time });
+      expect(gain).toHaveBeenLastCalledWith(0.4, time);
+    }
     expect(clicker.volume).toBe(40);
   });
 });

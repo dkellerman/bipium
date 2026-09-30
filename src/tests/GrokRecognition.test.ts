@@ -66,6 +66,9 @@ describe('Grok microphone lifecycle', () => {
     recognition.onanalysis = vi.fn();
     recognition.start();
     await settle();
+    expect(navigator.mediaDevices.getUserMedia).toHaveBeenCalledWith(
+      expect.objectContaining({ audio: expect.objectContaining({ autoGainControl: false }) }),
+    );
     expect(context.createMediaStreamSource).not.toHaveBeenCalled();
     const emit = (data: object) => Socket.latest.onmessage({ data: JSON.stringify(data) });
     emit({ type: 'transcript.created' });

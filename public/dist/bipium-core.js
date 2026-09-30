@@ -766,7 +766,6 @@
       sounds = DEFAULT_SOUNDS,
       resolveScheduledSounds
     }) {
-      this.voiceDucking = false;
       this.sounds = {};
       this.soundRequest = 0;
       this.audioContext = audioContext;
@@ -807,9 +806,6 @@
     }
     setVolume(volume) {
       this.volume = volume;
-    }
-    setVoiceDucking(enabled) {
-      this.voiceDucking = enabled;
     }
     setResolveScheduledSounds(resolveScheduledSounds) {
       this.resolveScheduledSounds = resolveScheduledSounds;
@@ -878,10 +874,7 @@
         audioNode.connect(this.gainNode);
         audioNode.start(time2, 0, clickLength);
       }
-      this.gainNode.gain.setValueAtTime(
-        this.volume * (this.voiceDucking ? 0.25 : 1) * relativeVolume / 100,
-        time2
-      );
+      this.gainNode.gain.setValueAtTime(this.volume * relativeVolume / 100, time2);
       return audioNode;
     }
     click(t = 0) {

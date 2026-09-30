@@ -35,7 +35,7 @@ export class GrokRecognition {
           channelCount: 1,
           echoCancellation: true,
           noiseSuppression: true,
-          autoGainControl: true,
+          autoGainControl: false,
         },
         video: false,
       });

@@ -18,7 +18,6 @@ export interface ClickerOptions {
 export class Clicker {
   audioContext: InstanceType<typeof AudioContext>;
   volume: number;
-  voiceDucking = false;
   gainNode: InstanceType<typeof GainNode>;
   sounds: SoundPack = {};
   private soundRequest = 0;
@@ -72,10 +71,6 @@ export class Clicker {
 
   setVolume(volume: number) {
     this.volume = volume;
-  }
-
-  setVoiceDucking(enabled: boolean) {
-    this.voiceDucking = enabled;
   }
 
   setResolveScheduledSounds(resolveScheduledSounds?: ClickerOptions['resolveScheduledSounds']) {
@@ -167,10 +162,7 @@ export class Clicker {
       audioNode.start(time, 0, clickLength);
     }
 
-    this.gainNode.gain.setValueAtTime(
-      (this.volume * (this.voiceDucking ? 0.25 : 1) * relativeVolume) / 100,
-      time,
-    );
+    this.gainNode.gain.setValueAtTime((this.volume * relativeVolume) / 100, time);
     return audioNode;
   }
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Clicker, DEFAULT_SOUNDS } from '@/core/index';
 import type { SoundPack } from '@/core/index';
 import type { SoundSpec } from '@/core/types';
@@ -69,13 +69,6 @@ export function useClicker(options: ClickerHookOptions = defaultClickerOptions) 
         sounds,
       }),
   );
-
-  useEffect(() => {
-    const onVoiceDucking = (event: Event) =>
-      clicker.setVoiceDucking((event as CustomEvent<boolean>).detail);
-    window.addEventListener('bipium:voice-duck', onVoiceDucking);
-    return () => window.removeEventListener('bipium:voice-duck', onVoiceDucking);
-  }, [clicker]);
 
   return clicker;
 }

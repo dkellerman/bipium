@@ -9,7 +9,7 @@ import { useApp } from '@/AppContext';
 import { useTapBPM } from '@/hooks';
 import { cn, isEditableEventTarget } from '@/lib/utils';
 import { sendOneEvent } from '@/tracking';
-import { MachineVisualizer } from './MachineVisualizer';
+import { DefaultVisualizer } from '@/components/DefaultVisualizer';
 import { DrumLaneLabels } from './DrumLaneLabels';
 
 export interface MachineExtras {
@@ -295,7 +295,8 @@ export function VisualizerCore({
 
   return (
     <div className="relative overflow-hidden bg-black" style={{ width, height }}>
-      <MachineVisualizer
+      <DefaultVisualizer
+        skipEdgeGridLines
         id={visualizers[0]}
         metronome={metronome}
         width={width}
