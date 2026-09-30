@@ -260,7 +260,7 @@ export function prepare(prompt, current, recentTurns = [], alternatives = [], tr
     transcriptionWords,
     patterns,
     request: {
-      model: 'typesafe/jev-1.13',
+      model: 'jev-1.13.0',
       state: {
         request: prompt,
         recognition_alternatives: alternatives,
@@ -494,7 +494,7 @@ async function voiceJson(request, env, progress = () => {}) {
     )
       return Response.json({ error: 'Invalid voice context' }, { status: 400, headers });
     const start = Date.now();
-    if (!env.OPENROUTER_API_KEY)
+    if (!env.TYPESAFE_API_KEY)
       return Response.json(
         { error: 'Voice interpretation is not configured.' },
         { status: 503, headers },
@@ -507,10 +507,10 @@ async function voiceJson(request, env, progress = () => {}) {
       transcriptionWords?.map(({ text, start, end }) => ({ text, start, end })),
     );
     const retrieved = Date.now();
-    const response = await fetch('https://openrouter.ai/api/alpha/decisions', {
+    const response = await fetch('https://api.typesafe.ai/v1/systemone', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${env.OPENROUTER_API_KEY}`,
+        Authorization: `Bearer ${env.TYPESAFE_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(prepared.request),

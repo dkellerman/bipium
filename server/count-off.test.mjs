@@ -64,7 +64,7 @@ describe('model interpreted count-offs', () => {
             currentConfig: API_DEFAULT_CONFIG,
           }),
         }),
-        { OPENROUTER_API_KEY: 'test' },
+        { TYPESAFE_API_KEY: 'test' },
       );
       expect(response.status).toBe(200);
       const result = await response.json();
@@ -93,7 +93,7 @@ describe('model interpreted count-offs', () => {
             currentConfig: current,
           }),
         }),
-        { OPENROUTER_API_KEY: 'test' },
+        { TYPESAFE_API_KEY: 'test' },
       );
       const raw = await response.text();
       const result = stream ? JSON.parse(raw.trim()).result : JSON.parse(raw);

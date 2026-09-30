@@ -4,7 +4,7 @@ import worker from '../dist/server/index.js';
 
 function environment() {
   return {
-    OPENROUTER_API_KEY: 'test-secret-not-for-client',
+    TYPESAFE_API_KEY: 'test-secret-not-for-client',
     ASSETS: {
       fetch: async request => new Response(new URL(request.url).pathname),
     },

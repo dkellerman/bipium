@@ -1,6 +1,6 @@
 import { transcription } from './transcription.mjs';
 import { voice } from './voice.mjs';
-// Server-only entrypoint. Future OpenRouter calls use env.OPENROUTER_API_KEY;
+// Server-only entrypoint. Direct Jev calls use env.TYPESAFE_API_KEY;
 // never return runtime secrets or inject them into the client bundle.
 const appRoutes = new Set(['/', '/machine', '/apidocs', '/about']);
 

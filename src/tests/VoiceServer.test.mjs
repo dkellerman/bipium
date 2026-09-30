@@ -295,7 +295,7 @@ describe('voice interpretation and vector retrieval', () => {
         method: 'POST',
         body: JSON.stringify({ prompt, currentConfig: current }),
       }),
-      { OPENROUTER_API_KEY: 'private-test-key' },
+      { TYPESAFE_API_KEY: 'private-test-key' },
     );
     const body = await result.json();
     expect(body.prompt).toBe(prompt);
@@ -306,7 +306,22 @@ describe('voice interpretation and vector retrieval', () => {
     expect(typeof body.confidence).toBe('number');
     expect(body.references).toHaveLength(4);
     expect(JSON.stringify(body)).not.toContain('private-test-key');
-    expect(provider.mock.calls[0][0]).toBe('https://openrouter.ai/api/alpha/decisions');
+    expect(provider.mock.calls[0][0]).toBe('https://api.typesafe.ai/v1/systemone');
+    expect(provider.mock.calls[0][1].headers.Authorization).toBe('Bearer private-test-key');
+    expect(JSON.parse(provider.mock.calls[0][1].body).model).toBe('jev-1.13.0');
+  });
+  it('requires the direct provider credential even when an old router key exists', async () => {
+    const provider = vi.fn();
+    vi.stubGlobal('fetch', provider);
+    const response = await voice(
+      new Request('https://test/api/voice', {
+        method: 'POST',
+        body: JSON.stringify({ prompt: '85', currentConfig: current }),
+      }),
+      { OPENROUTER_API_KEY: 'old-router-key' },
+    );
+    expect(response.status).toBe(503);
+    expect(provider).not.toHaveBeenCalled();
   });
   it('rejects malformed inputs before calling the provider', async () => {
     const provider = vi.fn();
@@ -317,7 +332,7 @@ describe('voice interpretation and vector retrieval', () => {
     ]) {
       const result = await voice(
         new Request('https://test/api/voice', { method: 'POST', body: JSON.stringify(body) }),
-        { OPENROUTER_API_KEY: 'test' },
+        { TYPESAFE_API_KEY: 'test' },
       );
       expect(result.status).toBe(400);
     }
@@ -328,7 +343,7 @@ describe('voice interpretation and vector retrieval', () => {
 it('a song lookup streams progress and changes only BPM', async () => {
   const base = { ...current, swing: 17, soundPack: 'drumkit', loopMode: true };
   const fetcher = vi.fn(async (url, options) => {
-    if (String(url).includes('openrouter')) {
+    if (String(url).includes('api.typesafe.ai')) {
       const request = JSON.parse(options.body);
       const songChoice = Object.entries(request.questions.songQuery.criteria).find(
         ([, v]) => v === 'Test Song by Test Artist',
@@ -361,7 +376,7 @@ it('a song lookup streams progress and changes only BPM', async () => {
       headers: { Accept: 'application/x-ndjson' },
       body: JSON.stringify({ prompt: 'play Test Song by Test Artist', currentConfig: base }),
     }),
-    { OPENROUTER_API_KEY: 'test' },
+    { TYPESAFE_API_KEY: 'test' },
   );
   const events = (await response.text())
     .trim()
