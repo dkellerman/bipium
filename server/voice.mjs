@@ -47,7 +47,7 @@ export function prepare(prompt, current, recentTurns = [], alternatives = [], tr
         reset: 'Reset everything or restore default settings',
         unrelated: 'Not a music control request',
         unsupported:
-          'Requires unsupported audio export, velocities, additional drum lanes, tempo ramps, or conflicting instructions',
+          'Requests a value outside the supported parameter ranges, unsupported audio export, velocities, additional drum lanes, tempo ramps, or conflicting instructions',
       },
     ),
     countFirst: choice(
@@ -326,7 +326,7 @@ export function assemble(prepared, answers, current) {
       message:
         selected.action === 'unrelated'
           ? 'Try describing a beat or changing its tempo.'
-          : 'That request needs controls this version does not support.',
+          : 'That request is outside the supported controls or value ranges. Kept the current beat.',
     };
   if (selected.action === 'stopListening')
     return { call: null, listening: 'stop', message: 'Listening stopped.' };

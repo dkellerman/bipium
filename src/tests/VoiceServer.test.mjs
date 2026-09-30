@@ -173,6 +173,34 @@ describe('voice interpretation and vector retrieval', () => {
       100,
     );
   });
+  it('leaves bare-number targeting to Jev with context and unchanged choice ranges', () => {
+    const recentTurns = [{ prompt: 'set swing to 20 percent', applied: true }];
+    const p = prepare('30', current, recentTurns);
+    expect(p.request.state.request).toBe('30');
+    expect(p.request.state.recent_turns).toEqual(recentTurns);
+    const noContext = prepare('30', current);
+    for (const field of ['tempo', 'tempoHigh', 'swing', 'volume', 'subDivs', 'beats'])
+      expect(p.request.questions[field].criteria).toEqual(
+        noContext.request.questions[field].criteria,
+      );
+    const swing = assemble(p, decisions(p, { swing: 'n:30' }), current).call.args[0];
+    expect(swing).toMatchObject({ bpm: current.bpm, swing: 30, volume: current.volume });
+    const tempo = assemble(p, decisions(p, { tempo: 'n:30' }), current).call.args[0];
+    expect(tempo).toMatchObject({ bpm: 30, swing: current.swing, volume: current.volume });
+    expect(assemble(p, decisions(p, { action: 'unrelated' }), current).call).toBeNull();
+  });
+  it('does not clamp or redirect an out-of-range contextual tempo', () => {
+    const base = { ...current, bpm: 320 };
+    const p = prepare('340', base, [{ prompt: '320', applied: true }]);
+    expect(p.request.state.request).toBe('340');
+    expect(p.request.questions.tempoHigh.criteria).not.toHaveProperty('n:340');
+    expect(assemble(p, decisions(p, { action: 'unsupported' }), base).call).toBeNull();
+  });
+  it('does not translate eighths into a subdivision edit without a model decision', () => {
+    const p = prepare('eighths', current, [{ prompt: '120 BPM', applied: true }]);
+    expect(assemble(p, decisions(p), current).call.args[0].subDivs).toBe(current.subDivs);
+    expect(assemble(p, decisions(p, { subDivs: '2' }), current).call.args[0].subDivs).toBe(2);
+  });
   it('provides recognition alternatives to Jev without changing the original prompt', () => {
     const p = prepare('make a beep at 100', current, [], ['make a beat at 100']);
     expect(p.request.state.request).toBe('make a beep at 100');
