@@ -33,6 +33,12 @@ describe('model interpreted count-offs', () => {
       estimateCountOff(anchors, { first: 0, last: 3, intervals: 3, subdivisions: 1 }),
     ).toMatchObject({ bpm: 120 });
   });
+  it.each([119.4, 119.6])('returns whole BPM for a timing estimate near %s', tempo => {
+    const anchors = Array.from({ length: 4 }, (_, i) => ({ start: (i * 60) / tempo }));
+    const result = estimateCountOff(anchors, { first: 0, last: 3, intervals: 3, subdivisions: 1 });
+    expect(result.bpm).toBe(Math.round(tempo));
+    expect(result.beatIntervalSeconds).toBeCloseTo(60 / tempo, 10);
+  });
   it('uses the musical spacing selected by Jev for subdivided pulses', () => {
     expect(
       estimateCountOff(words('1 ee and uh'), { first: 0, last: 3, intervals: 3, subdivisions: 4 }),

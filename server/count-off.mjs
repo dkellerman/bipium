@@ -21,7 +21,8 @@ export function estimateCountOff(words, { first, last, intervals, subdivisions }
   if (!Number.isFinite(start) || !Number.isFinite(end) || start < 0 || end <= start)
     return unavailable('The selected count-off timestamps are missing or out of order.');
   const beatIntervalSeconds = ((end - start) * subdivisions) / intervals;
-  const bpm = Math.round((60 / beatIntervalSeconds) * 10) / 10;
+  // Timing estimates use whole BPM; retain precise timing evidence below.
+  const bpm = Math.round(60 / beatIntervalSeconds);
   if (bpm < 30 || bpm > 300)
     return unavailable('The selected timing falls outside the 30–300 BPM count-off range.');
   return {

@@ -27,7 +27,7 @@ export function estimatePercussion(hits) {
     if (accentGroup) break;
   }
   const candidates = [1, 2, 3, 4]
-    .map(subdivisions => ({ bpm: Math.round(600 / interval / subdivisions) / 10, subdivisions }))
+    .map(subdivisions => ({ bpm: Math.round(60 / interval / subdivisions), subdivisions }))
     .filter(c => c.bpm >= 30 && c.bpm <= 300);
   const preferred =
     candidates.find(c => c.subdivisions === accentGroup) ??

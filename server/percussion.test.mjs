@@ -35,6 +35,18 @@ describe('server percussion analysis', () => {
     });
     expect(a.at(-1).candidates).toContainEqual({ bpm: 60, subdivisions: 2 });
   });
+  it.each([119.4, 119.6])('returns whole BPM for every percussion candidate near %s', tempo => {
+    const result = estimatePercussion(
+      Array.from({ length: 6 }, (_, i) => ({
+        time: (i * 60) / tempo,
+        strength: 1,
+      })),
+    );
+    expect(result.bpm).toBe(Math.round(tempo));
+    for (const candidate of result.candidates) {
+      expect(candidate.bpm).toBe(Math.round(tempo / candidate.subdivisions));
+    }
+  });
   it('suggests accent grouping only after three repeated groups', () => {
     const audio = recording([0.5, 0.75, 1, 1.25, 1.5, 1.75], [0.8, 0.3]);
     const r = feed(new PercussionDetector(), audio).at(-1);
