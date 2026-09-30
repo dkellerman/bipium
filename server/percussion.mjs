@@ -59,8 +59,6 @@ export class PercussionDetector {
     this.frameSamples = 0;
     this.energy = 0;
     this.peak = 0;
-    this.previous = 0;
-    this.flux = 0;
     this.floor = 0.001;
     this.lastRms = 0;
     this.pending = null;
@@ -80,13 +78,10 @@ export class PercussionDetector {
       const x = view.getInt16(i, true) / 32768;
       this.energy += x * x;
       this.peak = Math.max(this.peak, Math.abs(x));
-      this.flux += (x - this.previous) ** 2;
-      this.previous = x;
       this.samples++;
       this.frameSamples++;
       if (this.frameSamples !== 480) continue;
       const rms = Math.sqrt(this.energy / 480),
-        high = this.flux / (this.energy + 1e-9),
         time = this.samples / 48000;
       if (time > this.speechUntil) {
         if (
@@ -96,17 +91,17 @@ export class PercussionDetector {
           rms > this.lastRms * 2.5 &&
           this.peak > 0.035
         ) {
-          this.pending = { time: time - 0.01, strength: rms, high, frames: 1 };
+          this.pending = { time: time - 0.01, strength: rms, frames: 1 };
         } else if (this.pending) {
           const p = this.pending;
           p.frames++;
           p.strength = Math.max(p.strength, rms);
-          p.high = Math.max(p.high, high);
-          // Reject sustained sounds. Short, abrupt broadband attacks are the initial target.
+          // Require an abrupt attack and short decay. Frequency content is not a reliable
+          // gate: real snare and kick recordings fail a broadband-only threshold.
           if (p.frames > 15) this.pending = null;
           else if (rms < p.strength * 0.2) {
             this.pending = null;
-            if (p.frames >= 2 && p.high > 0.15) {
+            if (p.frames >= 2) {
               if (p.time - this.lastHit > 2.2) this.hits = [];
               this.lastHit = p.time;
               this.hits.push({ time: p.time, strength: p.strength });
@@ -122,7 +117,6 @@ export class PercussionDetector {
       this.frameSamples = 0;
       this.energy = 0;
       this.peak = 0;
-      this.flux = 0;
     }
     return results;
   }

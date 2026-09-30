@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { PercussionDetector, estimatePercussion } from './percussion.mjs';
 function recording(times, amplitudes = [0.5]) {
   const samples = new Int16Array(Math.ceil(((times.at(-1) ?? 0) + 0.5) * 48000));
@@ -22,6 +23,22 @@ function feed(detector, buffer, size = 9600) {
   return results;
 }
 describe('server percussion analysis', () => {
+  it.each(['snare1', 'kick1'])('detects repeated recorded %s attacks', name => {
+    const bytes = readFileSync(new URL(`./fixtures/${name}.pcm`, import.meta.url));
+    const sample = new Int16Array(
+      bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
+    );
+    const audio = new Int16Array(48000 * 6);
+    for (let hit = 1; hit <= 8; hit++) {
+      for (let i = 0; i < sample.length; i++) {
+        const index = hit * 24000 + i;
+        audio[index] = Math.max(-32768, Math.min(32767, audio[index] + sample[i]));
+      }
+    }
+    const results = feed(new PercussionDetector(), audio.buffer);
+    expect(results.length).toBeGreaterThan(0);
+    expect(results.at(-1).bpm).toBe(120);
+  });
   it('estimates 120 BPM from short broadband attacks independently of network chunk boundaries', () => {
     const audio = recording([0.5, 1, 1.5, 2, 2.5, 3]);
     const a = feed(new PercussionDetector(), audio),
