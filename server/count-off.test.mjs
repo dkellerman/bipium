@@ -97,6 +97,7 @@ describe('model interpreted count-offs', () => {
       );
       const raw = await response.text();
       const result = stream ? JSON.parse(raw.trim()).result : JSON.parse(raw);
+      expect(fetch).toHaveBeenCalledOnce();
       expect(result).toMatchObject({
         playback: 'start',
         countOff: { bpm: 120 },
@@ -104,6 +105,25 @@ describe('model interpreted count-offs', () => {
       });
     },
   );
+  it('defines a shared musical span without depending on same-call answers', () => {
+    const prepared = prepare(
+      'ready one two three four',
+      API_DEFAULT_CONFIG,
+      [],
+      [],
+      words('ready one two three four'),
+    );
+    expect(prepared.request.state.count_off_scope).toContain(
+      'first and last reliably timestamped musical pulses',
+    );
+    for (const field of ['countFirst', 'countLast', 'countIntervals', 'countDivisions']) {
+      const instruction = prepared.request.questions[field].instructions;
+      expect(instruction).toContain('state.count_off_scope');
+      expect(instruction).not.toMatch(
+        /For action countOff|after countFirst|selected first|selected musical pulses/,
+      );
+    }
+  });
   it('preserves playback when Jev selects count-off without usable timing', () => {
     const prepared = prepare('one two three four', API_DEFAULT_CONFIG);
     const result = assemble(

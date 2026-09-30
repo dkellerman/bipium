@@ -1,14 +1,12 @@
 import { estimateCountOff } from './count-off.mjs';
 import { createSchemas, fitDrumLoopGrid, seedDrumLoopPattern } from '../src/core/api.ts';
 import { retrieve, corpusCount } from './retrieval.mjs';
-import { applyChangePolicy, interpretationPolicy } from './change-policy.mjs';
+import { applyChangePolicy, interpretationPolicy, changePolicyContext } from './change-policy.mjs';
 import { songCandidates, lookupSongTempo } from './song-tempo.mjs';
 const schema = createSchemas(new Set(['drumkit', 'defaults'])).config;
 const choice = (instructions, criteria) => ({
   type: 'choice',
-  instructions:
-    instructions +
-    ' Follow the user request over optional source examples. Preserve unmentioned settings for edits.',
+  instructions,
   criteria,
 });
 const nums = (start, end) =>
@@ -16,7 +14,14 @@ const nums = (start, end) =>
     Array.from({ length: end - start + 1 }, (_, i) => [String(start + i), String(start + i)]),
   );
 const lanes = ['kick', 'hat', 'snare'];
-export function prepare(prompt, current, recentTurns = [], alternatives = [], transcriptionWords) {
+export function prepare(
+  prompt,
+  current,
+  recentTurns = [],
+  alternatives = [],
+  transcriptionWords,
+  detailedDrums = false,
+) {
   const references = retrieve(
     [
       ...recentTurns
@@ -35,9 +40,11 @@ export function prepare(prompt, current, recentTurns = [], alternatives = [], tr
       { keep: 'No song lookup needed', ...songs },
     ),
     action: choice(
-      'Classify the requested operation in a voice-controlled metronome. A song title offered on its own requests its tempo and counts as play. Unrelated speech must not create a beat.',
+      'Which operation does the current utterance request in this voice-controlled metronome? Classify directly from state.request and its conversation context, without assuming any parameter answers. A song title offered on its own requests its tempo and counts as play. Use unsupported for requests outside the supported capabilities or ranges; do not substitute a different operation. Unrelated speech must not create a beat.',
       {
-        play: 'Create or change a beat, tempo, metronome, request a named song tempo, or resume playback',
+        play: 'General groove or style creation, ordinary settings, named song tempo, or resume playback; no specific drum-hit manipulation',
+        drumEdit:
+          'Specific instrument-pattern manipulation: adding, removing, moving or replacing drum hits, including contextual continuations. Use this even if ordinary settings are also requested. A general groove or style request alone is play.',
         countOff:
           'A performed spoken count-in or rhythmic syllables that establish a tempo for playback',
         stop: 'Stop or pause playback',
@@ -51,7 +58,7 @@ export function prepare(prompt, current, recentTurns = [], alternatives = [], tr
       },
     ),
     countFirst: choice(
-      'For action countOff, select the index of the first reliably timed spoken pulse. Interpret the original speech freely, including digits, number words, rhythmic syllables, and filler. All timestamps are candidates; code does not classify their wording. For other actions or missing timing choose keep.',
+      'Which timestamped word begins the performed count described by state.count_off_scope? Return its index. Use only the speech and timestamps in state. Choose keep if there is no unambiguous timed count.',
       {
         keep: 'No reliable first anchor',
         ...Object.fromEntries(
@@ -63,7 +70,7 @@ export function prepare(prompt, current, recentTurns = [], alternatives = [], tr
       },
     ),
     countLast: choice(
-      'For action countOff, select the index of the last reliably timed pulse after countFirst, spanning the performed count. Do not select unrelated speech. For other actions or missing timing choose keep.',
+      'Which timestamped word ends the performed count described by state.count_off_scope? Return its index. Use only the speech and timestamps in state. Choose keep if there is no unambiguous timed count.',
       {
         keep: 'No reliable last anchor',
         ...Object.fromEntries(
@@ -75,11 +82,11 @@ export function prepare(prompt, current, recentTurns = [], alternatives = [], tr
       },
     ),
     countIntervals: choice(
-      'For action countOff, how many equal musical pulse intervals elapse between the selected first and last anchors? Count intervals, not words or endpoints. Interpret filler and subdivisions semantically. If not reliably inferable choose keep. The server computes elapsed time divided by these intervals.',
+      'How many equal musical pulse intervals span the performed count described by state.count_off_scope, from its first to its last reliably timed pulse? Derive the span directly from the speech and timestamps in state. Count musical intervals, not transcript words or endpoints. Choose keep if the span is ambiguous or no timed count is present.',
       { keep: 'Cannot establish pulse spacing', ...nums(1, 79) },
     ),
     countDivisions: choice(
-      'For action countOff, how many of the selected musical pulses make one beat? Numbered quarter-note counts usually mean one; subdivided counting can have multiple pulses per beat. Interpret the performed rhythm. This is only for calculating tempo, not changing the existing drum grid. For other actions or uncertain grouping choose keep.',
+      'How many equally spaced musical pulses make one beat in the performed count described by state.count_off_scope? Infer the grouping directly from the speech and timestamps in state, independently of the existing drum grid. Choose keep if grouping is uncertain or no timed count is present.',
       {
         keep: 'Cannot establish beat grouping',
         1: 'Each pulse is a whole beat: numbered beat counting, not subdivisions',
@@ -93,7 +100,7 @@ export function prepare(prompt, current, recentTurns = [], alternatives = [], tr
       },
     ),
     tempo: choice(
-      'Choose requested BPM from 20 through 240 or relative tempo. Read both digits and written words. For an exact BPM above 240 choose keep; the separate high-tempo question handles it. Never substitute a relative or approximate choice for an exact value. For a named song BPM lookup choose keep; do not guess the song tempo. Numeric candidates may refer to other settings; only choose one if it describes tempo.',
+      'Choose requested BPM from 20 through 240 or relative tempo. Read both digits and written words. For an exact BPM outside 20–240 choose keep. Never substitute a relative or approximate choice for an exact value. For a named song BPM lookup choose keep; do not guess the song tempo. Numeric candidates may refer to other settings; only choose one if it describes tempo.',
       {
         ...numeric(20, 240),
         keep: 'No tempo change stated',
@@ -192,53 +199,55 @@ export function prepare(prompt, current, recentTurns = [], alternatives = [], tr
       funk: 'Beat 1, and of 2, beat 3',
     };
     const divisions = current.playSubDivs ? current.subDivs : 1;
-    for (let step = 0; step < current.beats * divisions; step++) {
-      const position = step / divisions;
-      const beat = Math.floor(position) + 1;
-      const part = step % divisions;
-      const label =
-        part === 0
-          ? `beat ${beat}`
-          : part / divisions === 0.5
-            ? `the and of beat ${beat}`
-            : divisions === 4
-              ? `the ${part === 1 ? 'e' : 'a'} of beat ${beat}`
-              : `subdivision ${part + 1} of ${divisions} on beat ${beat}`;
-      patterns[lane][`only:${step}`] = [position];
-      criteria[`only:${step}`] = `Play ${lane} ONLY on ${label}; remove its other hits`;
-      // Relative choices carry the complete edited lane, retaining every other hit.
-      const exists = patterns[lane].keep.includes(position);
-      const key = `${exists ? 'remove' : 'add'}:${step}`;
-      patterns[lane][key] = exists
-        ? patterns[lane].keep.filter(p => p !== position)
-        : [...patterns[lane].keep, position].sort((a, b) => a - b);
-      criteria[key] =
-        `${exists ? 'Remove' : 'Add'} ${lane} on ${label} only; preserve all its other hits`;
-      if (exists) {
-        for (const [direction, delta] of [
-          ['back', -divisions],
-          ['forward', divisions],
-        ]) {
-          const destination =
-            (step + delta + current.beats * divisions) % (current.beats * divisions);
-          patterns[lane][`move-${direction}:${step}`] = [
-            ...patterns[lane].keep.filter(p => p !== position),
-            destination / divisions,
-          ].sort((a, b) => a - b);
-          criteria[`move-${direction}:${step}`] =
-            `Move ${lane} from ${label} ${direction} one beat; preserve its other hits`;
+    if (detailedDrums) {
+      for (let step = 0; step < current.beats * divisions; step++) {
+        const position = step / divisions;
+        const beat = Math.floor(position) + 1;
+        const part = step % divisions;
+        const label =
+          part === 0
+            ? `beat ${beat}`
+            : part / divisions === 0.5
+              ? `the and of beat ${beat}`
+              : divisions === 4
+                ? `the ${part === 1 ? 'e' : 'a'} of beat ${beat}`
+                : `subdivision ${part + 1} of ${divisions} on beat ${beat}`;
+        patterns[lane][`only:${step}`] = [position];
+        criteria[`only:${step}`] = `Play ${lane} ONLY on ${label}; remove its other hits`;
+        // Relative choices carry the complete edited lane, retaining every other hit.
+        const exists = patterns[lane].keep.includes(position);
+        const key = `${exists ? 'remove' : 'add'}:${step}`;
+        patterns[lane][key] = exists
+          ? patterns[lane].keep.filter(p => p !== position)
+          : [...patterns[lane].keep, position].sort((a, b) => a - b);
+        criteria[key] =
+          `${exists ? 'Remove' : 'Add'} ${lane} on ${label} only; preserve all its other hits`;
+        if (exists) {
+          for (const [direction, delta] of [
+            ['back', -divisions],
+            ['forward', divisions],
+          ]) {
+            const destination =
+              (step + delta + current.beats * divisions) % (current.beats * divisions);
+            patterns[lane][`move-${direction}:${step}`] = [
+              ...patterns[lane].keep.filter(p => p !== position),
+              destination / divisions,
+            ].sort((a, b) => a - b);
+            criteria[`move-${direction}:${step}`] =
+              `Move ${lane} from ${label} ${direction} one beat; preserve its other hits`;
+          }
         }
       }
-    }
-    for (const [direction, delta] of [
-      ['back', -1],
-      ['forward', 1],
-    ]) {
-      patterns[lane][`shift-${direction}`] = patterns[lane].keep.map(
-        p => (p + delta + current.beats) % current.beats,
-      );
-      criteria[`shift-${direction}`] =
-        `Move all existing ${lane} hits ${direction} one beat, wrapping within the bar`;
+      for (const [direction, delta] of [
+        ['back', -1],
+        ['forward', 1],
+      ]) {
+        patterns[lane][`shift-${direction}`] = patterns[lane].keep.map(
+          p => (p + delta + current.beats) % current.beats,
+        );
+        criteria[`shift-${direction}`] =
+          `Move all existing ${lane} hits ${direction} one beat, wrapping within the bar`;
+      }
     }
     references.forEach((r, i) => {
       patterns[lane]['ref' + i] = r.pattern[lane].map(s => s / 4);
@@ -246,14 +255,12 @@ export function prepare(prompt, current, recentTurns = [], alternatives = [], tr
         `${r.title}: ${lane} source pattern at quarter-note positions ${patterns[lane]['ref' + i].join(', ')} (zero=beat 1). Optional style example.`;
     });
     questions[lane] = choice(
-      `Choose the resulting ${lane} pattern. Add/remove choices edit one position while preserving other hits. Move choices relocate one named hit; shift choices move the specified hits by the stated distance. ONLY choices replace the lane with one hit. Silent removes the ENTIRE lane, never a single specified hit. Within a requested new custom drum pattern, select a suitable example or pattern. Specific placements and removals take precedence. Preserve this lane when editing other instruments. For a continuation that omits the instrument, resolve the instrument from the most recent relevant user request. Apply the continuation ONLY to that instrument and choose keep for every other lane. Do not treat omitted instrument names as permission to add the same hit to multiple lanes. For example, after a request about the snare, an additional placement without an instrument still targets only the snare.`,
+      detailedDrums
+        ? `Choose the resulting ${lane} pattern. Add/remove choices edit one position while preserving other hits. Move choices relocate one named hit; shift choices move the specified hits by the stated distance. ONLY choices replace the lane with one hit. Silent removes the ENTIRE lane, never a single specified hit. Within a requested new custom drum pattern, select a suitable example or pattern. Specific placements and removals take precedence. Preserve this lane when editing other instruments. For a continuation that omits the instrument, resolve the instrument from the most recent relevant user request. Choose keep for this lane if the continuation refers to a different instrument. Do not treat omitted instrument names as permission to add the same hit to multiple lanes. For example, after a request about the snare, an additional placement without an instrument still targets only the snare.`
+        : `Which resulting ${lane} pattern fits the overall requested groove? Use the whole musical request, meter, tempo feel and optional references. Preserve this lane for ordinary setting changes and specific hit edits; detailed manipulation is handled separately.`,
       criteria,
     );
   }
-  const countTimingGuidance =
-    ' Interpret counting syllables as musical pulses, not conversational filler when used rhythmically. Conventional sixteenth-note counting such as one e and a or one ee and uh has four pulses per beat: with four separate timestamped syllables, first index 0, last index 3, three intervals, four divisions. A sequence such as 1, 2, 3, 4 or one two three four is four whole-beat pulses: three intervals and ONE pulse per beat, not four subdivisions. The number of beats in the count is not the countDivisions value. A performed subdivision count can establish tempo within one beat; multiple numbered beats are not required. These are musical examples for your interpretation, not text-matching rules. Select based on the actual request and available timestamps, including natural variations.';
-  for (const field of ['countFirst', 'countLast', 'countIntervals', 'countDivisions'])
-    questions[field].instructions += countTimingGuidance;
   applyChangePolicy(questions);
   return {
     references,
@@ -275,6 +282,9 @@ export function prepare(prompt, current, recentTurns = [], alternatives = [], tr
             }
           : {}),
         interpretation_policy: interpretationPolicy,
+        change_policies: changePolicyContext(Object.keys(questions)),
+        count_off_scope:
+          'A performed count is one unambiguous continuous rhythmic sequence in the current utterance, bounded by its first and last reliably timestamped musical pulses. Ignore introductory or trailing conversational speech; interpret rhythmic syllables and filler by their musical role. If multiple sequences or irregular timing make that span ambiguous, choose keep for timing answers. Read the span directly from transcription_timing.words; no other question answers are available. Intervals are elapsed equal musical pulse steps across this span; divisions are pulses per beat, not the number of beats counted. For example, four numbered whole-beat pulses span three intervals with one pulse per beat; four sixteenth-note syllables such as one e and a or one ee and uh span three intervals with four pulses per beat. In such performed counting, the final a or uh is a timed musical pulse, not trailing conversational filler. These are model interpretation examples, not transcript matching rules.',
         current_config: current,
         recent_turns: recentTurns,
         context_note:
@@ -289,7 +299,50 @@ export function prepare(prompt, current, recentTurns = [], alternatives = [], tr
     },
   };
 }
-export function assemble(prepared, answers, current) {
+export function prepareDrumEdit(main, current) {
+  const state = main.request.state;
+  const prepared = prepare(
+    state.request,
+    current,
+    state.recent_turns,
+    state.recognition_alternatives,
+    undefined,
+    true,
+  );
+  prepared.request.questions = Object.fromEntries(
+    [...lanes, 'loopMode'].map(field => [field, prepared.request.questions[field]]),
+  );
+  prepared.request.state = {
+    request: state.request,
+    recent_turns: state.recent_turns,
+    recognition_alternatives: state.recognition_alternatives,
+    current_config: current,
+    interpretation_policy: state.interpretation_policy,
+    change_policies: changePolicyContext(Object.keys(prepared.request.questions)),
+    context_note: state.context_note,
+    speech_note: state.speech_note,
+    drum_edit_note:
+      'Jev classified this request as specific drum manipulation. Choose the requested resulting lane patterns from the actual current grid; preserve all unmentioned hits and lanes. Resolve omitted instruments and positions from conversation context. Each lane is judged from this same state, not another answer. Select drum mode when the edit requires a custom pattern, preserve the current mode if no edit is justified, and honor an explicit mode request. Do not generate a new genre pattern in place of an edit.',
+    current_hits: Object.fromEntries(
+      lanes.map(lane => [
+        lane,
+        prepared.patterns[lane].keep.map(position => ({
+          beat: Math.floor(position) + 1,
+          offset: position % 1,
+        })),
+      ]),
+    ),
+  };
+  for (const lane of lanes) {
+    // Style retrieval stays in general beat creation, not the explicit editing query.
+    for (const key of Object.keys(prepared.request.questions[lane].criteria)) {
+      if (key.startsWith('ref')) delete prepared.request.questions[lane].criteria[key];
+    }
+  }
+  return prepared;
+}
+
+function validateAnswers(prepared, answers) {
   for (const [field, q] of Object.entries(prepared.request.questions)) {
     const a = answers?.[field];
     if (
@@ -302,6 +355,10 @@ export function assemble(prepared, answers, current) {
     )
       throw Error('Jev returned an incomplete decision. Please try again.');
   }
+}
+
+export function assemble(prepared, answers, current) {
+  validateAnswers(prepared, answers);
   if (answers.action.confidence <= 0.5) return { call: null, message: 'Kept the current beat.' };
   const selected = Object.fromEntries(
     Object.entries(answers).map(([k, a]) => [k, a.confidence > 0.5 ? a.choice : 'keep']),
@@ -499,7 +556,7 @@ async function voiceJson(request, env, progress = () => {}) {
         { error: 'Voice interpretation is not configured.' },
         { status: 503, headers },
       );
-    const prepared = prepare(
+    let prepared = prepare(
       body.prompt,
       current.data,
       recentTurns.map(({ prompt, applied }) => ({ prompt, applied })),
@@ -507,21 +564,53 @@ async function voiceJson(request, env, progress = () => {}) {
       transcriptionWords?.map(({ text, start, end }) => ({ text, start, end })),
     );
     const retrieved = Date.now();
-    const response = await fetch('https://api.typesafe.ai/v1/systemone', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${env.TYPESAFE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(prepared.request),
-      signal: AbortSignal.any([request.signal, AbortSignal.timeout(15000)]),
-    });
-    if (!response.ok)
+    const evaluate = async preparedRequest => {
+      const response = await fetch('https://api.typesafe.ai/v1/systemone', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${env.TYPESAFE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(preparedRequest),
+        signal: AbortSignal.any([request.signal, AbortSignal.timeout(15000)]),
+      });
+      if (!response.ok) return { errorStatus: response.status };
+      return response.json();
+    };
+    let result = await evaluate(prepared.request);
+    if (result.errorStatus)
       return Response.json(
-        { error: `Jev is unavailable (${response.status}). Please try again.` },
+        { error: `Jev is unavailable (${result.errorStatus}). Please try again.` },
         { status: 502, headers },
       );
-    const result = await response.json();
+    validateAnswers(prepared, result.answers);
+    const mainRequest = prepared.request;
+    let drumEditRequest;
+    if (result.answers.action.choice === 'drumEdit' && result.answers.action.confidence > 0.5) {
+      const specialist = prepareDrumEdit(prepared, current.data);
+      drumEditRequest = specialist.request;
+      const editResult = await evaluate(drumEditRequest);
+      if (editResult.errorStatus)
+        return Response.json(
+          { error: `Jev is unavailable (${editResult.errorStatus}). Please try again.` },
+          { status: 502, headers },
+        );
+      validateAnswers(specialist, editResult.answers);
+      // Apply neither stage until both responses are valid. The specialist owns lanes and mode.
+      prepared = {
+        ...prepared,
+        patterns: specialist.patterns,
+        request: {
+          ...prepared.request,
+          questions: { ...prepared.request.questions, ...specialist.request.questions },
+        },
+      };
+      const usage = {
+        input_tokens: (result.usage?.input_tokens ?? 0) + (editResult.usage?.input_tokens ?? 0),
+        output_tokens: (result.usage?.output_tokens ?? 0) + (editResult.usage?.output_tokens ?? 0),
+      };
+      result = { ...result, answers: { ...result.answers, ...editResult.answers }, usage };
+    }
     let output = assemble(prepared, result.answers, current.data);
     const songAnswer = result.answers.songQuery;
     if (
@@ -568,7 +657,8 @@ async function voiceJson(request, env, progress = () => {}) {
         decisions: result.answers,
         references: prepared.references,
         model: prepared.request.model,
-        jevRequest: prepared.request,
+        jevRequest: mainRequest,
+        ...(drumEditRequest ? { drumEditRequest } : {}),
         usage: result.usage,
         timing: { retrievalMs: retrieved - start, totalMs: Date.now() - start },
         corpusCount,

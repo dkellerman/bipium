@@ -45,3 +45,12 @@ No other hardcoded interpretation exception is recorded. Do not add one on the u
 - Run `VisualizerLifecycle.test.tsx` after visualizer or lifecycle edits. Verify both themes. Desktop responsive mode and Chrome device emulation do NOT verify this physical-iPhone regression; never claim physical-device success without testing there.
 
 - Voice mode must not change playback volume or apply a voice gain multiplier. Do not reintroduce automatic ducking/boosting. Microphone capture requests automatic gain control off.
+
+## Jev questions in one request
+
+- Use one Jev request for ordinary settings and general groove creation. The user authorized a second specialized request only when Jev classifies specific drum manipulation (2026-09-29: “ok let’s try this”; no transcript matching). Each question must be answerable from shared request state without reading another question's answer; same-call answers are evaluated independently.
+- Independence is about available evidence, not musical isolation. Tempo, meter, subdivisions, swing, and patterns remain connected through the whole musical request. General groove requests may imply multiple coordinated settings; specific edits preserve unmentioned settings.
+- Never instruct one question to use another question's "selected" answer. Define any shared musical span or frame in state and have each question judge its own part directly from that evidence.
+- Do not add transcript parsing or deterministic intent overrides to reconcile answers. The existing explicit-approval policy still applies.
+
+- Drum specialist scope: reuse the existing lane edit choices and grid arithmetic, send exact current configuration and recent context, and return the same client setConfig API with the chosen mode. Preserve unrelated behavior; no additional language heuristics or capability expansion.

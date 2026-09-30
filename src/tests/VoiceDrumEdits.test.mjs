@@ -1,8 +1,11 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
-import { prepare, assemble } from '../../server/voice.mjs';
+import { prepare as prepareMain, assemble } from '../../server/voice.mjs';
 import { API_DEFAULT_CONFIG } from '../core/api';
 const current = structuredClone(API_DEFAULT_CONFIG);
+// Existing execution tests exercise the full specialist candidate set.
+const prepare = (prompt, config, history = [], alternatives = [], words) =>
+  prepareMain(prompt, config, history, alternatives, words, true);
 function answers(p, overrides = {}) {
   return Object.fromEntries(
     Object.entries(p.request.questions).map(([field, q]) => {
