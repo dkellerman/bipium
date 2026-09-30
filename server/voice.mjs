@@ -1,7 +1,7 @@
 import { estimateCountOff } from './count-off.mjs';
 import { createSchemas, fitDrumLoopGrid, seedDrumLoopPattern } from '../src/core/api.ts';
 import { retrieve, corpusCount } from './retrieval.mjs';
-import { applyChangePolicy } from './change-policy.mjs';
+import { applyChangePolicy, interpretationPolicy } from './change-policy.mjs';
 import { songCandidates, lookupSongTempo } from './song-tempo.mjs';
 const schema = createSchemas(new Set(['drumkit', 'defaults'])).config;
 const choice = (instructions, criteria) => ({
@@ -274,6 +274,7 @@ export function prepare(prompt, current, recentTurns = [], alternatives = [], tr
               },
             }
           : {}),
+        interpretation_policy: interpretationPolicy,
         current_config: current,
         recent_turns: recentTurns,
         context_note:

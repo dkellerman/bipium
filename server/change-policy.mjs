@@ -49,12 +49,13 @@ const shared =
 const contextGuidance =
   ' Interpret short replies, bare values, fragments, and continuations generically across every musical property and operation. Weigh the explicit meaning and units of the current utterance, the recent conversational topic and its recency, the current player state, ordinary musical plausibility, supported choices, and whether the user is correcting, replacing, adding to, or continuing the last request. No single factor is an automatic routing rule. Explicit meaning can establish a new topic; otherwise recent context can resolve an omitted target when the value plausibly fits. Do not blindly assign a value to the last-mentioned property if the context no longer fits. Recent turns can establish the topic even if not applied; applied=false still means no state change occurred. Interpret the intended quantity before checking whether the player can execute it. A value outside a supported range can still clearly refer to that quantity: select unsupported, preserve the player state, and never substitute a nearby value or reinterpret it as another property merely to make it executable. If there is no relevant context or explicit target, a bare number in the existing supported 20–320 BPM range is likely tempo; this is a model preference only, not a narrower normal-range cutoff or a rule overriding context. Choose one coherent interpretation across all questions; preserve properties not implicated by that interpretation instead of applying the same value to several settings. A lone value is not automatically a performed count-off; interpret the speech and rhythm context. When uncertainty remains, preserve uncertain settings rather than inventing intent.';
 
+export const interpretationPolicy = contextGuidance + shared;
 export function applyChangePolicy(questions) {
   for (const [field, question] of Object.entries(questions)) {
     const policy = policies[field];
     if (!policy) throw new Error(`Missing change policy: ${field}`);
     question.instructions +=
-      contextGuidance + shared + ` Change policy: ${policy.level}. ${levels[policy.level]}`;
+      ` Follow state.interpretation_policy. Before selecting a value, identify what the current request refers to using recent_turns and current_config. Choose keep if it targets another property. Change policy: ${policy.level}. ${levels[policy.level]}`;
     if (policy.scope) question.instructions += ' ' + policy.scope;
     for (const [option, level] of Object.entries(policy.choices || {})) {
       question.instructions += ` For choice ${option}, override the field policy with ${level}: ${levels[level]}`;
