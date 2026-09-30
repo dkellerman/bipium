@@ -80,7 +80,17 @@ export function prepare(prompt, current, recentTurns = [], alternatives = [], tr
     ),
     countDivisions: choice(
       'For action countOff, how many of the selected musical pulses make one beat? Numbered quarter-note counts usually mean one; subdivided counting can have multiple pulses per beat. Interpret the performed rhythm. This is only for calculating tempo, not changing the existing drum grid. For other actions or uncertain grouping choose keep.',
-      { keep: 'Cannot establish beat grouping', ...nums(1, 8) },
+      {
+        keep: 'Cannot establish beat grouping',
+        1: 'Each pulse is a whole beat: numbered beat counting, not subdivisions',
+        2: 'Two pulses per beat: eighth-note subdivision counting',
+        3: 'Three pulses per beat: triplet subdivision counting',
+        4: 'Four pulses per beat: sixteenth-note subdivision counting',
+        5: 'Five pulses per beat: quintuplet subdivision counting',
+        6: 'Six pulses per beat: sextuplet subdivision counting',
+        7: 'Seven pulses per beat: septuplet subdivision counting',
+        8: 'Eight pulses per beat: thirty-second-note subdivision counting',
+      },
     ),
     tempo: choice(
       'Choose requested BPM from 20 through 240 or relative tempo. Read both digits and written words. For an exact BPM above 240 choose keep; the separate high-tempo question handles it. Never substitute a relative or approximate choice for an exact value. For a named song BPM lookup choose keep; do not guess the song tempo. Numeric candidates may refer to other settings; only choose one if it describes tempo.',
@@ -241,7 +251,7 @@ export function prepare(prompt, current, recentTurns = [], alternatives = [], tr
     );
   }
   const countTimingGuidance =
-    ' Interpret counting syllables as musical pulses, not conversational filler when used rhythmically. Conventional sixteenth-note counting such as one e and a or one ee and uh has four pulses per beat: with four separate timestamped syllables, first index 0, last index 3, three intervals, four divisions. Four numbered beat counts have three intervals and one division. A performed subdivision count can establish tempo within one beat; multiple numbered beats are not required. These are musical examples for your interpretation, not text-matching rules. Select based on the actual request and available timestamps, including natural variations.';
+    ' Interpret counting syllables as musical pulses, not conversational filler when used rhythmically. Conventional sixteenth-note counting such as one e and a or one ee and uh has four pulses per beat: with four separate timestamped syllables, first index 0, last index 3, three intervals, four divisions. A sequence such as 1, 2, 3, 4 or one two three four is four whole-beat pulses: three intervals and ONE pulse per beat, not four subdivisions. The number of beats in the count is not the countDivisions value. A performed subdivision count can establish tempo within one beat; multiple numbered beats are not required. These are musical examples for your interpretation, not text-matching rules. Select based on the actual request and available timestamps, including natural variations.';
   for (const field of ['countFirst', 'countLast', 'countIntervals', 'countDivisions'])
     questions[field].instructions += countTimingGuidance;
   applyChangePolicy(questions);
