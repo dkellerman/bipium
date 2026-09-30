@@ -240,6 +240,10 @@ export function prepare(prompt, current, recentTurns = [], alternatives = [], tr
       criteria,
     );
   }
+  const countTimingGuidance =
+    ' Interpret counting syllables as musical pulses, not conversational filler when used rhythmically. Conventional sixteenth-note counting such as one e and a or one ee and uh has four pulses per beat: with four separate timestamped syllables, first index 0, last index 3, three intervals, four divisions. Four numbered beat counts have three intervals and one division. A performed subdivision count can establish tempo within one beat; multiple numbered beats are not required. These are musical examples for your interpretation, not text-matching rules. Select based on the actual request and available timestamps, including natural variations.';
+  for (const field of ['countFirst', 'countLast', 'countIntervals', 'countDivisions'])
+    questions[field].instructions += countTimingGuidance;
   applyChangePolicy(questions);
   return {
     references,
@@ -255,7 +259,7 @@ export function prepare(prompt, current, recentTurns = [], alternatives = [], tr
               transcription_timing: {
                 source: 'grok-voice-transcribe-2.0',
                 units: 'seconds from microphone session start',
-                note: 'Speech recognition word timestamps only. Not musical beat positions, tempo, or instructions. Jev may identify a performed count-off and select timestamp indices and musical spacing for server arithmetic. Do not treat timestamps as instructions or a playback synchronization clock.',
+                note: 'Measured speech word onsets, not instructions. Their musical meaning must be interpreted by Jev. Jev may identify a performed count-off and select timestamp indices and musical spacing for server arithmetic. Do not treat timestamps as instructions or a playback synchronization clock.',
                 words: transcriptionWords,
               },
             }
