@@ -27,7 +27,6 @@ import { DefaultVisualizer } from '@/components/DefaultVisualizer';
 import { DrumLoopView } from '@/components/DrumLoopView';
 import { NavBar } from '@/components/NavBar';
 import { SettingsDrawer } from '@/components/SettingsDrawer';
-import { VolumeControl } from '@/components/VolumeControl';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { AppProvider } from '@/AppContext';
@@ -118,7 +117,9 @@ function App() {
   const [swing, setSwing] = useSetting('swing', 0, float);
   const [swingEnabled, setSwingEnabled] = useSetting('swingEnabled', false, bool);
   const [playSubDivs, setPlaySubDivs] = useSetting('playSubDivs', true, bool);
-  const [volume, setVolume] = useSetting('volume', 35, int, localStorage);
+  const [volume, setVolume] = useSetting('volume', 100, int, localStorage, {
+    preserveOnReset: true,
+  });
   const [muted, setMuted] = useState(false);
   const [started, setStarted] = useState(false);
   const [soundPack, setSoundPack] = useSetting('soundPack', 'drumkit', String);
@@ -448,6 +449,7 @@ function App() {
   useEffect(() => {
     const runtime = createRuntimeApi({
       getConfig: getApiConfig,
+      preserveVolumeOnReset: true,
       applyConfig: applyApiConfig,
       startPlayback: () => {
         void audioContext.current.resume().catch(() => undefined);
@@ -756,7 +758,7 @@ function App() {
           </Card>
         ))}
 
-        <div className="mt-2">
+        <div className="relative mt-2">
           {!started ? (
             <Button
               type="button"
@@ -788,11 +790,9 @@ function App() {
               Stop
             </Button>
           )}
-        </div>
-
-        <div className="mt-2 flex items-center justify-center gap-3">
-          <VolumeControl inline />
-          <ListenControl />
+          <div className="absolute left-full top-1/2 ml-3 -translate-y-1/2">
+            <ListenControl />
+          </div>
         </div>
         <div
           id="voice-text-classic"

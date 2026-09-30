@@ -679,6 +679,7 @@ export function toQuery(config: ApiConfig): string {
 }
 
 export interface RuntimeControls {
+  preserveVolumeOnReset?: boolean;
   getConfig: () => ApiConfig;
   applyConfig: (config: ApiConfig) => void;
   startPlayback: () => void;
@@ -799,6 +800,7 @@ export function createRuntimeApi(controls: RuntimeControls): RuntimeApi {
     },
     resetToDefaults() {
       const next = cloneApiConfig(API_DEFAULT_CONFIG);
+      if (controls.preserveVolumeOnReset) next.volume = controls.getConfig().volume;
       controls.stopPlayback();
       controls.applyConfig(next);
       return cloneApiConfig(next);

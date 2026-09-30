@@ -6694,6 +6694,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
       },
       resetToDefaults() {
         const next = cloneApiConfig(API_DEFAULT_CONFIG);
+        if (controls.preserveVolumeOnReset) next.volume = controls.getConfig().volume;
         controls.stopPlayback();
         controls.applyConfig(next);
         return cloneApiConfig(next);

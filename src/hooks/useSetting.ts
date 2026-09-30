@@ -11,12 +11,13 @@ export function useSetting<T>(
   defVal: T,
   transform: TransformFn<T> = identityTransform,
   storage: StorageLike = sessionStorage as StorageLike,
+  { preserveOnReset = false }: { preserveOnReset?: boolean } = {},
 ): UseSettingReturn<T> {
   const sget = (key: string) => (storage ? storage.getItem(key) : null);
   const queryValue = q[id];
   const storageValue = sget(id);
   const initialValue =
-    'reset' in q
+    'reset' in q && !preserveOnReset
       ? defVal
       : queryValue === ''
         ? (storageValue ?? defVal)

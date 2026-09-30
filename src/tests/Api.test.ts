@@ -169,6 +169,28 @@ describe('browser api loop support', () => {
     expect(runtime.clearLoopPattern().loopPattern.kick).toEqual(Array(5).fill(false));
   });
 
+  it('preserves the current volume on reset when requested by classic mode', () => {
+    let config = createConfig({ volume: 61, bpm: 137, loopMode: true });
+    const runtime = createRuntimeApi({
+      preserveVolumeOnReset: true,
+      getConfig: () => config,
+      applyConfig: next => {
+        config = next;
+      },
+      startPlayback: () => {},
+      stopPlayback: () => {},
+      togglePlayback: () => false,
+      isPlaying: () => false,
+      tap: () => {},
+      now: () => 0,
+      getSoundPacks: () => ['defaults', 'drumkit'],
+    });
+    expect(runtime.resetToDefaults()).toEqual(createConfig({ volume: 61 }));
+    runtime.setConfig({ volume: 22 });
+    expect(runtime.resetToDefaults().volume).toBe(22);
+    expect(config.volume).toBe(22);
+  });
+
   it('merges runtime methods onto an existing window.bpm namespace and restores it', () => {
     const target = {
       bpm: {
