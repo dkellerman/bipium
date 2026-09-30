@@ -270,25 +270,29 @@ export function ListenControl({
             className="h-8 w-full min-w-0 overflow-hidden text-xs leading-4"
             title={`${lastHeard ? `Heard: ${lastHeard}\n` : ''}${status}`}
           >
-            <div className="truncate">
-              {interim
-                ? `Hearing: ${interim}`
-                : lastHeard
-                  ? `Heard: ${lastHeard}`
-                  : listening
-                    ? 'Listening…'
-                    : ''}
-            </div>
-            <div className="flex items-center justify-center gap-1 truncate">
-              {busy && (
-                <LoaderCircle size={12} className="shrink-0 animate-spin" aria-hidden="true" />
-              )}
-              <span className="truncate">
-                {status === 'Listening for your next phrase…'
-                  ? 'Try “snare on beat four.”'
-                  : status}
-              </span>
-            </div>
+            {status === 'Listening for your next phrase…' && !interim && !lastHeard ? (
+              <div className="line-clamp-2 whitespace-normal">
+                Try “Make a medium tempo funk beat with a little bit of swing.”
+              </div>
+            ) : (
+              <>
+                <div className="truncate">
+                  {interim
+                    ? `Hearing: ${interim}`
+                    : lastHeard
+                      ? `Heard: ${lastHeard}`
+                      : listening
+                        ? 'Listening…'
+                        : ''}
+                </div>
+                <div className="flex items-center justify-center gap-1 truncate">
+                  {busy && (
+                    <LoaderCircle size={12} className="shrink-0 animate-spin" aria-hidden="true" />
+                  )}
+                  <span className="truncate">{status}</span>
+                </div>
+              </>
+            )}
           </div>,
           target,
         )}

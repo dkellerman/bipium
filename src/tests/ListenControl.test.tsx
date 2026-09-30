@@ -107,7 +107,7 @@ describe('listening controls', () => {
     const fetcher = vi.fn(async () => Response.json(response()));
     vi.stubGlobal('fetch', fetcher);
     await click('Listen');
-    expect(document.body.textContent).toContain('snare on beat four');
+    expect(document.body.textContent).toContain('Make a medium tempo funk beat with a little bit of swing');
     await act(async () => FakeSpeech.latest.phrase('funk', false));
     expect(fetcher).not.toHaveBeenCalled();
     await act(async () => FakeSpeech.latest.phrase('funk'));
