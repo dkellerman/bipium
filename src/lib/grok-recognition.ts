@@ -1,5 +1,19 @@
 import { OnsetDetector, type Onset } from './onsets';
-import { musicLikelihood, RhythmStabilizer, type HeardRhythm } from './rhythm-tracker';
+import {
+  musicLikelihood,
+  RhythmStabilizer,
+  type HeardRhythm,
+  type RhythmDiagnosis,
+} from './rhythm-tracker';
+
+export type RhythmStatus = {
+  state: 'analyzing' | 'paused for speech' | 'metronome playing';
+  /** Loudest mic level since the last check, dBFS. */
+  level: number;
+  /** Onsets heard in the last 8 s. */
+  onsets: number;
+  diagnosis?: RhythmDiagnosis;
+};
 import { DevAudioRecorder, devLog } from './dev-log';
 
 const RATE = 48000;
@@ -30,6 +44,9 @@ export class GrokRecognition {
   onrhythm: ((rhythm: HeardRhythm) => void) | null = null;
   /** A steady rhythm was just heard but isn't confirmed yet (keep playing). */
   onrhythmcandidate: (() => void) | null = null;
+  /** Every rhythm check: what the mic picked up and why no rhythm was found yet. */
+  onrhythmstatus: ((status: RhythmStatus) => void) | null = null;
+  private peak = -Infinity; // loudest chunk (dBFS) since the last check
   /** True while rhythm shouldn't be detected (the metronome is playing). */
   ignoreRhythm: (() => boolean) | null = null;
   private cancelled = false;
@@ -176,11 +193,20 @@ export class GrokRecognition {
     this.recording.push(pcm);
     this.onsets.push(pcm);
     this.audioTime += pcm.length / RATE;
+    let sum = 0;
+    for (let i = 0; i < pcm.length; i++) sum += (pcm[i] / 32768) ** 2;
+    this.peak = Math.max(this.peak, 10 * Math.log10(sum / pcm.length + 1e-12));
     if (this.audioTime < this.nextAnalysis) return;
     this.nextAnalysis += ANALYZE_EVERY;
+    const level = Math.round(this.peak);
+    this.peak = -Infinity;
+    const heard = this.onsets.between(this.audioTime - QUIET_FOR, this.audioTime).length;
+    const status = (state: RhythmStatus['state'], diagnosis?: RhythmDiagnosis) =>
+      this.onrhythmstatus?.({ state, level, onsets: heard, diagnosis });
     if (this.ignoreRhythm?.()) {
       this.rhythm.next(null);
       this.noteSteady(null, this.audioTime);
+      status('metronome playing');
       return;
     }
     // Speech pauses rhythm tracking, unless the audio shows music (singing over an
@@ -192,6 +218,7 @@ export class GrokRecognition {
       // itself; the stricter over-speech bar still applies to the analysis.
       if (musicLikelihood(speech) < 0.5 && this.instrumentPlaying() < 0.5) {
         this.rhythm.next(null);
+        status('paused for speech');
         devLog('rhythm', {
           now: this.audioTime,
           skipped: 'speech without music',
@@ -208,6 +235,7 @@ export class GrokRecognition {
       this.rhythmWorker.onmessage = ({ data }) => {
         if (this.cancelled) return;
         this.noteSteady(data.result, data.input.now);
+        this.onrhythmstatus?.({ ...data.input.status, diagnosis: data.diagnosis });
         const report = this.rhythm.next(data.result);
         devLog('rhythm', { ...data.input, analysis: data.result, reported: report });
         if (report) this.onrhythm?.(report);
@@ -218,6 +246,7 @@ export class GrokRecognition {
       onsets: this.onsets.between(this.audioTime - QUIET_FOR, this.audioTime),
       now: this.audioTime,
       speech,
+      status: { state: 'analyzing', level, onsets: heard },
     });
   }
   private noteSteady(result: HeardRhythm | null, now: number) {

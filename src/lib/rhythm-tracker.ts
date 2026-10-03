@@ -52,6 +52,16 @@ export function musicLikelihood({ heldNotes, sharpOnsets }: MusicEvidence) {
   return Math.max(clamp((heldNotes - 0.05) / 0.25), clamp((sharpOnsets - 0.3) / 0.4));
 }
 
+/** What one analysis found, and if nothing, why (shown in voice debug mode). */
+export type RhythmDiagnosis = {
+  result: HeardRhythm | null;
+  reason: string;
+  onsets: number;
+  pulse?: number;
+  coverage?: number;
+  chance?: number;
+};
+
 /**
  * One analysis of the onsets up to `now` (seconds), or null if there's no clear rhythm.
  * `speech` is music evidence when there was speech in the window (null if none).
@@ -61,41 +71,62 @@ export function analyzeOnsets(
   now: number,
   speech: MusicEvidence | null = null,
 ): HeardRhythm | null {
+  return diagnoseOnsets(onsets, now, speech).result;
+}
+
+export function diagnoseOnsets(
+  onsets: Onset[],
+  now: number,
+  speech: MusicEvidence | null = null,
+): RhythmDiagnosis {
   const recent = onsets.filter(o => o.time > now - WINDOW && o.time <= now);
-  if (recent.length < MIN_ONSETS) return null;
-  if (recent[recent.length - 1].time - recent[0].time < MIN_SPAN) return null;
-  if (now - recent[recent.length - 1].time > STILL_GOING) return null;
+  const none = (reason: string, extra = {}) => ({
+    result: null,
+    reason,
+    onsets: recent.length,
+    ...extra,
+  });
+  if (recent.length < MIN_ONSETS) return none('too few onsets');
+  if (recent[recent.length - 1].time - recent[0].time < MIN_SPAN) return none('too short');
+  if (now - recent[recent.length - 1].time > STILL_GOING) return none('stopped');
   const percussive = !!speech && speech.sharpOnsets > speech.heldNotes;
   const result = estimateRhythm(audioEvents(recent, percussive), {
     tempoPreference: TEMPO_PREFERENCE,
   });
+  if (!result) return none('no tempo fits');
+  const scores = {
+    pulse: result.pulseConfidence,
+    coverage: result.coverage,
+    chance: result.chance,
+  };
   // Without words, which tempo a pulse is counted at is a guess (settled below); what
   // has to be clear is that there's a steady pulse at all.
   const needed = speech ? MIN_CONFIDENCE_OVER_SPEECH : MIN_CONFIDENCE;
   // Confidences only rank hypotheses; random onsets need ruling out on their own.
-  if (
-    !result ||
-    result.pulseConfidence < needed ||
-    result.coverage < MIN_COVERAGE ||
-    result.coverage - result.chance < MIN_COVERAGE_OVER_CHANCE
-  )
-    return null;
+  if (result.pulseConfidence < needed) return none('pulse unclear', scores);
+  if (result.coverage < MIN_COVERAGE || result.coverage - result.chance < MIN_COVERAGE_OVER_CHANCE)
+    return none('not steady', scores);
   // The beat: whichever multiple of the pulse is the most common tempo (how a listener
   // would tap along). Accents may say how the beat divides, if they agree on that beat.
   const pulse = result.bpm * result.subdivisions;
   const counts = [1, 2, 3, 4].filter(k => pulse / k >= 20 && pulse / k <= 320);
   const distance = (k: number) => Math.abs(Math.log(pulse / k / TEMPO_PREFERENCE.center));
   const perBeat = counts.reduce((a, b) => (distance(b) < distance(a) ? b : a));
-  if (result.confidence >= needed && result.subdivisions === perBeat) {
-    const { bpm, subdivisions, swing, confidence } = result;
-    return { bpm, subdivisions, swing, confidence };
-  }
-  return {
-    bpm: Math.round(pulse / perBeat),
-    subdivisions: perBeat,
-    swing: 0,
-    confidence: result.pulseConfidence,
-  };
+  const heard =
+    result.confidence >= needed && result.subdivisions === perBeat
+      ? {
+          bpm: result.bpm,
+          subdivisions: result.subdivisions,
+          swing: result.swing,
+          confidence: result.confidence,
+        }
+      : {
+          bpm: Math.round(pulse / perBeat),
+          subdivisions: perBeat,
+          swing: 0,
+          confidence: result.pulseConfidence,
+        };
+  return { result: heard, reason: 'ok', onsets: recent.length, ...scores };
 }
 
 /**

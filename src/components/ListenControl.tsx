@@ -3,7 +3,7 @@ import { createPortal, flushSync } from 'react-dom';
 import { Mic, Square, LoaderCircle, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { readVoiceResponse } from '@/lib/voice-response';
-import { GrokRecognition, type TranscriptWord } from '@/lib/grok-recognition';
+import { GrokRecognition, type RhythmStatus, type TranscriptWord } from '@/lib/grok-recognition';
 import type { Onset } from '@/lib/onsets';
 import { devLog } from '@/lib/dev-log';
 import { VoiceIntro } from '@/components/VoiceIntro';
@@ -45,6 +45,35 @@ function logDecisions(result: VoiceResult) {
   console.log(result);
   console.groupEnd();
 }
+const IDLE = 'Listening for your next phrase…';
+const HEARING_SOUND = 'Hearing sound… play steadily.';
+const HEARING_RHYTHM = 'Hearing a rhythm… keep playing.';
+// Progress messages a newer rhythm check may replace (never a voice reply).
+const RHYTHM_PROGRESS = [IDLE, HEARING_SOUND, HEARING_RHYTHM];
+
+// `?voicedebug` (sticky; `?voicedebug=0` clears it) shows what rhythm detection sees.
+function voiceDebugEnabled() {
+  try {
+    const flag = new URLSearchParams(window.location.search).get('voicedebug');
+    if (flag !== null) localStorage.setItem('voiceDebug', flag === '0' ? '' : '1');
+    return localStorage.getItem('voiceDebug') === '1';
+  } catch {
+    return false;
+  }
+}
+
+function describeRhythmStatus({ state, level, onsets, diagnosis }: RhythmStatus) {
+  const parts = [`mic ${Number.isFinite(level) ? level : '-∞'} dB`, `${onsets} onsets/8s`, state];
+  if (diagnosis) {
+    parts.push(diagnosis.result ? `${diagnosis.result.bpm} BPM` : diagnosis.reason);
+    if (diagnosis.pulse !== undefined)
+      parts.push(
+        `pulse ${diagnosis.pulse.toFixed(2)} cov ${diagnosis.coverage?.toFixed(2)}/${diagnosis.chance?.toFixed(2)}`,
+      );
+  }
+  return parts.join(' · ');
+}
+
 export function ListenControl({
   variant = 'classic',
 }: {
@@ -61,6 +90,8 @@ export function ListenControl({
   const [interim, setInterim] = useState('');
   const [lastHeard, setLastHeard] = useState('');
   const [status, setStatus] = useState('Describe a beat to get started.');
+  const [debug] = useState(voiceDebugEnabled);
+  const [debugLine, setDebugLine] = useState('');
   const [busy, setBusy] = useState(false);
   const [history, setHistory] = useState<VoiceResult[]>(() => {
     try {
@@ -197,8 +228,20 @@ export function ListenControl({
     recognition.onrhythmcandidate = () => {
       if (!active.current || sr.current !== recognition || metronomePlaying()) return;
       setOpen(true);
+      setStatus(current => (RHYTHM_PROGRESS.includes(current) ? HEARING_RHYTHM : current));
+    };
+    // Feedback whenever the mic picks up sound, so playing is never met with silence.
+    recognition.onrhythmstatus = rhythmStatus => {
+      if (!active.current || sr.current !== recognition) return;
+      if (debug) setDebugLine(describeRhythmStatus(rhythmStatus));
+      if (rhythmStatus.state !== 'analyzing' || rhythmStatus.diagnosis?.result) return;
+      const next = rhythmStatus.onsets >= 3 ? HEARING_SOUND : IDLE;
       setStatus(current =>
-        current.startsWith('Hearing ') ? current : 'Hearing a rhythm… keep playing.',
+        current === HEARING_RHYTHM && next === HEARING_SOUND
+          ? current
+          : RHYTHM_PROGRESS.includes(current)
+            ? next
+            : current,
       );
     };
     recognition.onrhythm = rhythm => {
@@ -237,8 +280,7 @@ export function ListenControl({
       setStatus(`Hearing ${heard}. Say “start” or press Start to play.`);
     };
     recognition.onready = () => {
-      if (active.current && sr.current === recognition)
-        setStatus('Listening for your next phrase…');
+      if (active.current && sr.current === recognition) setStatus(IDLE);
     };
     recognition.onresult = event => {
       if (sr.current !== recognition) return;
@@ -381,20 +423,22 @@ export function ListenControl({
             className="h-8 w-full min-w-0 overflow-hidden text-xs leading-4"
             title={`${lastHeard ? `Heard: ${lastHeard}\n` : ''}${status}`}
           >
-            {status === 'Listening for your next phrase…' && !interim && !lastHeard ? (
+            {status === IDLE && !interim && !lastHeard && !debug ? (
               <div className="line-clamp-2 whitespace-normal">
                 Try “Make a medium tempo funk beat with a little bit of swing.”
               </div>
             ) : (
               <>
                 <div className="truncate">
-                  {interim
-                    ? `Hearing: ${interim}`
-                    : lastHeard
-                      ? `Heard: ${lastHeard}`
-                      : listening
-                        ? 'Listening…'
-                        : ''}
+                  {debug && debugLine && !interim
+                    ? debugLine
+                    : interim
+                      ? `Hearing: ${interim}`
+                      : lastHeard
+                        ? `Heard: ${lastHeard}`
+                        : listening
+                          ? 'Listening…'
+                          : ''}
                 </div>
                 <div className="flex items-center justify-center gap-1 truncate">
                   {busy && (
