@@ -145,9 +145,10 @@ describe('listening controls', () => {
       swing: 0,
     });
     expect(api.start).not.toHaveBeenCalled();
-    expect(document.body.textContent).toContain(
-      'Hearing 92 BPM, 2 per beat. Say “start” or press Start to play.',
-    );
+    expect(document.body.textContent).toContain('Hearing 92 BPM, 2 per beat');
+    // The Start badge next to the heard tempo starts the metronome.
+    await click('▶ Start');
+    expect(api.start).toHaveBeenCalledTimes(1);
   });
 
   it('ignores heard rhythm while the metronome is playing', async () => {

@@ -92,6 +92,8 @@ export function ListenControl({
   const [status, setStatus] = useState('Describe a beat to get started.');
   const [debug] = useState(voiceDebugEnabled);
   const [debugLine, setDebugLine] = useState('');
+  // The last tempo heard from playing, shown with a Start badge while it's the status.
+  const [heardTempo, setHeardTempo] = useState<{ label: string; status: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [history, setHistory] = useState<VoiceResult[]>(() => {
     try {
@@ -273,7 +275,9 @@ export function ListenControl({
       const heard = `${rhythm.bpm} BPM${rhythm.subdivisions > 1 ? `, ${rhythm.subdivisions} per beat` : ''}${
         rhythm.swing ? `, ${rhythm.swing}% swing` : ''
       }`;
-      setStatus(`Hearing ${heard}. Say “start” or press Start to play.`);
+      const statusText = `Hearing ${heard}. Say “start” or press Start to play.`;
+      setHeardTempo({ label: heard, status: statusText });
+      setStatus(statusText);
     };
     recognition.onready = () => {
       if (active.current && sr.current === recognition) setStatus(IDLE);
@@ -440,7 +444,25 @@ export function ListenControl({
                   {busy && (
                     <LoaderCircle size={12} className="shrink-0 animate-spin" aria-hidden="true" />
                   )}
-                  <span className="truncate">{status}</span>
+                  {heardTempo && status === heardTempo.status ? (
+                    <span className="flex min-w-0 items-center gap-1.5">
+                      <span className="truncate">
+                        Hearing <strong>{heardTempo.label}</strong>
+                      </span>
+                      <button
+                        type="button"
+                        className="shrink-0 rounded-full bg-emerald-700 px-2 py-px text-[11px] font-semibold text-white hover:bg-emerald-800"
+                        onClick={() => {
+                          window.dispatchEvent(new Event('bipium:unlock-audio'));
+                          runtime()?.start();
+                        }}
+                      >
+                        ▶ Start
+                      </button>
+                    </span>
+                  ) : (
+                    <span className="truncate">{status}</span>
+                  )}
                 </div>
               </>
             )}
