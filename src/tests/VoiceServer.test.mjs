@@ -425,6 +425,27 @@ describe('music around speech', () => {
   });
 });
 
+describe('playing along to a heard tempo', () => {
+  it('acts only on a spoken stop', async () => {
+    stubJev({ action: 'play', ...tempo('1', '2', '0') });
+    expect(await say('one twenty', current, { playAlong: true })).toMatchObject({
+      call: null,
+      message: '',
+    });
+    stubJev({ action: 'stop' });
+    expect((await say('stop', current, { playAlong: true, sung: 0.1 })).call).toMatchObject({
+      method: 'stop',
+    });
+    stubJev({ action: 'stop' });
+    expect(await say('stop', current, { playAlong: true, sung: 0.9 })).toMatchObject({
+      call: null,
+      message: '',
+    });
+    stubJev({ action: 'play', ...tempo('1', '2', '0') });
+    expect((await say('one twenty')).call.args[0]).toEqual({ bpm: 120 }); // not playing along
+  });
+});
+
 describe('responses', () => {
   it('acts on nothing when the action itself is unsure', async () => {
     stubJev({ action: ['reset', 0.5] });

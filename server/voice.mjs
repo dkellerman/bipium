@@ -51,6 +51,11 @@ function readBody(body) {
   const music = body.music;
   if (music !== undefined && !(Number.isFinite(music) && music >= 0 && music <= 1))
     return { error: 'Invalid music evidence' };
+  const sung = body.sung ?? 0;
+  if (!(Number.isFinite(sung) && sung >= 0 && sung <= 1))
+    return { error: 'Invalid singing evidence' };
+  if (body.playAlong !== undefined && typeof body.playAlong !== 'boolean')
+    return { error: 'Invalid play-along state' };
   const recentTurns = body.recentTurns ?? [];
   if (
     !Array.isArray(recentTurns) ||
@@ -72,6 +77,8 @@ function readBody(body) {
     words: words?.map(({ text, start }) => ({ text, start })),
     onsets: onsets.map(({ time, strength, level }) => ({ time, strength, level })),
     music: music ?? 0,
+    sung,
+    playAlong: body.playAlong === true,
     // What each turn did, not just what was said, so "undo that" or "the last snare
     // you added" can be resolved.
     recentTurns: recentTurns.map(({ prompt, applied, outcome }) => ({
@@ -101,37 +108,73 @@ function summarize(patch, style) {
   if (patch.playSubDivs === false) parts.push('subdivisions off');
   if ('swing' in patch) parts.push(patch.swing ? `${patch.swing}% swing` : 'straight');
   if ('volume' in patch) parts.push(`volume ${patch.volume}`);
-  if ('loopRepeats' in patch) parts.push(patch.loopRepeats ? `${patch.loopRepeats} bars` : 'repeat forever');
+  if ('loopRepeats' in patch)
+    parts.push(patch.loopRepeats ? `${patch.loopRepeats} bars` : 'repeat forever');
   if ('soundPack' in patch) parts.push(patch.soundPack === 'drumkit' ? 'drum kit' : 'beeps');
   if ('loopMode' in patch) parts.push(patch.loopMode ? 'drum mode' : 'click mode');
   return parts.join(' · ');
 }
 
+// Share of a phrase's audio in held, pitched notes above which it was sung, not spoken.
+const SUNG = 0.5;
+
 async function interpret(input, env, signal) {
   const { prompt, current, alternatives, words, recentTurns, music } = input;
   const trace = {};
-  const query = [...recentTurns.filter(t => t.applied).slice(-2).map(t => t.said), prompt].join(' ');
+  const query = [
+    ...recentTurns
+      .filter(t => t.applied)
+      .slice(-2)
+      .map(t => t.said),
+    prompt,
+  ].join(' ');
   const context = retrieveContext(query);
   const styleNames = candidateStyles(query);
 
   const timed = (words?.length ?? 0) >= 3;
-  const main = buildMainRequest({ prompt, current, recentTurns, alternatives, timed, music, context, styleNames });
+  const main = buildMainRequest({
+    prompt,
+    current,
+    recentTurns,
+    alternatives,
+    timed,
+    music,
+    context,
+    styleNames,
+  });
   const mainResult = await askJev(env, main, signal);
   trace.main = { request: main, answers: mainResult.answers, usage: mainResult.usage };
   const plan = readMainAnswers(mainResult.answers, current);
+
+  // Playing along to a tempo heard from the user's instrument: stop is the only thing
+  // voice acts on, so playing and lyrics can't keep changing the beat, and a stop that
+  // was sung (the phrase's own audio held pitched notes) is a lyric, not a command.
+  if (input.playAlong && (plan.action !== 'stop' || input.sung >= SUNG))
+    return { output: { call: null, message: '' }, trace };
 
   // Over music, words Jev finds unrelated or can't place are likely lyrics or the
   // instrument itself: not worth a reply; keep whatever the status line shows.
   if ((!plan.action || plan.action === 'unrelated') && music >= 0.5)
     return { output: { call: null, message: '' }, trace };
-  if (!plan.action) return { output: { call: null, message: 'I didn’t catch that. Kept the current beat.' }, trace };
+  if (!plan.action)
+    return {
+      output: { call: null, message: 'I didn’t catch that. Kept the current beat.' },
+      trace,
+    };
   if (SIMPLE[plan.action]) return { output: SIMPLE[plan.action], trace };
   if (plan.action === 'countOff') {
     // Jev decided this is a count-in; the timing is measured, not interpreted.
-    const countIn = estimateCountIn({ words, onsets: input.onsets, subdivisions: plan.countSubdivisions });
+    const countIn = estimateCountIn({
+      words,
+      onsets: input.onsets,
+      subdivisions: plan.countSubdivisions,
+    });
     trace.countIn = countIn;
     if (!countIn || countIn.confidence <= 0.5)
-      return { output: { call: null, countIn, message: '[count-in] I couldn’t time that count-in.' }, trace };
+      return {
+        output: { call: null, countIn, message: '[count-in] I couldn’t time that count-in.' },
+        trace,
+      };
     const patch = { bpm: countIn.bpm };
     // The count sets the feel: counted subdivisions turn them on, a plain beat count
     // turns them off, so an earlier setting can't linger under a new count.
@@ -165,7 +208,15 @@ async function interpret(input, env, signal) {
   let positions = null;
   if (plan.action === 'drumEdit') {
     const base = style ? stylePositions(style, next.beats) : positionsOf(next);
-    const drums = buildDrumRequest({ prompt, recentTurns, alternatives, config: next, base, style, context });
+    const drums = buildDrumRequest({
+      prompt,
+      recentTurns,
+      alternatives,
+      config: next,
+      base,
+      style,
+      context,
+    });
     const drumResult = await askJev(env, drums.request, signal);
     trace.drums = { request: drums.request, answers: drumResult.answers, usage: drumResult.usage };
     positions = readDrumAnswers(drumResult.answers, drums.slots, base, next.beats);
@@ -245,8 +296,9 @@ export function voice(request, env) {
         if (!request.signal.aborted)
           controller.enqueue(
             encoder.encode(
-              JSON.stringify(response.ok ? { type: 'result', result } : { type: 'error', error: result.error }) +
-                '\n',
+              JSON.stringify(
+                response.ok ? { type: 'result', result } : { type: 'error', error: result.error },
+              ) + '\n',
             ),
           );
         controller.close();

@@ -94,6 +94,13 @@ export function ListenControl({
   const [debugLine, setDebugLine] = useState('');
   // The last tempo heard from playing, shown with a Start badge while it's the status.
   const [heardTempo, setHeardTempo] = useState<{ label: string; status: string } | null>(null);
+  // Playing along: the metronome was started while a tempo heard from playing was shown.
+  // Then only a spoken "stop" acts (decided on the server, by what Jev chose).
+  const playAlong = useRef(false);
+  const statusRef = useRef(status);
+  statusRef.current = status;
+  const heardTempoRef = useRef(heardTempo);
+  heardTempoRef.current = heardTempo;
   const [busy, setBusy] = useState(false);
   const [history, setHistory] = useState<VoiceResult[]>(() => {
     try {
@@ -140,6 +147,7 @@ export function ListenControl({
     words?: TranscriptWord[],
     onsets?: Onset[],
     music?: number,
+    sung?: number,
   ) => {
     prompt = prompt.trim();
     if (!prompt) return;
@@ -157,6 +165,9 @@ export function ListenControl({
         const abort = new AbortController();
         controller.current = abort;
         setBusy(true);
+        // Was a tempo heard from playing showing when this was said? (For play-along.)
+        const onHeardTempo =
+          !!heardTempoRef.current && statusRef.current === heardTempoRef.current.status;
         setStatus(`Finding a beat for “${prompt}”…`);
         const currentConfig = api.getConfig();
         try {
@@ -169,6 +180,8 @@ export function ListenControl({
               transcriptionWords: words,
               ...(onsets?.length ? { onsets } : {}),
               ...(music !== undefined ? { music } : {}),
+              ...(sung !== undefined ? { sung } : {}),
+              playAlong: playAlong.current,
               currentConfig,
               recentTurns: historyRef.current.slice(-6).map(turn => ({
                 prompt: turn.prompt,
@@ -187,7 +200,7 @@ export function ListenControl({
           if (debug) {
             const action = result.debug?.main?.answers?.action;
             setDebugLine(
-              `“${prompt}” · music ${(music ?? 0).toFixed(2)} → ${
+              `“${prompt}” · music ${(music ?? 0).toFixed(2)} · sung ${(sung ?? 0).toFixed(2)}${playAlong.current ? ' · playing along' : ''} → ${
                 action ? `${action.choice} ${action.confidence.toFixed(2)}` : 'no action'
               } · ${result.call?.method ?? 'no call'}`,
             );
@@ -208,7 +221,11 @@ export function ListenControl({
             const validated = api.validateConfig(result.call.args[0]);
             if (!validated.ok) throw Error('The returned beat could not be played.');
             flushSync(() => api.setConfig(validated.value));
-            if (result.playback === 'start') api.start();
+            if (result.playback === 'start') {
+              // Starting on a tempo just heard from playing: from here, only "stop" acts.
+              if (onHeardTempo) playAlong.current = true;
+              api.start();
+            }
           } else if (result.call?.method === 'stop') api.stop();
           else if (result.call?.method === 'clearLoopPattern')
             flushSync(() => api.clearLoopPattern());
@@ -244,6 +261,10 @@ export function ListenControl({
     recognition.onrhythmstatus = rhythmStatus => {
       if (!active.current || sr.current !== recognition) return;
       if (debug) setDebugLine(describeRhythmStatus(rhythmStatus));
+      if (rhythmStatus.state === 'metronome playing') {
+        if (heardTempoRef.current && statusRef.current === heardTempoRef.current.status)
+          playAlong.current = true;
+      } else playAlong.current = false;
       if (rhythmStatus.state !== 'analyzing' || rhythmStatus.diagnosis?.result) return;
       // Enough onsets to analyze means it's working on a tempo, even if this check failed.
       const analyzed = (rhythmStatus.diagnosis?.onsets ?? 0) >= 8;
@@ -305,6 +326,7 @@ export function ListenControl({
             event.words,
             event.onsets,
             event.music,
+            event.sung,
           );
         else unfinished += result[0].transcript;
       }
@@ -469,6 +491,7 @@ export function ListenControl({
                         className="shrink-0 rounded-full bg-emerald-700 px-2 text-[11px] font-semibold leading-4 text-white hover:bg-emerald-800"
                         onClick={() => {
                           window.dispatchEvent(new Event('bipium:unlock-audio'));
+                          playAlong.current = true;
                           runtime()?.start();
                         }}
                       >

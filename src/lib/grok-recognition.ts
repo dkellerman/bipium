@@ -30,6 +30,8 @@ export type RecognitionEvent = {
   onsets?: Onset[];
   /** 0…1: how much the audio around the phrase looked like music (singing, playing). */
   music?: number;
+  /** 0…1: how much the phrase's own words were sung (held, pitched notes) rather than spoken. */
+  sung?: number;
   results: {
     length: number;
     [index: number]: { isFinal: boolean; length: number; [index: number]: { transcript: string } };
@@ -158,6 +160,14 @@ export class GrokRecognition {
                   : data.speech_final && words?.length
                     ? 0
                     : undefined,
+              sung:
+                data.speech_final && words?.length
+                  ? musicLikelihood({
+                      heldNotes: this.onsets.music(words[0].start, words[words.length - 1].end)
+                        .heldNotes,
+                      sharpOnsets: 0,
+                    })
+                  : undefined,
               results: [
                 {
                   isFinal: data.speech_final === true,

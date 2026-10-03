@@ -117,6 +117,14 @@ is acted on only above 0.5 confidence; otherwise that setting stays as it is.
   While the metronome plays, phrases are never flagged as music: its own clicks read as
   percussion and made commands like "stop" look like lyrics (user: "I stopped playing
   and said stop and it recognized it but didn't act").
+- **Playing along (2026-10-03).** Once the metronome is started while a tempo heard
+  from the user's playing is showing (Start badge, "start", or the Start button), only
+  a spoken stop acts until it stops. User: "if it's activated due to instrument
+  detection, then you're only allowed to stop ... if you say stop, it should stop. But if
+  you sing stop, it shouldn't. [Don't] hard code stuff". Jev still decides that a phrase
+  means stop; code allows only that action. "Sung" is measured from audio (held,
+  pitched notes over the phrase's own words), never from the words. Everything else is
+  ignored silently while playing along.
 - **Audio-only percussion analysis.** "instrument is fine" / "ok, no jev then":
   PCM onset detection and timing estimation (`server/percussion.mjs` on the relay; now
   superseded in the app by the browser tracker). No transcript parsing.
