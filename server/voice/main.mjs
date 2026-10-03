@@ -18,7 +18,7 @@ const GUIDANCE = [
   'Choose keep or none when the utterance does not ask to change that thing. Do not change settings as a side effect of an unrelated request.',
   'Recent utterances resolve follow-ups ("faster", "a bit more", "and on four too") but are not requests themselves.',
   'Speech recognition can mishear: "beat" may appear as "beep" and "and" as "end". Alternate transcripts are other guesses at the same speech.',
-  'DIGITS: for an exact number the user said for a setting (as digits or words, even outside the supported range), the digit questions give each decimal place: 128 is hundreds 1, tens 2, ones 8; 95 is hundreds 0. Read spoken numbers as numbers first: "one thirty" and "a hundred thirty" are 130 (ones 0), "one oh five" is 105, "ninety" is 90. Answer none if no exact number was said for that setting; ignore numbers said for other settings.',
+  'DIGITS: for an exact number the user said for a setting (as digits or words, even outside the supported range; a target value or an amount to change it by), the digit questions give each decimal place: 128 is hundreds 1, tens 2, ones 8; 95 is hundreds 0. Read spoken numbers as numbers first: "one thirty" and "a hundred thirty" are 130 (ones 0), "one oh five" is 105, "ninety" is 90. Answer none if no exact number was said for that setting; ignore numbers said for other settings.',
   'A number right next to a setting\'s name ("volume 60", "swing 30", "tempo 90") sets that setting. A bare number with no other context most likely means tempo in BPM. The player supports 20–320 BPM; a number outside that range still means what the user said.',
 ].join(' ');
 
@@ -36,10 +36,23 @@ const playerState = config => ({
 });
 
 const numberOptions = (from, to, describe) =>
-  Object.fromEntries(Array.from({ length: to - from + 1 }, (_, i) => [String(from + i), describe(from + i)]));
+  Object.fromEntries(
+    Array.from({ length: to - from + 1 }, (_, i) => [String(from + i), describe(from + i)]),
+  );
 
-export function buildMainRequest({ prompt, current, recentTurns, alternatives, timed, music = 0, context, styleNames = [] }) {
-  const offered = [...new Set([...BASICS, ...styleNames])].map(name => STYLES[styleKey(name)]).filter(Boolean);
+export function buildMainRequest({
+  prompt,
+  current,
+  recentTurns,
+  alternatives,
+  timed,
+  music = 0,
+  context,
+  styleNames = [],
+}) {
+  const offered = [...new Set([...BASICS, ...styleNames])]
+    .map(name => STYLES[styleKey(name)])
+    .filter(Boolean);
   // A count-in is only offered when there's word timing to measure it from.
   const hasCountOff = timed;
   const questions = {
@@ -48,58 +61,71 @@ export function buildMainRequest({ prompt, current, recentTurns, alternatives, t
         ? 'What does the user want the player to do? Music is being heard (state.heard_music): words not clearly addressed to the player are most likely lyrics or singing, so choose unrelated unless the request to the player is clear.'
         : 'What does the user want the player to do?',
       {
-      play: 'Start or change the beat: tempo, meter, subdivisions, feel, volume, sounds, mode, a style or groove, or just play',
-      drumEdit:
-        'Change specific drum hits: add, remove or move kick, snare or hat hits, including follow-ups such as "and on four too"',
-      ...(hasCountOff
-        ? {
-            countOff:
-              'The user performed a spoken count-in, counting beats or subdivisions aloud ("one, two, three, four", "one and two and", "one trip let two trip let", "one e and a two e and a"), to set the tempo. A count-in needs more than two numbers; two numbers alone, or a time signature named by its numbers ("three four"), are not a count-in',
-          }
-        : {}),
-      stop: 'Stop or pause playback',
-      stopListening: 'Stop listening to the microphone, leaving playback alone',
-      clear: 'Clear all drum hits',
-      reset: 'Reset everything to the defaults',
-      unrelated: 'Not talking to the player (including singing or lyrics)',
-      unsupported:
-        'Asks for something this player cannot do, such as other instruments, tempo ramps, velocity or exporting audio',
-    }),
+        play: 'Start or change the beat: tempo, meter, subdivisions, feel, volume, sounds, mode, a style or groove, or just play',
+        drumEdit:
+          'Change specific drum hits: add, remove or move kick, snare or hat hits, including follow-ups such as "and on four too"',
+        ...(hasCountOff
+          ? {
+              countOff:
+                'The user performed a spoken count-in, counting beats or subdivisions aloud ("one, two, three, four", "one and two and", "one trip let two trip let", "one e and a two e and a"), to set the tempo. A count-in needs more than two numbers; two numbers alone, or a time signature named by its numbers ("three four"), are not a count-in',
+            }
+          : {}),
+        stop: 'Stop or pause playback',
+        stopListening: 'Stop listening to the microphone, leaving playback alone',
+        clear: 'Clear all drum hits',
+        reset: 'Reset everything to the defaults',
+        unrelated: 'Not talking to the player (including singing or lyrics)',
+        unsupported:
+          'Asks for something this player cannot do, such as other instruments, tempo ramps, velocity or exporting audio',
+      },
+    ),
     mode: choice(
       'Should the player switch between regular mode and custom drum mode? Asking for a beat, groove, feel or style (a funk beat, a rock groove, bossa nova) is regular mode: choose keep. Choose drums only for an explicit drum loop, drum machine or custom drum pattern, or for specific kick, snare or hat placements.',
       {
         keep: 'Stay in the current mode; includes ordinary requests for a beat, groove or style',
-        drums: 'Custom drum mode: an explicit drum loop, drum machine or custom pattern, or specific kick/snare/hat placements',
-        click: 'Regular mode: the user explicitly asks to leave drum mode, or for a plain click or regular metronome',
+        drums:
+          'Custom drum mode: an explicit drum loop, drum machine or custom pattern, or specific kick/snare/hat placements',
+        click:
+          'Regular mode: the user explicitly asks to leave drum mode, or for a plain click or regular metronome',
       },
     ),
     style: choice(
       'Which drum style or genre does the user ask for as a new groove? Choose none when the user is changing particular hits or lanes of the current pattern, even if they use a style term to describe the change.',
       {
-      none: 'No style or genre is asked for',
-      ...Object.fromEntries(
-          offered.map(s => [styleKey(s.name), s.tempo ? `${s.name} (around ${s.tempo} BPM)` : s.name]),
+        none: 'No style or genre is asked for',
+        ...Object.fromEntries(
+          offered.map(s => [
+            styleKey(s.name),
+            s.tempo ? `${s.name} (around ${s.tempo} BPM)` : s.name,
+          ]),
         ),
       },
     ),
-    tempo: choice('How should the tempo change? A number the user gives for another setting (volume, swing, beats, repeats) is not a tempo.', {
-      keep: 'No tempo change',
-      exact: 'To an exact BPM the user states as a number',
-      style: 'To the typical tempo of the style the user asks for, when they give no tempo',
-      slow: 'Slow',
-      medium: 'Medium',
-      fast: 'Fast',
-      faster: 'Faster than now',
-      slower: 'Slower than now',
-      double: 'Double time',
-      half: 'Half time',
-    }),
-    ...digits('tempo', 'tempo in BPM', 399),
+    tempo: choice(
+      'How should the tempo change? A number the user gives for another setting (volume, swing, beats, repeats) is not a tempo.',
+      {
+        keep: 'No tempo change',
+        exact: 'To an exact BPM the user states as a number',
+        style: 'To the typical tempo of the style the user asks for, when they give no tempo',
+        slow: 'Slow',
+        medium: 'Medium',
+        fast: 'Fast',
+        faster:
+          'Faster than now, by the amount the user states if any ("5 BPM faster", "a bit faster")',
+        slower:
+          'Slower than now, by the amount the user states if any ("10 slower", "slow down a bit")',
+        double: 'Double time',
+        half: 'Half time',
+      },
+    ),
+    ...digits('tempo', 'tempo in BPM, or number of BPM to change it by', 399),
     beats: choice(
       'How many beats per bar? A time signature, written or said as two numbers ("three four", "six eight"), gives the beats per bar as its first number; the second is the note value, not a beat count.',
       {
         keep: 'No change to beats per bar',
-        ...numberOptions(1, 12, n => (n === 3 ? '3 beats per bar (also a waltz)' : `${n} beats per bar`)),
+        ...numberOptions(1, 12, n =>
+          n === 3 ? '3 beats per bar (also a waltz)' : `${n} beats per bar`,
+        ),
       },
     ),
     subDivs: choice('How many subdivisions per beat?', {
@@ -140,18 +166,18 @@ export function buildMainRequest({ prompt, current, recentTurns, alternatives, t
       light: 'A little swing',
       medium: 'Swing or shuffle',
       heavy: 'Heavy swing',
-      more: 'More swing than now',
-      less: 'Less swing than now',
+      more: 'More swing than now, by the amount the user states if any ("20 more swing")',
+      less: 'Less swing than now, by the amount the user states if any ("a little less swing")',
     }),
-    ...digits('swing', 'swing amount (0–100)', 100),
+    ...digits('swing', 'swing amount (0–100), or amount to change it by', 100),
     volume: choice('How should the volume (loudness) change?', {
       keep: 'No volume change',
       exact: 'To an exact volume level (0–100) the user states, with or without "percent"',
-      quieter: 'Quieter',
-      louder: 'Louder',
+      quieter: 'Quieter, by the amount the user states if any ("10% quieter")',
+      louder: 'Louder, by the amount the user states if any ("volume up 20")',
       mute: 'Mute',
     }),
-    ...digits('volume', 'volume level (0–100)', 100),
+    ...digits('volume', 'volume level (0–100), or amount to change it by', 100),
     repeats: choice('How many bars should play before stopping?', {
       keep: 'No change',
       exact: 'An exact number of bars or repeats the user states',
@@ -184,11 +210,29 @@ export function buildMainRequest({ prompt, current, recentTurns, alternatives, t
   };
 }
 
-const exactOr = (answers, key, setting) => {
-  if (setting !== 'exact') return { value: undefined };
+// Modes that move a setting up or down: by the amount the user stated (the digit
+// answers), or by a default step when no number was stated.
+const STEP = { faster: 1, slower: -1, more: 1, less: -1, louder: 1, quieter: -1 };
+const DEFAULT_STEP = 10;
+
+/**
+ * The value a stated number gives: the number itself (`exact`), or `current` moved by it
+ * (a STEP mode; with no number stated, by DEFAULT_STEP kept within `range`).
+ */
+const exactOr = (answers, key, setting, current, range = [-Infinity, Infinity]) => {
+  if (setting !== 'exact' && !STEP[setting]) return { value: undefined };
+  if (STEP[setting] && picked(answers[`${key}_ones`]) === 'none') {
+    const stepped = current + STEP[setting] * DEFAULT_STEP;
+    return { value: Math.min(range[1], Math.max(range[0], stepped)) };
+  }
   const value = readDigits(answers, key);
-  return value === null ? { unclear: true } : { value };
+  if (value === null) return { unclear: true };
+  return { value: STEP[setting] ? current + STEP[setting] * value : value };
 };
+
+/** A number was clearly stated for a setting whose kind of change Jev couldn't settle. */
+const numberWithoutChange = (answers, key, setting) =>
+  !setting && answers[`${key}_ones`] !== undefined && readDigits(answers, key) !== null;
 
 /**
  * Turn main answers into a plan: the action plus a config patch of what changed.
@@ -207,7 +251,9 @@ export function readMainAnswers(answers, current) {
   plan.style = style;
 
   const tempo = picked(answers.tempo);
-  const exactTempo = exactOr(answers, 'tempo', tempo);
+  if (numberWithoutChange(answers, 'tempo', tempo))
+    problems.push('I didn’t catch how to change the tempo.');
+  const exactTempo = exactOr(answers, 'tempo', tempo, current.bpm);
   const bpm =
     exactTempo.value ??
     {
@@ -215,15 +261,15 @@ export function readMainAnswers(answers, current) {
       slow: 70,
       medium: 100,
       fast: 150,
-      faster: current.bpm + 10,
-      slower: current.bpm - 10,
       double: current.bpm * 2,
       half: Math.round(current.bpm / 2),
     }[tempo];
   if (exactTempo.unclear) problems.push('I didn’t catch the exact tempo.');
   else if (bpm !== undefined) {
     if (bpm < BPM_RANGE[0] || bpm > BPM_RANGE[1])
-      problems.push(`${bpm} BPM is outside the supported ${BPM_RANGE[0]}–${BPM_RANGE[1]} BPM range.`);
+      problems.push(
+        `${bpm} BPM is outside the supported ${BPM_RANGE[0]}–${BPM_RANGE[1]} BPM range.`,
+      );
     else if (bpm !== current.bpm) patch.bpm = bpm;
   }
 
@@ -240,7 +286,9 @@ export function readMainAnswers(answers, current) {
   } else if (audible === 'on' || audible === 'off') patch.playSubDivs = audible === 'on';
 
   const swing = picked(answers.swing);
-  const exactSwing = exactOr(answers, 'swing', swing);
+  if (numberWithoutChange(answers, 'swing', swing))
+    problems.push('I didn’t catch how to change the swing.');
+  const exactSwing = exactOr(answers, 'swing', swing, current.swing, [0, 100]);
   const swingValue =
     exactSwing.value ??
     {
@@ -248,27 +296,27 @@ export function readMainAnswers(answers, current) {
       light: 15,
       medium: 33,
       heavy: 50,
-      more: Math.min(100, current.swing + 10),
-      less: Math.max(0, current.swing - 10),
     }[swing];
   if (exactSwing.unclear) problems.push('I didn’t catch the exact swing amount.');
   else if (swingValue !== undefined) {
     if (swingValue > 100) problems.push(`Swing goes up to 100%, not ${swingValue}%.`);
+    else if (swingValue < 0) problems.push(`Swing can't go below 0%.`);
     else patch.swing = swingValue;
   }
 
   const volume = picked(answers.volume);
-  const exactVolume = exactOr(answers, 'volume', volume);
+  if (numberWithoutChange(answers, 'volume', volume))
+    problems.push('I didn’t catch how to change the volume.');
+  const exactVolume = exactOr(answers, 'volume', volume, current.volume, [0, 100]);
   const volumeValue =
     exactVolume.value ??
     {
-      quieter: Math.max(0, current.volume - 10),
-      louder: Math.min(100, current.volume + 10),
       mute: 0,
     }[volume];
   if (exactVolume.unclear) problems.push('I didn’t catch the exact volume.');
   else if (volumeValue !== undefined) {
     if (volumeValue > 100) problems.push(`Volume goes up to 100%, not ${volumeValue}%.`);
+    else if (volumeValue < 0) problems.push(`Volume can't go below 0%.`);
     else patch.volume = volumeValue;
   }
 

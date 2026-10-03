@@ -24,10 +24,14 @@ const PLACES = [
 /** A digit option described by what it means in that place, with example numbers. */
 function describeDigit(place, d) {
   if (place === 'hundreds')
-    return d === 0 ? '0: under 100 (e.g. 95)' : `${d}: ${d} hundred and something (e.g. ${d}30)`;
+    return d === 0
+      ? '0: under 100, including one- and two-digit numbers (e.g. 95, 5)'
+      : `${d}: ${d} hundred and something (e.g. ${d}30)`;
   if (place === 'tens')
-    return `${d}: ${d} in the tens place (e.g. 1${d}5${d ? `, ${d}0` : ', 105'})`;
-  return `${d}: the number ends in ${d} (e.g. ${120 + d}, ${90 + d})`;
+    return d === 0
+      ? '0: nothing in the tens place, including one-digit numbers (e.g. 105, 5)'
+      : `${d}: ${d} in the tens place (e.g. 1${d}5, ${d}0)`;
+  return `${d}: the number ends in ${d} (e.g. ${120 + d}, ${90 + d}${d ? `, ${d}` : ''})`;
 }
 
 /**

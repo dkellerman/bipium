@@ -115,6 +115,23 @@ describe('numbers', () => {
     expect(result.message).toContain('exact tempo');
   });
 
+  it('changes a setting by a stated amount instead of a fixed step', async () => {
+    const by = (key, mode, h, t, o) => ({
+      [key]: mode,
+      [`${key}_hundreds`]: h,
+      [`${key}_tens`]: t,
+      [`${key}_ones`]: o,
+    });
+    stubJev({ action: 'play', ...by('tempo', 'faster', '0', '0', '5') });
+    expect((await say('five BPM faster')).call.args[0]).toEqual({ bpm: current.bpm + 5 });
+    stubJev({ action: 'play', ...by('volume', 'louder', '0', '2', '0') });
+    expect((await say('volume up twenty')).call.args[0]).toEqual({ volume: current.volume + 20 });
+    stubJev({ action: 'play', ...by('swing', 'less', '0', '1', '0') });
+    expect((await say('ten less swing')).call).toBeNull(); // swing is 0: reported, not clamped
+    stubJev({ action: 'play', tempo: 'faster' }); // no number stated: the default step
+    expect((await say('faster')).call.args[0]).toEqual({ bpm: current.bpm + 10 });
+  });
+
   it('reports an exact tempo outside the range instead of clamping it', async () => {
     stubJev({ action: 'play', ...tempo('3', '4', '0') });
     const result = await say('340');
