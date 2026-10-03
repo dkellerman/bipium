@@ -8,6 +8,13 @@ import { useApp } from '@/AppContext';
 import { cn } from '@/lib/utils';
 import { sendEvent, sendOneEvent } from '@/tracking';
 import type { NumberInput } from '@/types';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 const int = (value: NumberInput) => {
   const parsed = Number.parseInt(String(value), 10);
@@ -82,24 +89,25 @@ function BeatsRow() {
     <div className="flex w-full items-center justify-center gap-2">
       <div className="flex items-center gap-2">
         <label className="text-base leading-none">Beats:</label>
-        <select
-          className={cn(
-            'h-11 min-w-16 rounded-md border border-slate-300 bg-white px-2',
-            'text-xl leading-none outline-none',
-          )}
-          value={beats}
-          onChange={event => {
-            const value = int(event.target.value);
+        <Select
+          value={String(beats)}
+          onValueChange={raw => {
+            const value = int(raw);
             setBeats(value);
             sendEvent('set_beats', 'App', value, value);
           }}
         >
-          {new Array(12).fill(0).map((_, index) => (
-            <option key={`beats-${index + 1}`} value={index + 1}>
-              {index + 1}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger aria-label="Beats per bar" className="h-14 min-w-20 text-xl sm:h-12">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {new Array(12).fill(0).map((_, index) => (
+              <SelectItem key={`beats-${index + 1}`} value={String(index + 1)} className="text-lg">
+                {index + 1}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       <StepButtons
         onIncrement={() => {
@@ -123,32 +131,41 @@ function BeatsRow() {
   );
 }
 
+const SUBDIVISION_OPTIONS = [
+  ['8', '32nd notes'],
+  ['7', 'Septuplets'],
+  ['6', 'Sextuplets'],
+  ['5', 'Quintuplets'],
+  ['4', '16th notes'],
+  ['3', 'Triplets'],
+  ['2', '8th notes'],
+  ['1', 'Quarter notes'],
+] as const;
+
 function SubDivsRow() {
   const { subDivs, setSubDivs } = useApp();
 
   return (
     <div className="flex w-full items-center gap-2">
-      <select
-        className={cn(
-          'h-11 min-w-0 flex-1 rounded-md border border-slate-300 bg-white px-3',
-          'text-base outline-none',
-        )}
-        value={subDivs}
-        onChange={event => {
-          const value = int(event.target.value);
+      <Select
+        value={String(subDivs)}
+        onValueChange={raw => {
+          const value = int(raw);
           setSubDivs(value);
           sendEvent('set_subdivs', 'App', value, value);
         }}
       >
-        <option value="8">32nd notes</option>
-        <option value="7">Septuplets</option>
-        <option value="6">Sextuplets</option>
-        <option value="5">Quintuplets</option>
-        <option value="4">16th notes</option>
-        <option value="3">Triplets</option>
-        <option value="2">8th notes</option>
-        <option value="1">Quarter notes</option>
-      </select>
+        <SelectTrigger aria-label="Subdivisions" className="h-14 min-w-0 flex-1 text-base sm:h-12">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {SUBDIVISION_OPTIONS.map(([value, label]) => (
+            <SelectItem key={value} value={value}>
+              {label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
       <StepButtons
         onIncrement={() => {
           if (subDivs >= 8) return;
