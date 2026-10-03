@@ -46,10 +46,11 @@ function logDecisions(result: VoiceResult) {
   console.groupEnd();
 }
 const IDLE = 'Listening for your next phrase…';
-const HEARING_SOUND = 'Hearing sound… play steadily.';
-const HEARING_RHYTHM = 'Hearing a rhythm… keep playing.';
+const HEARING_SOUND = 'Hearing sound…';
+const HEARING_INSTRUMENT = 'Hearing an instrument… finding the tempo.';
+const HEARING_RHYTHM = 'Got a steady rhythm… keep playing.';
 // Progress messages a newer rhythm check may replace (never a voice reply).
-const RHYTHM_PROGRESS = [IDLE, HEARING_SOUND, HEARING_RHYTHM];
+const RHYTHM_PROGRESS = [IDLE, HEARING_SOUND, HEARING_INSTRUMENT, HEARING_RHYTHM];
 
 // `?voicedebug` (sticky; `?voicedebug=0` clears it) shows what rhythm detection sees.
 function voiceDebugEnabled() {
@@ -235,14 +236,10 @@ export function ListenControl({
       if (!active.current || sr.current !== recognition) return;
       if (debug) setDebugLine(describeRhythmStatus(rhythmStatus));
       if (rhythmStatus.state !== 'analyzing' || rhythmStatus.diagnosis?.result) return;
-      const next = rhythmStatus.onsets >= 3 ? HEARING_SOUND : IDLE;
-      setStatus(current =>
-        current === HEARING_RHYTHM && next === HEARING_SOUND
-          ? current
-          : RHYTHM_PROGRESS.includes(current)
-            ? next
-            : current,
-      );
+      // Enough onsets to analyze means it's working on a tempo, even if this check failed.
+      const analyzed = (rhythmStatus.diagnosis?.onsets ?? 0) >= 8;
+      const next = analyzed ? HEARING_INSTRUMENT : rhythmStatus.onsets >= 3 ? HEARING_SOUND : IDLE;
+      setStatus(current => (RHYTHM_PROGRESS.includes(current) ? next : current));
     };
     recognition.onrhythm = rhythm => {
       const api = runtime();

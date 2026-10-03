@@ -11,7 +11,14 @@
 import { estimateRhythm } from '../../server/voice/rhythm.mjs';
 import type { MusicEvidence, Onset } from './onsets';
 
-export type HeardRhythm = { bpm: number; subdivisions: number; swing: number; confidence: number };
+export type HeardRhythm = {
+  bpm: number;
+  subdivisions: number;
+  swing: number;
+  confidence: number;
+  /** Fewer beats were hit (rests, missed hits): it must hold longer before it's reported. */
+  weak?: boolean;
+};
 
 const WINDOW = 8; // seconds of onsets analyzed
 const MIN_ONSETS = 8;
@@ -19,9 +26,11 @@ const MIN_SPAN = 4;
 const STILL_GOING = 1.5; // the last onset must be this recent
 const MIN_CONFIDENCE = 0.7;
 const MIN_CONFIDENCE_OVER_SPEECH = 0.8;
-const MIN_COVERAGE = 0.7; // share of the pulse's slots with a hit right on them
+const MIN_COVERAGE = 0.5; // share of the pulse's slots with a hit right on them (rests and missed hits are normal)
+const STRONG_COVERAGE = 0.7; // below this a rhythm must hold for longer (WEAK_AGREE)
 const MIN_COVERAGE_OVER_CHANCE = 0.4; // …beyond what randomly timed onsets would cover
 const AGREE = 2; // consecutive analyses that must agree (about 2 s apart)
+const WEAK_AGREE = 3; // …when any of them was weak; random onsets rarely hold a tempo that long
 const STOPPED = 2; // empty analyses in a row after which the rhythm counts as stopped
 const SAME_TEMPO = 0.03;
 // Without words there's no telling 70 from 140; lean mildly towards common tempos.
@@ -126,7 +135,13 @@ export function diagnoseOnsets(
           swing: 0,
           confidence: result.pulseConfidence,
         };
-  return { result: heard, reason: 'ok', onsets: recent.length, ...scores };
+  const weak = result.coverage < STRONG_COVERAGE;
+  return {
+    result: { ...heard, ...(weak ? { weak } : {}) },
+    reason: 'ok',
+    onsets: recent.length,
+    ...scores,
+  };
 }
 
 /**
@@ -154,7 +169,7 @@ export class RhythmStabilizer {
       this.streak.length && same(this.streak[0], analysis)
         ? [...this.streak, analysis]
         : [analysis];
-    if (this.streak.length < AGREE) return null;
+    if (this.streak.length < (this.streak.some(a => a.weak) ? WEAK_AGREE : AGREE)) return null;
     const settled = this.streak[this.streak.length - 1];
     if (this.reported && same(this.reported, settled)) return null;
     this.reported = settled;
