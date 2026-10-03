@@ -193,6 +193,14 @@ export function ListenControl({
     // click reaches the mic and the player isn't asking for a tempo.
     const metronomePlaying = () => !!runtime()?.isStarted();
     recognition.ignoreRhythm = metronomePlaying;
+    // Feedback while a rhythm is being confirmed, so playing never looks ignored.
+    recognition.onrhythmcandidate = () => {
+      if (!active.current || sr.current !== recognition || metronomePlaying()) return;
+      setOpen(true);
+      setStatus(current =>
+        current.startsWith('Hearing ') ? current : 'Hearing a rhythm… keep playing.',
+      );
+    };
     recognition.onrhythm = rhythm => {
       const api = runtime();
       if (!api || !active.current || sr.current !== recognition) return;

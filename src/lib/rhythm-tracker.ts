@@ -21,7 +21,8 @@ const MIN_CONFIDENCE = 0.7;
 const MIN_CONFIDENCE_OVER_SPEECH = 0.8;
 const MIN_COVERAGE = 0.7; // share of the pulse's slots with a hit right on them
 const MIN_COVERAGE_OVER_CHANCE = 0.4; // …beyond what randomly timed onsets would cover
-const AGREE = 3; // consecutive analyses that must agree
+const AGREE = 2; // consecutive analyses that must agree (about 2 s apart)
+const STOPPED = 2; // empty analyses in a row after which the rhythm counts as stopped
 const SAME_TEMPO = 0.03;
 // Without words there's no telling 70 from 140; lean mildly towards common tempos.
 const TEMPO_PREFERENCE = { center: 110, spread: 0.7 };
@@ -65,7 +66,9 @@ export function analyzeOnsets(
   if (recent[recent.length - 1].time - recent[0].time < MIN_SPAN) return null;
   if (now - recent[recent.length - 1].time > STILL_GOING) return null;
   const percussive = !!speech && speech.sharpOnsets > speech.heldNotes;
-  const result = estimateRhythm(audioEvents(recent, percussive), { tempoPreference: TEMPO_PREFERENCE });
+  const result = estimateRhythm(audioEvents(recent, percussive), {
+    tempoPreference: TEMPO_PREFERENCE,
+  });
   // Without words, which tempo a pulse is counted at is a guess (settled below); what
   // has to be clear is that there's a steady pulse at all.
   const needed = speech ? MIN_CONFIDENCE_OVER_SPEECH : MIN_CONFIDENCE;
@@ -87,24 +90,39 @@ export function analyzeOnsets(
     const { bpm, subdivisions, swing, confidence } = result;
     return { bpm, subdivisions, swing, confidence };
   }
-  return { bpm: Math.round(pulse / perBeat), subdivisions: perBeat, swing: 0, confidence: result.pulseConfidence };
+  return {
+    bpm: Math.round(pulse / perBeat),
+    subdivisions: perBeat,
+    swing: 0,
+    confidence: result.pulseConfidence,
+  };
 }
 
-/** Reports a rhythm once it has held steady, and again only when it changes. */
+/**
+ * Reports a rhythm once it has held steady, and again only when it changes or after
+ * the playing has stopped for a while (so playing the same tempo again is reported).
+ */
 export class RhythmStabilizer {
   private streak: HeardRhythm[] = [];
   private reported: HeardRhythm | null = null;
+  private quiet = 0;
 
   /** Feed each analysis (null = nothing clear); returns a rhythm when one should be reported. */
   next(analysis: HeardRhythm | null): HeardRhythm | null {
     // The same pulse counted differently (55 in eighths, 110 in quarters) still agrees.
     const pulse = (r: HeardRhythm) => r.bpm * r.subdivisions;
-    const same = (a: HeardRhythm, b: HeardRhythm) => Math.abs(Math.log(pulse(a) / pulse(b))) < SAME_TEMPO;
+    const same = (a: HeardRhythm, b: HeardRhythm) =>
+      Math.abs(Math.log(pulse(a) / pulse(b))) < SAME_TEMPO;
     if (!analysis) {
       this.streak = [];
+      if (++this.quiet >= STOPPED) this.reported = null;
       return null;
     }
-    this.streak = this.streak.length && same(this.streak[0], analysis) ? [...this.streak, analysis] : [analysis];
+    this.quiet = 0;
+    this.streak =
+      this.streak.length && same(this.streak[0], analysis)
+        ? [...this.streak, analysis]
+        : [analysis];
     if (this.streak.length < AGREE) return null;
     const settled = this.streak[this.streak.length - 1];
     if (this.reported && same(this.reported, settled)) return null;

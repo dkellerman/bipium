@@ -58,6 +58,16 @@ describe('rhythm tracker', () => {
     expect(Math.abs(report.bpm - 92)).toBeLessThanOrEqual(2);
   });
 
+  it('reports the same tempo again after the playing stopped and resumed', () => {
+    const stabilizer = new RhythmStabilizer();
+    const heard = { bpm: 100, subdivisions: 1, swing: 0, confidence: 0.9 };
+    const feed = (analyses: (typeof heard | null)[]) =>
+      analyses.map(a => stabilizer.next(a)).filter(Boolean);
+    expect(feed([heard, heard, heard])).toHaveLength(1);
+    expect(feed([null, heard, heard])).toHaveLength(0); // a brief gap is the same playing
+    expect(feed([null, null, heard, heard])).toHaveLength(1);
+  });
+
   it('stays quiet for randomly timed noise', () => {
     let time = 0;
     const noise: Onset[] = [];
@@ -108,4 +118,3 @@ describe('rhythm tracker', () => {
     expect(Math.abs(reports[0].bpm - 100)).toBeLessThanOrEqual(2);
   });
 });
-

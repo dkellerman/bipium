@@ -28,6 +28,8 @@ export class GrokRecognition {
   onready: (() => void) | null = null;
   /** A steady rhythm heard with no speech (claps, an instrument). */
   onrhythm: ((rhythm: HeardRhythm) => void) | null = null;
+  /** A steady rhythm was just heard but isn't confirmed yet (keep playing). */
+  onrhythmcandidate: (() => void) | null = null;
   /** True while rhythm shouldn't be detected (the metronome is playing). */
   ignoreRhythm: (() => boolean) | null = null;
   private cancelled = false;
@@ -129,7 +131,9 @@ export class GrokRecognition {
               music:
                 data.speech_final && words?.length
                   ? Math.max(
-                      musicLikelihood(this.onsets.music(words[0].start - 2, words[words.length - 1].end + 1)),
+                      musicLikelihood(
+                        this.onsets.music(words[0].start - 2, words[words.length - 1].end + 1),
+                      ),
                       this.instrumentPlaying(),
                     )
                   : undefined,
@@ -198,13 +202,16 @@ export class GrokRecognition {
       }
     }
     if (!this.rhythmWorker && typeof Worker !== 'undefined') {
-      this.rhythmWorker = new Worker(new URL('./rhythm-worker.ts', import.meta.url), { type: 'module' });
+      this.rhythmWorker = new Worker(new URL('./rhythm-worker.ts', import.meta.url), {
+        type: 'module',
+      });
       this.rhythmWorker.onmessage = ({ data }) => {
         if (this.cancelled) return;
         this.noteSteady(data.result, data.input.now);
         const report = this.rhythm.next(data.result);
         devLog('rhythm', { ...data.input, analysis: data.result, reported: report });
         if (report) this.onrhythm?.(report);
+        else if (data.result) this.onrhythmcandidate?.();
       };
     }
     this.rhythmWorker?.postMessage({
@@ -220,7 +227,12 @@ export class GrokRecognition {
     }
     const pulse = result.bpm * result.subdivisions;
     const same = Math.abs(Math.log(pulse / (this.steady.pulse || pulse))) < 0.03;
-    this.steady = { at: now, streak: same ? this.steady.streak + 1 : 1, confidence: result.confidence, pulse };
+    this.steady = {
+      at: now,
+      streak: same ? this.steady.streak + 1 : 1,
+      confidence: result.confidence,
+      pulse,
+    };
   }
   /** 0…1: confidence that an instrument is playing, from a steady rhythm held recently. */
   private instrumentPlaying() {
