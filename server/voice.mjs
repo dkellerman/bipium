@@ -56,6 +56,8 @@ function readBody(body) {
     return { error: 'Invalid singing evidence' };
   if (body.playAlong !== undefined && typeof body.playAlong !== 'boolean')
     return { error: 'Invalid play-along state' };
+  if (body.playing !== undefined && typeof body.playing !== 'boolean')
+    return { error: 'Invalid playback state' };
   const recentTurns = body.recentTurns ?? [];
   if (
     !Array.isArray(recentTurns) ||
@@ -79,6 +81,7 @@ function readBody(body) {
     music: music ?? 0,
     sung,
     playAlong: body.playAlong === true,
+    playing: body.playing === true,
     // What each turn did, not just what was said, so "undo that" or "the last snare
     // you added" can be resolved.
     recentTurns: recentTurns.map(({ prompt, applied, outcome }) => ({
@@ -130,6 +133,9 @@ async function interpret(input, env, signal) {
   ].join(' ');
   const context = retrieveContext(query);
   const styleNames = candidateStyles(query);
+
+  // While the metronome plays, singing is never read as words (not even sent to Jev).
+  if (input.playing && input.sung >= SUNG) return { output: { call: null, message: '' }, trace };
 
   const timed = (words?.length ?? 0) >= 3;
   const main = buildMainRequest({

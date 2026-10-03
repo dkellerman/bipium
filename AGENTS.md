@@ -125,6 +125,10 @@ is acted on only above 0.5 confidence; otherwise that setting stays as it is.
   means stop; code allows only that action. "Sung" is measured from audio (held,
   pitched notes over the phrase's own words), never from the words. Everything else is
   ignored silently while playing along.
+  More generally, while the metronome plays (however it was started), a sung phrase is
+  never read as words: it's dropped before Jev ("when you're playing, your singing should
+  not be interpreted as words"). With the metronome stopped, singing still counts as
+  music evidence for rhythm tracking.
 - **Audio-only percussion analysis.** "instrument is fine" / "ok, no jev then":
   PCM onset detection and timing estimation (`server/percussion.mjs` on the relay; now
   superseded in the app by the browser tracker). No transcript parsing.

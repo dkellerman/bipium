@@ -425,6 +425,21 @@ describe('music around speech', () => {
   });
 });
 
+describe('singing while the metronome plays', () => {
+  it('is never read as words; spoken phrases still are', async () => {
+    const requests = stubJev({ action: 'stop' });
+    expect(await say('stop', current, { playing: true, sung: 0.9 })).toMatchObject({
+      call: null,
+      message: '',
+    });
+    expect(requests).toHaveLength(0); // not even sent to Jev
+    stubJev({ action: 'stop' });
+    expect((await say('stop', current, { playing: true, sung: 0.1 })).call).toMatchObject({
+      method: 'stop',
+    });
+  });
+});
+
 describe('playing along to a heard tempo', () => {
   it('acts only on a spoken stop', async () => {
     stubJev({ action: 'play', ...tempo('1', '2', '0') });

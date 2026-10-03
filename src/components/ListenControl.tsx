@@ -182,6 +182,7 @@ export function ListenControl({
               ...(music !== undefined ? { music } : {}),
               ...(sung !== undefined ? { sung } : {}),
               playAlong: playAlong.current,
+              playing: api.isStarted(),
               currentConfig,
               recentTurns: historyRef.current.slice(-6).map(turn => ({
                 prompt: turn.prompt,
