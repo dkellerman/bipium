@@ -1,435 +1,337 @@
 // @vitest-environment node
-import { describe, it, expect, vi, afterEach } from 'vitest';
-import { prepare as prepareMain, assemble, voice } from '../../server/voice.mjs';
-import { retrieve, corpusCount } from '../../server/retrieval.mjs';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { voice } from '../../server/voice.mjs';
+import { buildMainRequest } from '../../server/voice/main.mjs';
+import { buildDrumRequest } from '../../server/voice/drums.mjs';
+import { positionsOf } from '../../server/voice/grid.mjs';
+import { estimateCountIn } from '../../server/voice/count-in.mjs';
 import { API_DEFAULT_CONFIG } from '../core/api';
+
 const current = structuredClone(API_DEFAULT_CONFIG);
-// Existing execution tests exercise the full specialist candidate set.
-const prepare = (prompt, config, history = [], alternatives = [], words) =>
-  prepareMain(prompt, config, history, alternatives, words, true);
-function decisions(prepared, overrides = {}) {
-  return Object.fromEntries(
-    Object.entries(prepared.request.questions).map(([field, q]) => {
-      const selected =
-        overrides[field] ??
-        (Object.hasOwn(q.criteria, 'keep') ? 'keep' : Object.keys(q.criteria)[0]);
-      return [
-        field,
-        { type: 'choice', choice: selected, confidence: 0.83, probabilities: { [selected]: 1 } },
-      ];
-    }),
-  );
-}
-afterEach(() => vi.unstubAllGlobals());
-describe('voice interpretation and vector retrieval', () => {
-  it('enables an accepted subdivision change while preserving an explicit off choice', () => {
-    const base = { ...structuredClone(current), playSubDivs: false };
-    const p = prepare('make this eighth notes', base);
-    expect(
-      assemble(p, decisions(p, { subDivs: '2', playSubDivs: 'keep' }), base).call.args[0],
-    ).toMatchObject({ subDivs: 2, playSubDivs: true });
-    expect(
-      assemble(p, decisions(p, { subDivs: '2', playSubDivs: 'off' }), base).call.args[0]
-        .playSubDivs,
-    ).toBe(false);
-  });
+const drumConfig = { ...structuredClone(current), loopMode: true };
+const backbeat = {
+  ...drumConfig,
+  loopPattern: { kick: [true, false, true, false], hat: [true, true, true, true], snare: [false, true, false, true] },
+};
 
-  it('removes one snare hit without replacing its other hits or other lanes', () => {
-    const base = { ...structuredClone(current), loopMode: true };
-    base.loopPattern.snare = [false, true, true, true];
-    const p = prepare('remove snare from the 3', base);
-    const a = decisions(p, { snare: 'remove:2' });
-    const c = assemble(p, a, base).call.args[0];
-    expect(c.loopPattern.snare).toEqual([false, true, false, true]);
-    expect(c.loopPattern.kick).toEqual(base.loopPattern.kick);
-    expect(c.loopPattern.hat).toEqual(base.loopPattern.hat);
-    a.snare.confidence = 0.5;
-    expect(assemble(p, a, base).call.args[0].loopPattern.snare).toEqual(base.loopPattern.snare);
-  });
-  it('supports exclusive placement and relative edits on subdivision positions', () => {
-    const base = { ...structuredClone(current), loopMode: true, subDivs: 2 };
-    base.loopPattern = {
-      kick: Array(8).fill(false),
-      hat: Array(8).fill(true),
-      snare: [false, false, true, false, true, false, true, false],
-    };
-    const p = prepare('snare just on the floor', base);
-    expect(
-      assemble(p, decisions(p, { snare: 'only:6' }), base).call.args[0].loopPattern.snare,
-    ).toEqual([false, false, false, false, false, false, true, false]);
-    expect(
-      assemble(p, decisions(p, { snare: 'add:5' }), base).call.args[0].loopPattern.snare,
-    ).toEqual([false, false, true, false, true, true, true, false]);
-    expect(
-      assemble(p, decisions(p, { snare: 'remove:4' }), base).call.args[0].loopPattern.snare,
-    ).toEqual([false, false, true, false, false, false, true, false]);
-  });
-  it('can move an existing snare hit back one beat and preserve other hits', () => {
-    const base = { ...structuredClone(current), loopMode: true };
-    base.loopPattern.snare = [false, true, false, true];
-    const p = prepare('move the snare on beat four back a beat', base);
-    expect(p.request.questions.snare.criteria['move-back:3']).toBeTruthy();
-    const c = assemble(p, decisions(p, { snare: 'move-back:3' }), base).call.args[0];
-    expect(c.loopPattern.snare).toEqual([false, true, true, false]);
-    expect(p.request.questions.snare.criteria['remove:3']).toBeTruthy();
-  });
-  it('moves all snare hits back one beat when no source hit is named', () => {
-    const base = { ...structuredClone(current), loopMode: true };
-    base.loopPattern.snare = [false, true, false, true];
-    const p = prepare('move the snare back a beat', base);
-    const c = assemble(p, decisions(p, { snare: 'shift-back' }), base).call.args[0];
-    expect(c.loopPattern.snare).toEqual([true, false, true, false]);
-  });
-  it('enters drum mode for a chosen instrument edit even when mode was kept', () => {
-    const p = prepare('add a snare on beat four', current);
-    const c = assemble(p, decisions(p, { snare: 'add:3', loopMode: 'keep' }), current).call.args[0];
-    expect(c.loopMode).toBe(true);
-    expect(c.loopPattern.snare[3]).toBe(true);
-  });
-  it('follows Jev mode decisions without keyword overrides', () => {
-    const drums = { ...structuredClone(current), loopMode: true };
-    const regular = prepare('switch to beat mode', drums);
-    expect(
-      assemble(regular, decisions(regular, { loopMode: 'keep' }), drums).call.args[0].loopMode,
-    ).toBe(true);
-    const drum = prepare('switch to drum mode', current);
-    expect(
-      assemble(drum, decisions(drum, { loopMode: 'off' }), current).call.args[0].loopMode,
-    ).toBe(false);
-  });
-  it('searches all research entries and returns both sources', () => {
-    expect(corpusCount).toBe(673);
-    const refs = retrieve('house beat at 124 BPM');
-    expect(refs).toHaveLength(4);
-    expect(new Set(refs.map(r => r.source))).toEqual(new Set(['Thump', 'GMD']));
-    expect(refs[0].title.toLowerCase()).toContain('house');
-    expect(refs.every(r => Number.isFinite(r.similarity) && r.url.startsWith('https://'))).toBe(
-      true,
-    );
-  });
-  it('assembles one API call and expands its grid without losing hits', () => {
-    const p = prepare('100 BPM with eighth hats', current);
-    const result = assemble(
-      p,
-      decisions(p, {
-        tempo: 'n:100',
-        loopMode: 'on',
-        hat: 'eighths',
-        kick: 'one_three',
-        snare: 'backbeat',
+/** Stub Jev: every question answers keep/none unless overridden. An override can name
+ * an option by its description, e.g. 'Add snare on 3'. */
+function stubJev(...stages) {
+  const requests = [];
+  const fetcher = vi.fn(async (_url, init) => {
+    const request = JSON.parse(init.body);
+    requests.push(request);
+    const overrides = stages[requests.length - 1] ?? {};
+    const answers = Object.fromEntries(
+      Object.entries(request.questions).map(([key, q]) => {
+        const fallback = ['keep', 'none'].find(k => Object.hasOwn(q.criteria, k)) ?? 'play';
+        const [wanted, confidence = 0.9] = [].concat(overrides[key] ?? fallback);
+        const choice =
+          Object.entries(q.criteria).find(([, text]) => text === wanted)?.[0] ?? wanted;
+        return [key, { choice, confidence, probabilities: { [choice]: confidence } }];
       }),
-      current,
     );
-    const c = result.call.args[0];
-    expect(c.bpm).toBe(100);
-    expect(c.subDivs).toBe(2);
-    expect(c.loopPattern.hat).toEqual(Array(8).fill(true));
-    expect(c.loopPattern.kick.filter(Boolean)).toHaveLength(2);
-  });
-  it('preserves untouched lanes and tempo in a removal edit', () => {
-    const base = { ...current, loopMode: true };
-    const p = prepare('remove hats', base);
-    const c = assemble(p, decisions(p, { hat: 'silent' }), base).call.args[0];
-    expect(c.bpm).toBe(base.bpm);
-    expect(c.loopPattern.kick).toEqual(base.loopPattern.kick);
-    expect(c.loopPattern.snare).toEqual(base.loopPattern.snare);
-    expect(c.loopPattern.hat.some(Boolean)).toBe(false);
-  });
-  it.each([0.49, 0.5, 0.50001])(
-    'only applies a setting when its confidence exceeds 50 percent (%s)',
-    confidence => {
-      const p = prepare('100 BPM and a little swing', current);
-      const a = decisions(p, { tempo: 'n:100', swing: 'light' });
-      a.tempo.confidence = confidence;
-      const result = assemble(p, a, current);
-      expect(result.call.args[0].bpm).toBe(confidence > 0.5 ? 100 : current.bpm);
-      expect(result.call.args[0].swing).toBe(15);
-    },
-  );
-  it('does not execute an uncertain operation', () => {
-    const p = prepare('reset', current);
-    const a = decisions(p, { action: 'reset' });
-    a.action.confidence = 0.5;
-    expect(assemble(p, a, current).call).toBeNull();
-  });
-  it('preserves an uncertain lane while applying a confident tempo change', () => {
-    const p = prepare('a custom beat at 100 BPM', current);
-    const a = decisions(p, { tempo: 'n:100', loopMode: 'on', hat: 'eighths' });
-    a.hat.confidence = 0.5;
-    const c = assemble(p, a, current).call.args[0];
-    expect(c.bpm).toBe(100);
-    expect(c.subDivs).toBe(current.subDivs);
-    expect(c.loopPattern.hat).toEqual(current.loopPattern.hat);
-  });
-  it('uses the current beat for faster and slower and includes recent outcomes', () => {
-    const recentTurns = [
-      { prompt: 'funk at 100 BPM', applied: true },
-      { prompt: 'a confusing request', applied: false },
-    ];
-    const base = { ...current, bpm: 100 };
-    const p = prepare('faster', base, recentTurns);
-    expect(p.request.state.recent_turns).toEqual(recentTurns);
-    const faster = assemble(p, decisions(p, { tempo: 'faster' }), base).call.args[0];
-    expect(faster.bpm).toBe(110);
-    const slower = prepare('slower', faster, recentTurns);
-    expect(assemble(slower, decisions(slower, { tempo: 'slower' }), faster).call.args[0].bpm).toBe(
-      100,
-    );
-  });
-  it('leaves bare-number targeting to Jev with context and unchanged choice ranges', () => {
-    const recentTurns = [{ prompt: 'set swing to 20 percent', applied: true }];
-    const p = prepare('30', current, recentTurns);
-    expect(p.request.state.request).toBe('30');
-    expect(p.request.state.recent_turns).toEqual(recentTurns);
-    const noContext = prepare('30', current);
-    for (const field of ['tempo', 'tempoHigh', 'swing', 'volume', 'subDivs', 'beats'])
-      expect(p.request.questions[field].criteria).toEqual(
-        noContext.request.questions[field].criteria,
-      );
-    const swing = assemble(p, decisions(p, { swing: 'n:30' }), current).call.args[0];
-    expect(swing).toMatchObject({ bpm: current.bpm, swing: 30, volume: current.volume });
-    const tempo = assemble(p, decisions(p, { tempo: 'n:30' }), current).call.args[0];
-    expect(tempo).toMatchObject({ bpm: 30, swing: current.swing, volume: current.volume });
-    expect(assemble(p, decisions(p, { action: 'unrelated' }), current).call).toBeNull();
-  });
-  it('does not clamp or redirect an out-of-range contextual tempo', () => {
-    const base = { ...current, bpm: 320 };
-    const p = prepare('340', base, [{ prompt: '320', applied: true }]);
-    expect(p.request.state.request).toBe('340');
-    expect(p.request.questions.tempoHigh.criteria).not.toHaveProperty('n:340');
-    expect(assemble(p, decisions(p, { action: 'unsupported' }), base).call).toBeNull();
-  });
-  it('does not translate eighths into a subdivision edit without a model decision', () => {
-    const p = prepare('eighths', current, [{ prompt: '120 BPM', applied: true }]);
-    expect(assemble(p, decisions(p), current).call.args[0].subDivs).toBe(current.subDivs);
-    expect(assemble(p, decisions(p, { subDivs: '2' }), current).call.args[0].subDivs).toBe(2);
-  });
-  it('provides recognition alternatives to Jev without changing the original prompt', () => {
-    const p = prepare('make a beep at 100', current, [], ['make a beat at 100']);
-    expect(p.request.state.request).toBe('make a beep at 100');
-    expect(p.request.state.recognition_alternatives).toEqual(['make a beat at 100']);
-  });
-  it('prepares all required playback settings without asking the user to enable them', () => {
-    const base = { ...current, playSubDivs: false };
-    const p = prepare('a beat', base);
-    const result = assemble(
-      p,
-      decisions(p, { loopMode: 'on', playSubDivs: 'off', hat: 'eighths' }),
-      base,
-    );
-    expect(result.call.args[0].playSubDivs).toBe(true);
-    expect(result.call.args[0].subDivs).toBe(2);
-    expect(result.playback).toBe('start');
-    expect(result.message).not.toContain('enable');
-  });
-  it('does not veto a confident tempo edit over fields being preserved unchanged', () => {
-    const p = prepare('faster', current);
-    const a = decisions(p, { tempo: 'faster' });
-    a.tempo.confidence = 0.95;
-    a.action.confidence = 1;
-    for (const field of Object.keys(a)) if (a[field].choice === 'keep') a[field].confidence = 0.3;
-    const result = assemble(p, a, current);
-    expect(result.call.args[0].bpm).toBe(current.bpm + 10);
-  });
-  it('ignores custom lane choices when ordinary playback was selected', () => {
-    const p = prepare('a beat at 100 BPM', current);
-    const a = decisions(p, { tempo: 'n:100', loopMode: 'off', kick: 'funk', hat: 'sixteenths' });
-    a.kick.confidence = 0.2;
-    const c = assemble(p, a, current).call.args[0];
-    expect(c.loopMode).toBe(false);
-    expect(c.loopPattern).toEqual(current.loopPattern);
-    expect(c.subDivs).toBe(current.subDivs);
-  });
-  it.each([
-    ['clear', 'clearLoopPattern'],
-    ['reset', 'resetToDefaults'],
-  ])('maps %s to a direct API call, using action confidence', (action, method) => {
-    const p = prepare(action, current);
-    const a = decisions(p, { action });
-    const result = assemble(p, a, current);
-    expect(result.call).toEqual({ method, args: [] });
-    expect(result.playback).toBeUndefined();
-    a.action.confidence = 0.7;
-    expect(assemble(p, a, current).call).toEqual({ method, args: [] });
-  });
-  it('keeps drum sounds when returning to ordinary metronome playback', () => {
-    const base = { ...current, loopMode: true, soundPack: 'drumkit' };
-    const p = prepare('a regular beat at 100 BPM', base);
-    expect(
-      assemble(p, decisions(p, { tempo: 'n:100', loopMode: 'off' }), base).call.args[0].soundPack,
-    ).toBe('drumkit');
-  });
-  it.each([0.5, 0.50001])(
-    'only applies an explicit sound selection above 50 percent (%s)',
-    confidence => {
-      const p = prepare('switch to beep sounds', current);
-      const a = decisions(p, { soundPack: 'defaults' });
-      a.soundPack.confidence = confidence;
-      expect(assemble(p, a, current).call.args[0].soundPack).toBe(
-        confidence > 0.5 ? 'defaults' : current.soundPack,
-      );
-    },
-  );
-  it('rejects out of range numeric values and invalid or incomplete decisions', () => {
-    const p = prepare('400 BPM', current);
-    expect(() => assemble(p, decisions(p, { tempo: 'n:400' }), current)).toThrow(/incomplete/);
-    const a = decisions(p);
-    delete a.kick.confidence;
-    expect(() => assemble(p, a, current)).toThrow(/incomplete/);
-  });
-  it('does not launch a beat for unrelated speech or a stop request', () => {
-    const p = prepare('stop', current);
-    expect(assemble(p, decisions(p, { action: 'unrelated' }), current).call).toBeNull();
-    expect(assemble(p, decisions(p, { action: 'stop' }), current).call).toEqual({
-      method: 'stop',
-      args: [],
-    });
-  });
-  it('keeps exact prompt, probabilities, confidence, request, and references without leaking the key', async () => {
-    const prompt = 'A house beat at 124 BPM';
-    const p = prepare(prompt, current);
-    const answers = decisions(p, { tempo: 'n:124' });
-    const provider = vi
-      .fn()
-      .mockResolvedValueOnce(Response.json({ id: 'decision-1', answers, usage: { cost: 0.001 } }));
-    vi.stubGlobal('fetch', provider);
-    const result = await voice(
-      new Request('https://test/api/voice', {
-        method: 'POST',
-        body: JSON.stringify({ prompt, currentConfig: current }),
-      }),
-      { TYPESAFE_API_KEY: 'private-test-key' },
-    );
-    const body = await result.json();
-    expect(body.prompt).toBe(prompt);
-    expect(body.jevRequest.state.request).toBe(prompt);
-    expect(body.decisions).toEqual(answers);
-    expect(body.confidence).toBe(0.83);
-    expect(provider).toHaveBeenCalledTimes(1);
-    expect(typeof body.confidence).toBe('number');
-    expect(body.references).toHaveLength(4);
-    expect(JSON.stringify(body)).not.toContain('private-test-key');
-    expect(provider.mock.calls[0][0]).toBe('https://api.typesafe.ai/v1/systemone');
-    expect(provider.mock.calls[0][1].headers.Authorization).toBe('Bearer private-test-key');
-    expect(JSON.parse(provider.mock.calls[0][1].body).model).toBe('jev-1.13.0');
-  });
-  it('requires the direct provider credential even when an old router key exists', async () => {
-    const provider = vi.fn();
-    vi.stubGlobal('fetch', provider);
-    const response = await voice(
-      new Request('https://test/api/voice', {
-        method: 'POST',
-        body: JSON.stringify({ prompt: '85', currentConfig: current }),
-      }),
-      { OPENROUTER_API_KEY: 'old-router-key' },
-    );
-    expect(response.status).toBe(503);
-    expect(provider).not.toHaveBeenCalled();
-  });
-  it('rejects malformed inputs before calling the provider', async () => {
-    const provider = vi.fn();
-    vi.stubGlobal('fetch', provider);
-    for (const body of [
-      { prompt: '', currentConfig: current },
-      { prompt: 'beat', currentConfig: {} },
-    ]) {
-      const result = await voice(
-        new Request('https://test/api/voice', { method: 'POST', body: JSON.stringify(body) }),
-        { TYPESAFE_API_KEY: 'test' },
-      );
-      expect(result.status).toBe(400);
-    }
-    expect(provider).not.toHaveBeenCalled();
-  });
-});
-
-it('a song lookup streams progress and changes only BPM', async () => {
-  const base = { ...current, swing: 17, soundPack: 'drumkit', loopMode: true };
-  const fetcher = vi.fn(async (url, options) => {
-    if (String(url).includes('api.typesafe.ai')) {
-      const request = JSON.parse(options.body);
-      const songChoice = Object.entries(request.questions.songQuery.criteria).find(
-        ([, v]) => v === 'Test Song by Test Artist',
-      )[0];
-      return Response.json({
-        answers: decisions(
-          { request },
-          { songQuery: songChoice, tempo: 'keep', soundPack: 'defaults', loopMode: 'off' },
-        ),
-      });
-    }
-    if (String(url).includes('/search?'))
-      return Response.json({
-        content: [
-          {
-            id: '12345678-1111-1111-1111-111111111111',
-            trackTitle: 'Test Song',
-            artists: [{ name: 'Test Artist' }],
-            popularity: 80,
-            href: 'https://open.spotify.com/track/test',
-          },
-        ],
-      });
-    return Response.json({ tempo: 119.6 });
+    return Response.json({ answers, usage: { input_tokens: 1 } });
   });
   vi.stubGlobal('fetch', fetcher);
+  return requests;
+}
+
+const say = async (prompt, config = current, extra = {}) => {
   const response = await voice(
-    new Request('https://example.test/api/voice', {
+    new Request('https://test/api/voice', {
       method: 'POST',
-      headers: { Accept: 'application/x-ndjson' },
-      body: JSON.stringify({ prompt: 'play Test Song by Test Artist', currentConfig: base }),
+      body: JSON.stringify({ prompt, currentConfig: config, ...extra }),
     }),
-    { TYPESAFE_API_KEY: 'test' },
+    { TYPESAFE_API_KEY: 'secret' },
   );
-  const events = (await response.text())
-    .trim()
-    .split('\n')
-    .map(line => JSON.parse(line));
-  expect(events[0]).toMatchObject({ type: 'status' });
-  expect(events[1].result.call.args[0]).toEqual({ ...base, bpm: 120 });
-  expect(events[1].result.playback).toBe('start');
-  expect(fetcher).toHaveBeenCalledTimes(3);
+  return response.json();
+};
+
+const tempo = (h, t, o) => ({ tempo: 'exact', tempo_hundreds: h, tempo_tens: t, tempo_ones: o });
+
+afterEach(() => vi.unstubAllGlobals());
+
+describe('main request', () => {
+  it('keeps every question a choice within Jev limits', () => {
+    const request = buildMainRequest({
+      prompt: 'anything',
+      current,
+      recentTurns: [],
+      alternatives: [],
+      timed: false,
+      context: {},
+    });
+    for (const question of Object.values(request.questions)) {
+      expect(question.type).toBe('choice');
+      expect(Object.keys(question.criteria).length).toBeLessThanOrEqual(255);
+    }
+  });
+
+  it('asks the same questions whatever the wording', () => {
+    const keys = prompt =>
+      Object.keys(
+        buildMainRequest({ prompt, current, recentTurns: [], alternatives: [], timed: false, context: {} })
+          .questions,
+      );
+    expect(keys('make it 120')).toEqual(keys('stop the drums and play a funk beat in 7/8'));
+  });
+
+  it('passes the transcript to Jev unchanged', async () => {
+    const requests = stubJev({ action: 'play' });
+    await say('move the snare to the end of two');
+    expect(requests[0].state.utterance).toBe('move the snare to the end of two');
+  });
+
+  it('only acts on what Jev chose, never on words in the transcript', async () => {
+    stubJev({ action: 'play' });
+    expect((await say('switch to drum mode at 85 bpm')).message).toBe('Playing.');
+    stubJev({ action: 'play', mode: 'drums', ...tempo('0', '8', '5') });
+    expect((await say('mumble')).call.args[0]).toEqual({ bpm: 85, loopMode: true });
+  });
 });
 
-describe('API voice mode preserves user choice unless a custom pattern is needed', () => {
-  it('honors Jev selecting drum mode', () => {
-    const p = prepare('a regular beat at 100 BPM', current);
-    const result = assemble(p, decisions(p, { tempo: 'n:100', loopMode: 'on' }), current);
-    expect(result.call.args[0].loopMode).toBe(true);
+describe('numbers', () => {
+  it('builds an exact tempo from confident digits', async () => {
+    stubJev({ action: 'play', ...tempo('1', '2', '8') });
+    const result = await say('128 bpm');
+    expect(result.call).toEqual({ method: 'setConfig', args: [{ bpm: 128 }] });
   });
-  it('keeps an ordinary subdivision change in regular mode', () => {
-    const p = prepare('play eighth hats', current);
-    const result = assemble(p, decisions(p, { hat: 'eighths', loopMode: 'keep' }), current);
-    expect(result.call.args[0].subDivs).toBe(2);
-    expect(result.call.args[0].loopMode).toBe(false);
+
+  it('keeps the tempo when any digit is unsure', async () => {
+    stubJev({ action: 'play', ...tempo('1', '2', ['8', 0.4]) });
+    const result = await say('128 bpm');
+    expect(result.call).toBeNull();
+    expect(result.message).toContain('exact tempo');
   });
-  it('does not enter custom mode when a placement matches the standard beat', () => {
-    const p = prepare('put the snare only on beat 3', current);
-    const result = assemble(p, decisions(p, { snare: 'only:2' }), current);
-    expect(result.call.args[0].loopMode).toBe(false);
+
+  it('reports an exact tempo outside the range instead of clamping it', async () => {
+    stubJev({ action: 'play', ...tempo('3', '4', '0') });
+    const result = await say('340');
+    expect(result.call).toBeNull();
+    expect(result.message).toContain('340 BPM is outside');
   });
-  it('keeps the user in drum mode when an edit restores a standard pattern', () => {
-    const base = { ...structuredClone(current), loopMode: true };
-    base.loopPattern.snare = [false, true, false, false];
-    const p = prepare('move the snare to beat 3', base);
-    const result = assemble(p, decisions(p, { snare: 'only:2' }), base);
-    expect(result.call.args[0].loopMode).toBe(true);
+
+  it('applies categorical and relative tempo choices', async () => {
+    stubJev({ action: 'play', tempo: 'faster' });
+    expect((await say('faster', { ...current, bpm: 100 })).call.args[0]).toEqual({ bpm: 110 });
   });
-  it('keeps a custom pattern through tempo changes', () => {
-    const base = { ...structuredClone(current), loopMode: true };
-    base.loopPattern.snare = [false, true, false, true];
-    const p = prepare('faster', base);
-    const result = assemble(p, decisions(p, { tempo: 'faster', loopMode: 'keep' }), base);
-    expect(result.call.args[0].loopMode).toBe(true);
-    expect(result.call.args[0].loopPattern).toEqual(base.loopPattern);
+
+  it('ignores digit answers unless the tempo is exact', async () => {
+    stubJev({ action: 'play', tempo: 'keep', tempo_hundreds: '1', tempo_tens: '2', tempo_ones: '0' });
+    expect((await say('swing it')).message).toBe('Playing.');
   });
 });
 
-it('leaves microphone-stop interpretation to Jev', () => {
-  const p = prepare('that is enough voice input', current);
-  expect(assemble(p, decisions(p, { action: 'stopListening' }), current)).toEqual({
-    call: null,
-    listening: 'stop',
-    message: 'Listening stopped.',
+describe('mode and styles', () => {
+  it('a style alone stays a regular beat, on drum kit sounds, at its tempo', async () => {
+    stubJev({ action: 'play', style: 'rock', tempo: 'style' });
+    const patch = (await say('rock beat', { ...current, soundPack: 'defaults' })).call.args[0];
+    expect(patch).toEqual({ bpm: 110, soundPack: 'drumkit' });
+  });
+
+  it('a style loads its pattern when drums are asked for', async () => {
+    stubJev({ action: 'play', style: 'rock', mode: 'drums', tempo: 'style' });
+    const patch = (await say('rock drum loop')).call.args[0];
+    expect({ ...current, ...patch }).toMatchObject({ loopMode: true, bpm: 110, subDivs: 2, playSubDivs: true });
+    expect(patch.loopPattern.snare).toEqual([false, false, true, false, false, false, true, false]);
+  });
+
+  it('a style in drum mode replaces the pattern', async () => {
+    stubJev({ action: 'play', style: 'rock' });
+    const patch = (await say('rock beat', drumConfig)).call.args[0];
+    expect(patch.loopPattern.snare).toEqual([false, false, true, false, false, false, true, false]);
+  });
+
+  it('an explicit click request switches to click mode without touching the grid', async () => {
+    stubJev({ action: 'play', mode: 'click' });
+    const patch = (await say('just the click', drumConfig)).call.args[0];
+    expect(patch).toEqual({ loopMode: false });
+  });
+
+  it('keeps the current mode for ordinary setting changes', async () => {
+    stubJev({ action: 'play', ...tempo('0', '9', '0') });
+    expect((await say('90', drumConfig)).call.args[0]).toEqual({ bpm: 90 });
+  });
+});
+
+describe('drum edits', () => {
+  it('moves a hit into a beat without disturbing the hit already there', async () => {
+    stubJev(
+      { action: 'drumEdit' },
+      { snare_4_remove: 'Remove snare on 4', snare_2_add: 'Add snare on & of 2' },
+    );
+    const patch = (await say('move the snare from 4 to the and of 2', backbeat)).call.args[0];
+    expect(patch.loopPattern.snare).toEqual([false, false, true, true, false, false, false, false]);
+  });
+
+  it('applies a whole-lane shift', async () => {
+    stubJev({ action: 'drumEdit' }, { snare_all: 'earlier-8th' });
+    const patch = (await say('shift the snare back half a beat', backbeat)).call.args[0];
+    expect(patch.loopPattern.snare).toEqual([false, true, false, false, false, true, false, false]);
+  });
+
+  it('asks per lane per beat and keeps beats that were not answered', async () => {
+    const requests = stubJev({ action: 'drumEdit' }, { snare_3_add: 'Add snare on 3' });
+    const config = { ...drumConfig };
+    config.loopPattern = { kick: [true, false, false, false], hat: [true, true, true, true], snare: [false, true, false, true] };
+    const patch = (await say('add a snare on three', config)).call.args[0];
+    expect(Object.keys(requests[1].questions)).toContain('snare_3_add');
+    expect(patch.loopMode).toBeUndefined(); // already in drum mode
+    expect(patch.loopPattern.snare).toEqual([false, true, true, true]);
+    expect(patch.loopPattern.kick).toEqual([true, false, false, false]);
+  });
+
+  it('places an off-beat hit on a quarter-note grid', async () => {
+    stubJev({ action: 'drumEdit' }, { kick_2_add: 'Add kick on & of 2' });
+    const patch = (await say('kick on the and of two', drumConfig)).call.args[0];
+    expect(patch.subDivs).toBe(2);
+    expect(patch.loopPattern.kick).toEqual([true, false, false, true, false, false, false, false]);
+  });
+
+  it('stays within 255 options even on a 12-beat grid of thirty-seconds', () => {
+    const config = { ...drumConfig, beats: 12, subDivs: 8, playSubDivs: true };
+    config.loopPattern = { kick: Array(96).fill(true), hat: Array(96).fill(false), snare: Array(96).fill(false) };
+    const { request } = buildDrumRequest({
+      prompt: 'x',
+      recentTurns: [],
+      alternatives: [],
+      config,
+      base: positionsOf(config),
+      context: {},
+    });
+    for (const question of Object.values(request.questions))
+      expect(Object.keys(question.criteria).length).toBeLessThanOrEqual(255);
+  });
+});
+
+describe('count-ins', () => {
+  // Words at `bpm`, `perBeat` words per beat; in-between words land `late` seconds late.
+  const timed = (texts, bpm, perBeat = 1, late = 0) =>
+    texts.map((text, i) => ({
+      text,
+      start: 1 + Math.floor(i / perBeat) * (60 / bpm) + (i % perBeat) * (60 / bpm / perBeat) + (i % perBeat ? late : 0),
+    }));
+  const eighths = ['1', 'and', '2', 'and', '3', 'and', '4', 'and'];
+
+  it('estimates tempo and subdivisions from timing', () => {
+    expect(estimateCountIn({ words: timed(['one', 'two', 'three', 'four'], 100) })).toMatchObject({ bpm: 100, subdivisions: 1 });
+    expect(estimateCountIn({ words: timed(eighths, 120, 2) })).toMatchObject({ bpm: 120, subdivisions: 2, swing: 0 });
+  });
+
+  it('never uses number values to place beats', () => {
+    const a = estimateCountIn({ words: timed(['1', '2', '3', '4'], 110) });
+    const b = estimateCountIn({ words: timed(['4', '1', '3', '2'], 110) });
+    expect(b).toEqual(a);
+  });
+
+  it('survives dropped and misheard syllables', () => {
+    const dropped = timed(eighths, 120, 2).filter((_, i) => i !== 3 && i !== 5);
+    expect(estimateCountIn({ words: dropped })).toMatchObject({ bpm: 120, subdivisions: 2 });
+  });
+
+  it('reports clear swing but not slightly uneven counting', () => {
+    expect(estimateCountIn({ words: timed(eighths, 120, 2, 0.09) }).swing).toBe(35);
+    expect(estimateCountIn({ words: timed(eighths, 120, 2, 0.02) }).swing).toBe(0);
+  });
+
+  it('finds beats per bar only when the count repeats a bar', () => {
+    expect(estimateCountIn({ words: timed('one two three one two three'.split(' '), 90) }).beats).toBe(3);
+    expect(estimateCountIn({ words: timed(['one', 'two', 'three', 'four'], 100) }).beats).toBeNull();
+    // The classic "one . two . one two three four": the recurring "one" marks the bar.
+    const classic = [0, 2, 4, 5, 6, 7].map((beat, i) => ({
+      text: ['one', 'two', 'one', 'two', 'three', 'four'][i],
+      start: 1 + beat * 0.5,
+    }));
+    expect(estimateCountIn({ words: classic })).toMatchObject({ bpm: 120, beats: 4 });
+  });
+
+  it('uses audio onsets when the words are unsure and miss syllables', () => {
+    // Sixteenths at 80: the transcript kept only the numbers, with smeared timestamps
+    // (as the real transcriber does at this speed); the audio has every syllable.
+    // Recorded from the real transcriber and onset detector on a rhythmic synthetic count.
+    const onsets = [1.0, 1.38, 1.57, 1.76, 1.94, 2.13, 2.31, 2.51, 2.7, 2.88, 3.06, 3.25, 3.45, 3.63].map(
+      time => ({ time, level: 40 }),
+    );
+    const words = [['One,', 1.12], ['two,', 1.58], ['three,', 2.33], ['four.', 3.27]].map(
+      ([text, start]) => ({ text, start }),
+    );
+    expect(estimateCountIn({ words }).confidence).toBeLessThan(0.8);
+    expect(estimateCountIn({ words, onsets })).toMatchObject({ bpm: 80, subdivisions: 4 });
+  });
+
+  it('trusts confident word timing without consulting the audio', () => {
+    // Real speech can split a word into several onsets or miss one entirely.
+    const words = ['One,', 'two,', 'three,', 'four.'].map((text, i) => ({ text, start: 3.24 + i * 0.41 }));
+    const messy = [3.13, 3.2, 3.27, 3.55, 3.79, 3.93, 4.02].map(time => ({ time, level: 50 }));
+    expect(estimateCountIn({ words, onsets: messy })).toMatchObject({ subdivisions: 1, source: 'words' });
+  });
+
+  it('applies the count-in only when Jev calls it one', async () => {
+    const transcriptionWords = timed(eighths, 120, 2);
+    stubJev({ action: 'countOff' });
+    const result = await say('1 and 2 and 3 and 4 and', current, { transcriptionWords });
+    expect(result.call.args[0]).toMatchObject({ bpm: 120, subDivs: 2, playSubDivs: true });
+    stubJev({ action: 'play' });
+    expect((await say('1 and 2 and 3 and 4 and', current, { transcriptionWords })).message).toBe('Playing.');
+  });
+
+  it('fits the timing within the division Jev read from the count', async () => {
+    // "triplet" is one word for two syllables, so word timing alone can't be sure.
+    const words = [];
+    for (let beat = 0; beat < 4; beat++)
+      words.push({ text: String(beat + 1), start: 1 + beat * 0.66 }, { text: 'triplet', start: 1.22 + beat * 0.66 });
+    words.unshift({ text: '.', start: 0.5 });
+    expect(estimateCountIn({ words, subdivisions: 3 })).toMatchObject({ bpm: 91, subdivisions: 3, subdivisionConfidence: 1 });
+    stubJev({ action: 'countOff', countFeel: '3' });
+    const result = await say('1 triplet 2 triplet 3 triplet 4 triplet', current, { transcriptionWords: words });
+    expect(result.call.args[0]).toMatchObject({ bpm: 91, subDivs: 3, playSubDivs: true });
+  });
+
+  it('turns earlier subdivisions off when the count is plain beats', async () => {
+    const transcriptionWords = ['One,', 'two,', 'three,', 'four.'].map((text, i) => ({ text, start: 1 + i * 0.5 }));
+    stubJev({ action: 'countOff' });
+    const eighthsOn = { ...current, subDivs: 2, playSubDivs: true };
+    eighthsOn.loopPattern = { kick: Array(8).fill(false), hat: Array(8).fill(false), snare: Array(8).fill(false) };
+    const result = await say('One, two, three, four.', eighthsOn, { transcriptionWords });
+    expect(result.call.args[0]).toMatchObject({ bpm: 120, playSubDivs: false });
+  });
+
+  it('does not offer count-ins without timed words', async () => {
+    const requests = stubJev({ action: 'play' });
+    await say('one two three four');
+    expect(requests[0].questions.action.criteria.countOff).toBeUndefined();
+  });
+});
+
+describe('music around speech', () => {
+  it('tells Jev the words may be lyrics only when the audio shows music', async () => {
+    const requests = stubJev({ action: 'unrelated' });
+    await say('I want a funky beat at ninety', current, { music: 0.9 });
+    expect(requests[0].state.heard_music).toBeTruthy();
+    const quiet = stubJev({ action: 'play' });
+    await say('I want a funky beat at ninety', current, { music: 0.1 });
+    expect(quiet[0].state.heard_music).toBeUndefined();
+  });
+
+  it('stays silent when Jev is unsure over music, and says so otherwise', async () => {
+    stubJev({ action: ['play', 0.4] });
+    expect(await say('mm', current, { music: 0.9 })).toMatchObject({ call: null, message: '' });
+    stubJev({ action: ['play', 0.4] });
+    expect((await say('mm', current, { music: 0.1 })).message).toMatch(/didn’t catch/);
+  });
+});
+
+describe('responses', () => {
+  it('acts on nothing when the action itself is unsure', async () => {
+    stubJev({ action: ['reset', 0.5] });
+    expect((await say('reset')).call).toBeNull();
+  });
+
+  it('includes the Jev trace only when debugging', async () => {
+    stubJev({ action: 'stop' });
+    expect((await say('stop')).debug).toBeUndefined();
+    stubJev({ action: 'stop' });
+    expect((await say('stop', current, { debug: true })).debug.main.answers.action.choice).toBe('stop');
   });
 });

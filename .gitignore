@@ -35,3 +35,6 @@ TODO.md
 .dev.vars*
 .sites-runtime/
 .wrangler/
+
+# Local voice diagnostics (dev only)
+.voice-log/

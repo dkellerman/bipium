@@ -63,7 +63,6 @@ describe('Grok microphone lifecycle', () => {
     const { track, context, capture, Socket } = setup();
     const recognition = new GrokRecognition();
     recognition.onresult = vi.fn();
-    recognition.onanalysis = vi.fn();
     recognition.start();
     await settle();
     expect(navigator.mediaDevices.getUserMedia).toHaveBeenCalledWith(
@@ -96,13 +95,10 @@ describe('Grok microphone lifecycle', () => {
         results: [expect.objectContaining({ isFinal: true })],
       }),
     );
+    // The relay's old percussion messages are ignored; rhythm is tracked in the browser.
     emit({
       type: 'analysis.result',
       result: { call: null, message: '[percussion] No changes made · ~120 BPM' },
-    });
-    expect(recognition.onanalysis).toHaveBeenCalledWith({
-      call: null,
-      message: '[percussion] No changes made · ~120 BPM',
     });
     expect(recognition.onresult).toHaveBeenCalledTimes(2);
     recognition.abort();

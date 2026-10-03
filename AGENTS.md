@@ -1,58 +1,150 @@
 # Bipium agent instructions
 
-## Mandatory: this is an AI app; interpretation belongs to Jev
+Bipium is primarily a metronome. Voice control and the drum grid serve that; custom drum
+mode is for small adjustments when someone asks for specific drum parts, never the default.
 
-NEVER add hardcoded interpretation or intent-driven behavior without the user's explicit approval for that exact behavior. This applies to new features, fixes, emergency work, fallbacks, and optimizations. Being useful, passing tests, or resembling an existing exception is NOT approval.
+## The core rule: Jev interprets, code executes
 
-### Required approval process
+Language is understood by Jev (Typesafe's decision model), never by our code. Code does
+mechanics only: validation, transport, state, arithmetic, grid math, signal processing, and
+executing what Jev chose.
 
-1. Before implementing an exception, explain the exact proposed hardcoded behavior and ask the user for explicit permission.
-2. After approval, record it in the approved-exceptions register below BEFORE implementing it: exact behavior, scope/files, user's approving words, and limitations.
-3. No matching record means no permission. Do not infer permission from a broad feature request, earlier exceptions, or the existence of old code. Existing unrecorded heuristics must be surfaced and removed or explicitly approved; never silently grandfather them.
-4. Expanding an exception requires a new approval and an updated record. Revoked permission must be removed from the active register.
+- No keyword lists, phrase matching, regexes or grammars over the transcript, number-word
+  parsers, transcript rewrites, or wording-based overrides, unless the user approved that
+  exact behavior (see the register below).
+- No silent local fallback when Jev is unsure or unavailable. Say so and keep the current
+  state.
+- If something fails on a particular phrase, fix it generally: the questions, the shared
+  state, the option wording or the context. Never add a rule for that phrase.
 
-### Interpretation boundary
+### Getting approval for an exception
 
-- Jev interprets language and decides semantic actions and values. Preserve the original transcript and provide choices independently of wording.
-- No keyword lists, phrase matching, regex/handwritten grammars, number-word parsers, transcript rewrites, or wording-based overrides that infer, constrain, reject, or redirect user intent without a matching approval record.
-- No implicit local fallback when the model is uncertain or unavailable. Report the limitation and ask before proposing any hardcoded interpretation.
-- Ordinary validation, transport, state management, execution of model-selected operations, arithmetic, audio signal processing, and grid calculations are implementation mechanics, not permission to infer intent.
-- Count-offs go through Jev. Jev selects timing anchors and musical spacing; server code may perform the resulting arithmetic. The former count-off grammar exception was explicitly REVOKED on 2026-09-29. No number/syllable grammar or pre-model count-off bypass is permitted.
-- Tests must prove that different wording cannot make code bypass Jev or override its decisions.
+Before building any hardcoded interpretation, describe the exact behavior and ask. Once
+the user approves, record it below (behavior, scope, their words, limits) before
+implementing. No record means no permission; an earlier exception or old code is not
+permission. Surface unrecorded heuristics you find rather than keeping them quietly.
 
-### Approved-exceptions register
+## Designing Jev questions (what has worked)
 
-- **Song-request handling:** User explicitly said “song request is fine” when reviewing existing hardcoded paths. Scope: the existing `server/song-tempo.mjs` candidate preparation, title/artist lookup and matching, plus execution of Jev-selected song lookups in `server/voice.mjs`, as present at commit `2084898`. This is not approval to add new phrase rules, song triggers, or semantic shortcuts.
-- **Audio-only instrument/percussion analysis:** User explicitly said “instrument is fine” and previously “ok, no jev then” about arithmetic/audio detection. Scope: the existing PCM onset detection, timing estimation, and tentative accent grouping in `server/percussion.mjs`, as present at commit `2084898`. This does not authorize transcript parsing, instrument-word matching, or new automatic playback decisions.
+Jev answers multiple-choice questions (`choice`; max 255 options), each with a
+probability per option and a confidence. It can't return free text or numbers. An answer
+is acted on only above 0.5 confidence; otherwise that setting stays as it is.
 
-- **Numeric context guidance (2026-09-29):** User requested that Jev weigh “the last thing said” and “a normal range for that thing,” with context-free plain numbers likely BPM, and explicitly answered “Use only the existing 20–320 supported range.” This is a GENERAL model interpretation policy across all parameters and operations; BPM and eighths were examples, not special-case implementations. Jev must jointly weigh explicit meaning/units, conversational topic and recency, player state, musical plausibility, and correction/addition/continuation intent. Scope: model instructions in `server/change-policy.mjs` may name the existing 20–320 BPM supported range and tell Jev to weigh recent context, semantic units, and plausible values. No new typical-range cutoff (the proposed 40–240 range was NOT approved), per-property heuristic thresholds, bare-number parser, number-word parser, token/suffix matcher, numeric routing branch, or model override is authorized. User further clarified that “340” immediately following “320” probably still means BPM. Supported ranges must not veto semantic interpretation: Jev identifies intent first, then reports unsupported values without substituting or redirecting them. Existing validation and execution limits remain unchanged; no playback-range expansion was authorized. “Eighths” is a semantic subdivision request for Jev to interpret, not permission to add a keyword rule.
+- **Keep option lists small and meaningful.** One option per possible value (e.g. every
+  BPM) is slow, costly and less accurate.
+- **Separate exact numbers from categories.** Ask a mode (`keep | exact | faster | slow…`)
+  and, for exact values, one question per digit. Report values the player can't do
+  (340 BPM) instead of clamping them.
+- **Questions in one request are answered independently.** Each must be answerable from
+  the shared state alone; never refer to another question's answer. If two questions
+  must agree, restructure (e.g. split "remove" from "add").
+- **Describe options by what they change.** "Remove snare on 2, add snare on & of 2"
+  beats "snare on & of 2".
+- **Don't put the answer's consequence where it can anchor.** Count-in candidates showed
+  BPMs and Jev drifted towards the tempo already playing; describe the evidence instead
+  and let code do the arithmetic.
+- **Give Jev what happened, not just what was said.** Recent turns carry each turn's
+  outcome ("added snare on & of 3").
+- **Keep shared guidance short and general.** Retrieval (`context.mjs`) supplies
+  terminology and reference grooves; avoid essays and rules written for one failure.
+- One main request per phrase; a second (drum) request only when Jev routes to a
+  drum edit (user, 2026-09-29: "ok let's try this"; no transcript matching).
 
-**Whole-BPM estimates (2026-09-29):** User explicitly requested “don't sent fractional beats unless specifically requested, especially with count offs / percussion.” Scope: round inferred BPM from count-off timing and audio percussion to the nearest whole BPM in `server/count-off.mjs` and `server/percussion.mjs`, including percussion candidates. This is output precision for timing arithmetic, not language interpretation. Preserve timestamp precision, subdivisions, existing configuration, and explicit API values. Do not add transcript matching to detect requests for fractional precision; any future voice precision choice belongs to Jev.
+## Voice pipeline map
 
-No other hardcoded interpretation exception is recorded. Do not add one on the user's behalf.
+- `server/voice.mjs`: `/api/voice`. Validates input, runs the requests, returns a
+  `setConfig` patch of only what changes (or stop/clear/reset/null).
+- `server/voice/main.mjs`: the main request (action, mode, style, clicker settings).
+- `server/voice/drums.mjs`: drum edits; per lane, a whole-lane question plus remove/add
+  questions per beat over the actual grid (or the chosen style's pattern).
+- `server/voice/count-in.mjs` + `rhythm.mjs`: count-in timing (see the register).
+- `server/voice/context.mjs`, `glossary.json`, `styles.json`: retrieved context and the
+  style catalog (`scripts/build-styles.mjs`).
+- `src/lib/onsets.ts`, `rhythm-tracker.ts`, `rhythm-worker.ts`: browser-side onset
+  detection, music evidence (held notes, sharp percussion) and live rhythm tracking from
+  the mic. Music evidence keeps rhythm tracking going through speech (singing over a
+  guitar, clapping while talking) and reaches Jev as `heard_music` context, so Jev can
+  treat lyrics as unrelated. That's context for Jev, not a rule.
+
+## Testing
+
+- Unit tests stub Jev; they check mechanics (arithmetic, grids, limits, that wording can't
+  bypass Jev), not understanding. Never tune them, or the code, to make a phrase pass.
+- `node scripts/voice-eval.mjs` measures live interpretation against `pnpm dev`. A miss
+  is evidence about the questions or context. Don't encode a disputed reading as the
+  only right answer.
+- Local dev: `TYPESAFE_API_KEY` in `.env.local`; `pnpm dev` serves `/api/voice` and
+  proxies speech recognition to the production relay. Jev's answers log to the console.
+
+## Approved exceptions register
+
+- **Numeric context (2026-09-29).** The user asked that Jev weigh "the last thing said"
+  and "a normal range for that thing", with context-free plain numbers likely BPM, and
+  answered "Use only the existing 20–320 supported range". This is general model
+  guidance in `server/voice/main.mjs`, not a parser: Jev weighs units, recent topic,
+  player state and plausibility. "340" right after "320" probably still means BPM.
+  Ranges never veto meaning; unsupported values are reported, not redirected. Not
+  approved: a 40–240 typical range, per-property thresholds, number parsers, numeric
+  routing. "Eighths" is a subdivision request for Jev to interpret, not a keyword rule.
+- **Count-in timing (2026-10-03).** Jev alone decides that an utterance is a count-in
+  ("jev identifies it as a likely count in from the words - it's out of it after that").
+  Jev also reads how the count divides the beat (`countFeel`: "1 trip-let" is three per
+  beat); when it's confident, timing is fitted within that division. Timing then comes from a converging hypothesis process (`count-in.mjs`, `rhythm.mjs`)
+  over word timings and browser audio onsets. Approved: "numbers are ok to identify is
+  countins for specific clustering and weighting reasons, NOT for parsing directly and
+  'deciding' the beat or IF it's a count in", and for beats per bar, "one COULD get extra
+  weight towards the measure" ("yes"). Words only set soft weights (numerals lean to
+  beats, repeated syllables to subdivisions, a recurring "one" to bar starts); number
+  values never place beats. Swing only when clearly supported. Not approved: deciding
+  whether something is a count-in, hard rules on which words are beats or bars, use
+  outside count-in timing. (The old count-off grammar was revoked 2026-09-29.)
+- **Heard rhythm (2026-10-03).** Rhythm heard with no speech (claps, an instrument) may set
+  tempo/subdivisions/swing when the estimate is confident and has held steady. User:
+  "play if high enough confidence", revised to "don't play auto, show it but don't auto
+  start it"; a spoken confirmation step was rejected. It never starts playback; saying
+  "play" does. Rhythm isn't detected at all while the metronome plays ("don't detect
+  instrument while it's playing"). When one is reported, the status says "Hearing …"
+  and to say "start" or press Start.
+- **Instrument over stray words (2026-10-03).** The transcriber sometimes turns an
+  instrument into words ("Mm"). User: "if it's low confidence probably better to make sure
+  that's ignored if the instrument prob is super high". A steady rhythm held across two
+  consecutive analyses (only while the metronome is stopped) counts as music for 4 s: transcribed words
+  don't pause rhythm tracking (the stricter over-speech bar applies), phrases reach Jev
+  with `heard_music`, and over music a phrase Jev finds unrelated or can't place is
+  dropped silently. Jev still decides what every phrase means; clear requests still act.
+- **Audio-only percussion analysis.** "instrument is fine" / "ok, no jev then":
+  PCM onset detection and timing estimation (`server/percussion.mjs` on the relay; now
+  superseded in the app by the browser tracker). No transcript parsing.
+- **Whole-BPM estimates (2026-09-29).** "don't sent fractional beats unless specifically
+  requested, especially with count offs / percussion": estimated tempos round to whole
+  BPM. Explicit values the user states are kept as given.
+
+## Product rules
+
+- A named style plays as a regular metronome on drum-kit sounds; drum mode only when a
+  drum loop or specific kick/snare/hat parts are asked for.
+- Voice mode must not change playback volume or apply any gain; no ducking or boosting.
+  Mic capture requests automatic gain control and noise suppression off (noise
+  suppression keeps only voice and erases the instruments rhythm tracking listens for).
+
+## The shared Pixi visualizer (do not regress)
+
+- Classic and machine both use `src/components/DefaultVisualizer.tsx`. Don't fork its
+  rendering, animation or lifecycle per theme; theme differences are presentation props.
+- Keep the Pixi green now-line, timing and rendering as they are. Don't move the line out
+  of Pixi or redesign the visualizer without explicit approval.
+- Keep the Pixi Application/canvas alive across beat, subdivision, swing, pattern, mode
+  and size updates. Never key the Application on the grid. Resize the existing renderer
+  and apply the latest size after async initialization.
+- Keep the explicit grid and now-line redraws after size/grid updates (physical-device
+  fixes `b841edc`, `c393021`).
+- Run `VisualizerLifecycle.test.tsx` after visualizer or lifecycle changes and check both
+  themes. Desktop responsive mode and Chrome emulation don't reproduce the iPhone issue;
+  never claim physical-device success without testing on a device.
 
 ## Delivery
 
-- Do not create pull requests. Push authorized completed work directly to master and deploy.
-- Preserve unrelated local changes; use the existing managed worktree.
-- Verify changes in both classic and machine themes when UI changes are involved.
-- On this machine plain `cat` may be a colorizing wrapper. Use `sed -n` or `/bin/cat` for reads.
-
-## Mandatory: preserve the shared Pixi visualizer
-
-- Classic and machine must use `src/components/DefaultVisualizer.tsx`. Do not copy or fork its rendering, animation, or lifecycle code for a theme. Theme differences belong in presentation props.
-- Preserve the established Pixi green now-line, timing, and rendering behavior. Do not move the line outside Pixi or redesign this visualizer without the user's explicit approval.
-- Keep the Pixi Application/canvas alive across beat, subdivision, swing, pattern, mode, and size updates. Never add a grid-dependent Application key. Resize the existing renderer; apply the latest dimensions after asynchronous initialization.
-- Preserve explicit grid and now-line redraws after size/grid updates. These came from earlier physical-device fixes (`b841edc`, `c393021`); changing unrelated voice code must not remove them.
-- Run `VisualizerLifecycle.test.tsx` after visualizer or lifecycle edits. Verify both themes. Desktop responsive mode and Chrome device emulation do NOT verify this physical-iPhone regression; never claim physical-device success without testing there.
-
-- Voice mode must not change playback volume or apply a voice gain multiplier. Do not reintroduce automatic ducking/boosting. Microphone capture requests automatic gain control off.
-
-## Jev questions in one request
-
-- Use one Jev request for ordinary settings and general groove creation. The user authorized a second specialized request only when Jev classifies specific drum manipulation (2026-09-29: “ok let’s try this”; no transcript matching). Each question must be answerable from shared request state without reading another question's answer; same-call answers are evaluated independently.
-- Independence is about available evidence, not musical isolation. Tempo, meter, subdivisions, swing, and patterns remain connected through the whole musical request. General groove requests may imply multiple coordinated settings; specific edits preserve unmentioned settings.
-- Never instruct one question to use another question's "selected" answer. Define any shared musical span or frame in state and have each question judge its own part directly from that evidence.
-- Do not add transcript parsing or deterministic intent overrides to reconcile answers. The existing explicit-approval policy still applies.
-
-- Drum specialist scope: reuse the existing lane edit choices and grid arithmetic, send exact current configuration and recent context, and return the same client setConfig API with the chosen mode. Preserve unrelated behavior; no additional language heuristics or capability expansion.
+- No pull requests. Push authorized, completed work directly to master and deploy.
+- Preserve unrelated local changes; use the existing worktree.
+- Check both classic and machine themes for UI changes.
+- On this machine plain `cat` may colorize; use `sed -n` or `/bin/cat` to read files.

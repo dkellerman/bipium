@@ -4,6 +4,10 @@ import { Mic, Square, LoaderCircle, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { readVoiceResponse } from '@/lib/voice-response';
 import { GrokRecognition, type TranscriptWord } from '@/lib/grok-recognition';
+import type { Onset } from '@/lib/onsets';
+import { devLog } from '@/lib/dev-log';
+import { VoiceIntro } from '@/components/VoiceIntro';
+import { voiceIntroHidden } from '@/lib/voice-intro';
 import type { ApiConfig, RuntimeApi } from '@/core/api';
 
 type VoiceResult = {
@@ -14,11 +18,33 @@ type VoiceResult = {
     args: ApiConfig[];
   } | null;
   playback?: string;
-  confidence: number;
-  references: { id: number; title: string; url: string }[];
+  listening?: string;
+  debug?: Record<
+    string,
+    { answers?: Record<string, { choice: string; confidence: number }> } | null
+  >;
   [key: string]: unknown;
 };
 const runtime = () => (window as unknown as { bpm: RuntimeApi }).bpm;
+// Local development: log Jev's answers to the console.
+const DEV_TOOLS = import.meta.env.DEV && import.meta.env.MODE !== 'test';
+function logDecisions(result: VoiceResult) {
+  console.groupCollapsed(`[voice] ${result.prompt} → ${result.message}`);
+  // Jev stages have answers; others (the count-in estimate) are just logged below.
+  for (const [stage, trace] of Object.entries(result.debug ?? {})) {
+    const answers = trace?.answers;
+    if (!answers) continue;
+    console.table(
+      Object.fromEntries(
+        Object.entries(answers)
+          .filter(([, a]) => !['keep', 'none'].includes(a.choice))
+          .map(([key, a]) => [`${stage}.${key}`, { choice: a.choice, confidence: a.confidence }]),
+      ),
+    );
+  }
+  console.log(result);
+  console.groupEnd();
+}
 export function ListenControl({
   variant = 'classic',
 }: {
@@ -75,7 +101,13 @@ export function ListenControl({
       /* Session history is optional when storage is full. */
     }
   }, [history]);
-  const submit = (prompt: string, alternatives: string[] = [], words?: TranscriptWord[]) => {
+  const submit = (
+    prompt: string,
+    alternatives: string[] = [],
+    words?: TranscriptWord[],
+    onsets?: Onset[],
+    music?: number,
+  ) => {
     prompt = prompt.trim();
     if (!prompt) return;
     setLastHeard(prompt);
@@ -93,6 +125,7 @@ export function ListenControl({
         controller.current = abort;
         setBusy(true);
         setStatus(`Finding a beat for “${prompt}”…`);
+        const currentConfig = api.getConfig();
         try {
           const response = await fetch('/api/voice', {
             method: 'POST',
@@ -101,10 +134,15 @@ export function ListenControl({
               prompt,
               alternatives,
               transcriptionWords: words,
-              currentConfig: api.getConfig(),
-              recentTurns: historyRef.current
-                .slice(-6)
-                .map(turn => ({ prompt: turn.prompt, applied: turn.call !== null })),
+              ...(onsets?.length ? { onsets } : {}),
+              ...(music !== undefined ? { music } : {}),
+              currentConfig,
+              recentTurns: historyRef.current.slice(-6).map(turn => ({
+                prompt: turn.prompt,
+                applied: turn.call !== null,
+                outcome: turn.message,
+              })),
+              ...(DEV_TOOLS ? { debug: true } : {}),
             }),
             signal: abort.signal,
           });
@@ -112,6 +150,18 @@ export function ListenControl({
             if (version === generation.current) setStatus(message);
           });
           if (version !== generation.current) return;
+          if (DEV_TOOLS) logDecisions(result);
+          devLog('voice', {
+            prompt,
+            current: currentConfig,
+            words,
+            onsets,
+            music,
+            message: result.message,
+            call: result.call,
+            countIn: result.countIn,
+            action: (result.debug as any)?.main?.answers?.action,
+          });
           if (result.listening === 'stop') stop();
           if (result.call?.method === 'setConfig') {
             const validated = api.validateConfig(result.call.args[0]);
@@ -125,7 +175,7 @@ export function ListenControl({
             flushSync(() => api.resetToDefaults());
           historyRef.current = [...historyRef.current, result].slice(-10);
           setHistory(historyRef.current);
-          setStatus(result.message);
+          if (result.message) setStatus(result.message);
         } catch (error) {
           if (!abort.signal.aborted)
             setStatus(error instanceof Error ? error.message : 'Could not interpret that phrase.');
@@ -139,8 +189,44 @@ export function ListenControl({
     window.dispatchEvent(new Event('bipium:unlock-audio'));
     const recognition = new GrokRecognition();
     sr.current = recognition;
-    recognition.onanalysis = result => {
-      if (active.current && sr.current === recognition) setStatus(result.message);
+    // Rhythm is only detected while the metronome is stopped: while it plays, its own
+    // click reaches the mic and the player isn't asking for a tempo.
+    const metronomePlaying = () => !!runtime()?.isStarted();
+    recognition.ignoreRhythm = metronomePlaying;
+    recognition.onrhythm = rhythm => {
+      const api = runtime();
+      if (!api || !active.current || sr.current !== recognition) return;
+      if (metronomePlaying()) return;
+      const patch: Partial<ApiConfig> = { bpm: rhythm.bpm };
+      if (rhythm.subdivisions > 1)
+        Object.assign(patch, {
+          subDivs: rhythm.subdivisions,
+          playSubDivs: true,
+          swing: rhythm.swing,
+        });
+      const validated = api.validateConfig(patch);
+      if (!validated.ok) return;
+      // Shown on the player, never started automatically.
+      flushSync(() => api.setConfig(validated.value));
+      const message = `[rhythm] ${rhythm.bpm} BPM${
+        rhythm.subdivisions > 1 ? ` · ${rhythm.subdivisions} per beat` : ''
+      }${rhythm.swing ? ` · ${rhythm.swing}% swing` : ''}`;
+      // Keep it in the conversation, so "make that half time" refers to it.
+      historyRef.current = [
+        ...historyRef.current,
+        {
+          prompt: '(no speech: rhythm heard from playing or clapping)',
+          message,
+          call: { method: 'setConfig' as const, args: [validated.value] },
+        },
+      ].slice(-10);
+      setHistory(historyRef.current);
+      setOpen(true);
+      // Never starts on its own; the player decides.
+      const heard = `${rhythm.bpm} BPM${rhythm.subdivisions > 1 ? `, ${rhythm.subdivisions} per beat` : ''}${
+        rhythm.swing ? `, ${rhythm.swing}% swing` : ''
+      }`;
+      setStatus(`Hearing ${heard}. Say “start” or press Start to play.`);
     };
     recognition.onready = () => {
       if (active.current && sr.current === recognition)
@@ -159,6 +245,8 @@ export function ListenControl({
               result[j + 1].transcript.trim(),
             ).filter(transcript => transcript && transcript !== result[0].transcript.trim()),
             event.words,
+            event.onsets,
+            event.music,
           );
         else unfinished += result[0].transcript;
       }
@@ -189,7 +277,12 @@ export function ListenControl({
   ) : (
     <Mic className="size-5" aria-hidden="true" />
   );
-  const toggle = () => (listening ? stop() : start());
+  const [intro, setIntro] = useState(false);
+  const toggle = () => {
+    if (listening) stop();
+    else if (voiceIntroHidden()) start();
+    else setIntro(true);
+  };
   const reset = () => {
     stop();
     historyRef.current = [];
@@ -261,6 +354,16 @@ export function ListenControl({
         </Button>
       )}
       {resetTarget ? createPortal(resetButton, resetTarget) : variant === 'api' && resetButton}
+      {intro && (
+        <VoiceIntro
+          variant={variant}
+          onStart={() => {
+            setIntro(false);
+            start();
+          }}
+          onCancel={() => setIntro(false)}
+        />
+      )}
       {open &&
         target &&
         createPortal(

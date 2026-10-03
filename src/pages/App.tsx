@@ -180,6 +180,10 @@ function App() {
     [beats, activeSubDivs, swingActive, swing],
   );
   const [visualizerMode, setVisualizerMode] = useState<VisualizerMode>('default');
+  // getConfig() must see a mode change before React re-renders, or a second config
+  // change in the same tick merges with the stale mode and switches it back.
+  const visualizerModeRef = useRef<VisualizerMode>('default');
+  visualizerModeRef.current = visualizerMode;
   const [renderedVisualizerMode, setRenderedVisualizerMode] = useState<VisualizerMode>('default');
   const [soundUrls, setSoundUrls] = useState(() => ({ ...API_DEFAULT_CONFIG.soundUrls }));
   const [drumPattern, setDrumPattern] = useState<DrumLoopPattern>(() =>
@@ -257,6 +261,7 @@ function App() {
       setDrumPatternDirty(false);
     }
     pendingRenderedVisualizerModeRef.current = nextMode;
+    visualizerModeRef.current = nextMode;
     setVisualizerMode(nextMode);
     sendEvent('toggle_visualizer_mode', 'App', nextMode);
   }, [visualizerMode]);
@@ -367,11 +372,11 @@ function App() {
       soundPack: soundPackRef.current,
       volume: volumeRef.current,
       soundUrls: { ...soundUrlsRef.current },
-      loopMode: visualizerMode === 'drumLoop',
+      loopMode: visualizerModeRef.current === 'drumLoop',
       loopRepeats: loopRepeatsRef.current,
       loopPattern: cloneLoopPattern(drumPatternRef.current),
     }),
-    [visualizerMode],
+    [],
   );
 
   const applyApiConfig = useCallback(
@@ -407,6 +412,7 @@ function App() {
 
       loopTimingRef.current = nextLoopTiming;
       pendingRenderedVisualizerModeRef.current = nextVisualizerMode;
+      visualizerModeRef.current = nextVisualizerMode;
       clicker.setVolume(nextVolume);
       void clicker.setSounds(
         buildConfiguredSoundPack(
@@ -660,7 +666,6 @@ function App() {
         )}
       >
         <NavBar>
-          <div id="reset-control-classic" className="absolute right-12 top-1" />
           <Button
             type="button"
             variant="ghost"
@@ -790,8 +795,9 @@ function App() {
               Stop
             </Button>
           )}
-          <div className="absolute left-full top-1/2 ml-3 -translate-y-1/2">
+          <div className="absolute left-full top-1/2 ml-3 flex -translate-y-1/2 items-center gap-1">
             <ListenControl />
+            <div id="reset-control-classic" />
           </div>
         </div>
         <div

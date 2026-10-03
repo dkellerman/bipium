@@ -21,7 +21,7 @@ class FakeSpeech {
   onend: any;
   onerror: any;
   onready: any;
-  onanalysis: any;
+  onrhythm: any;
   start = vi.fn(() => this.onready?.());
   abort = vi.fn();
   constructor() {
@@ -61,6 +61,9 @@ const click = async (label: string) => {
 beforeEach(async () => {
   (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
   sessionStorage.clear();
+  localStorage.clear();
+  // Most tests start listening directly; the intro has its own tests below.
+  localStorage.setItem('voiceIntroHidden', '1');
   host = document.createElement('div');
   document.body.append(host);
   root = createRoot(host);
@@ -72,6 +75,7 @@ beforeEach(async () => {
     stop: vi.fn(),
     clearLoopPattern: vi.fn(),
     resetToDefaults: vi.fn(),
+    isStarted: vi.fn(() => false),
   };
   (window as any).bpm = api;
   (window as any).SpeechRecognition = FakeSpeech;
@@ -92,22 +96,78 @@ afterEach(async () => {
   delete (window as any).SpeechRecognition;
   delete (window as any).SpeechRecognitionPhrase;
 });
+describe('voice mode intro', () => {
+  const dialog = () => document.querySelector('[role="dialog"]');
+  const started = () => FakeSpeech.latest?.start.mock.calls.length ?? 0;
+  beforeEach(() => {
+    localStorage.clear();
+    FakeSpeech.latest = undefined as any;
+  });
+
+  it('describes voice mode before starting, and starts from the intro', async () => {
+    await click('Listen');
+    expect(dialog()?.textContent).toContain('Experimental');
+    expect(dialog()?.textContent).toContain('Count in');
+    expect(started()).toBe(0);
+    await click('Start');
+    expect(dialog()).toBeNull();
+    expect(started()).toBe(1);
+  });
+
+  it('shows again after cancelling, unless told not to', async () => {
+    await click('Listen');
+    await click('Cancel');
+    expect(dialog()).toBeNull();
+    expect(started()).toBe(0);
+    await click('Listen');
+    expect(dialog()).not.toBeNull();
+    await act(async () =>
+      (document.querySelector('input[type="checkbox"]') as HTMLInputElement).click(),
+    );
+    await click('Cancel');
+    expect(localStorage.getItem('voiceIntroHidden')).toBe('1');
+    await click('Listen');
+    expect(dialog()).toBeNull();
+    expect(started()).toBe(1);
+  });
+});
+
 describe('listening controls', () => {
-  it('displays server percussion estimates without applying a command', async () => {
+  it('sets a confidently heard rhythm without starting playback', async () => {
     await click('Listen');
     await act(async () =>
-      FakeSpeech.latest.onanalysis({ message: '[percussion] ~120 BPM · No changes made.' }),
+      FakeSpeech.latest.onrhythm({ bpm: 92, subdivisions: 2, swing: 0, confidence: 0.9 }),
     );
-    expect(document.body.textContent).toContain('[percussion] ~120 BPM · No changes made.');
-    expect(api.setConfig).not.toHaveBeenCalled();
+    expect(api.setConfig).toHaveBeenCalledWith({
+      bpm: 92,
+      subDivs: 2,
+      playSubDivs: true,
+      swing: 0,
+    });
     expect(api.start).not.toHaveBeenCalled();
+    expect(document.body.textContent).toContain(
+      'Hearing 92 BPM, 2 per beat. Say “start” or press Start to play.',
+    );
+  });
+
+  it('ignores heard rhythm while the metronome is playing', async () => {
+    api.isStarted.mockReturnValue(true);
+    await click('Listen');
+    const playing = API_DEFAULT_CONFIG.bpm;
+    for (const bpm of [playing, playing * 2, 77])
+      await act(async () =>
+        FakeSpeech.latest.onrhythm({ bpm, subdivisions: 1, swing: 0, confidence: 0.9 }),
+      );
+    expect(api.setConfig).not.toHaveBeenCalled();
   });
 
   it('shows examples, sends only final phrases, and applies the returned API config', async () => {
     const fetcher = vi.fn(async () => Response.json(response()));
     vi.stubGlobal('fetch', fetcher);
     await click('Listen');
-    expect(document.body.textContent).toContain('Make a medium tempo funk beat with a little bit of swing');
+    expect(document.body.textContent).toContain(
+      'Make a medium tempo funk beat with a little bit of swing',
+    );
     await act(async () => FakeSpeech.latest.phrase('funk', false));
     expect(fetcher).not.toHaveBeenCalled();
     await act(async () => FakeSpeech.latest.phrase('funk'));
@@ -167,7 +227,7 @@ describe('listening controls', () => {
     expect(document.querySelector('input')).toBeNull();
     expect(document.querySelector('details')).toBeNull();
   });
-  it('keeps recent spoken context across phrases in the same listening session', async () => {
+  it('keeps recent context, including what each phrase did, across phrases', async () => {
     const fetcher = vi.fn(async () => Response.json(response()));
     vi.stubGlobal('fetch', fetcher);
     await click('Listen');
@@ -177,7 +237,7 @@ describe('listening controls', () => {
       (fetcher.mock.calls as unknown as [string, RequestInit][])[1][1].body as string,
     );
     expect(request.prompt).toBe('faster');
-    expect(request.recentTurns).toEqual([{ prompt: 'funk', applied: true }]);
+    expect(request.recentTurns).toEqual([{ prompt: 'funk', applied: true, outcome: '100 BPM' }]);
   });
   it('sends alternate transcripts and shows the transcript in two compact lines', async () => {
     const fetcher = vi.fn(async () => Response.json(response()));

@@ -45,40 +45,48 @@ is present; the original Vercel deployment is separate.
 
 ### Voice and Jev
 
-`POST /api/voice` takes `{ prompt, currentConfig, recentTurns }`. Each phrase includes
-the actual current player configuration and up to six recent spoken prompts with
-whether they were applied, so relative edits use the ongoing context. The Worker retrieves four
-references from the full research vector index, then calls OpenRouter Decisions
-with `typesafe/jev-1.13`. It assembles and validates one `call` envelope:
-`{ method: "setConfig", args: [config] }`, plus `playback: "start"`. A stop request
-returns `{ method: "stop", args: [] }`; unsupported/unrelated speech returns no call.
-Regular metronome playback is preferred for generic beat/style requests. Custom
-drum patterns require an explicit drum-loop or instrument-placement request; later
-relative edits preserve the established mode. Sound-pack changes are separate and
-require an explicit request; switching playback mode does not select beeps.
-The client applies the configuration through the existing `window.bpm` API and
-starts playback. The browser still owns audio and timing. Grid adjustments are
-explicitly reported and preserve selected hits; impossible combinations are rejected.
+`POST /api/voice` takes `{ prompt, currentConfig, recentTurns, alternatives?, transcriptionWords? }`
+and returns `{ call, playback?, message }`, where `call` is a `setConfig` patch of only
+the settings that change, or `stop`, `clearLoopPattern`, `resetToDefaults`, or `null`.
+The client merges the patch through `window.bpm` and starts playback.
 
-Responses keep the exact prompt, all Jev answers including confidence and choice
-probabilities, the full Jev request, selected source references, usage, and timing.
-Confidence is Jev's distribution summary, not a calibrated accuracy estimate for
-this app. For each setting, Jev confidence must exceed 50% to change it; otherwise the previous
-value is preserved. Uncertain actions do nothing. Every valid server API call executes
-without an overall confidence threshold or a second model check. The response has one diagnostic `confidence` number (minimum active
-decision confidence); raw answers remain in `decisions`. Confidence never blocks
-playback. Invalid or unsupported requests still return no executable call.
-Recent responses are retained in browser session storage for conversational context.
-Prompt and decision metadata remain in the server response, with no details UI or history download. Prompt history is not persisted on the
-server. Stop listening cancels queued/in-flight interpretations but leaves any
-already-playing beat alone. Spoken "stop playback" stops the player.
+Interpretation belongs to Typesafe Jev (`jev-1.13.0`, called directly with
+`TYPESAFE_API_KEY`). Every question is a multiple-choice question; the server only
+validates, does arithmetic, and builds the patch. Code lives in `server/voice/`:
 
-Store `OPENROUTER_API_KEY` only as a secret in GPT Sites. For local Worker testing,
-put it in the ignored `dist/server/.dev.vars` after building. Never use a `VITE_`
-prefix or put the key in client code. No other model or speech-service key is used.
-Browser recognition support varies; it can use the browser vendor's remote speech
-service and is not guaranteed offline. Microphone denial/unsupported browsers show a short voice availability message.
-There is no typed prompt input. The Listen click unlocks the player's audio context.
+- **Main request** (`main.mjs`, every phrase): the action (play, drum edit, count-in,
+  stop, clear, reset, ...), drum or click mode, a style from `styles.json`, and every
+  clicker setting. Numbers are asked as a mode (keep, exact, slow, faster, ...) plus
+  one question per digit, so exact values and categories stay distinct.
+- **Drum request** (`drums.mjs`, only for drum edits): per lane, one whole-lane question
+  (shift, fill, empty) and, per beat, which existing hits come out and which new hits go
+  in, at sixteenth-note resolution or the grid's own (triplets etc.).
+- **Count-ins** (`count-in.mjs`, `rhythm.mjs`): Jev decides an utterance is a
+  count-in; tempo, subdivisions, beats per bar (when the count repeats a bar) and
+  (cautiously) swing are then estimated by scoring and refining competing hypotheses.
+  Evidence: the transcript's word timings, plus audio onsets detected in the browser
+  (`src/lib/onsets.ts`: spectral flux and RMS against rolling baselines). Words matched to
+  onsets take the onset's time; onsets the transcript missed are added when the words
+  are unsure or incomplete. Numerals and repeated syllables only weight which events are
+  likely beats.
+- **Heard rhythm** (`src/lib/rhythm-tracker.ts`): with the mic on, claps or an instrument
+  heard steadily and confidently set the tempo (shown as "Hearing 110 BPM. Say “start” or
+  press Start to play.") without starting playback. Speech pauses it unless the audio
+  shows music (held notes, sharp percussion, or a steady rhythm already being heard);
+  that music evidence is also sent to Jev so it can treat lyrics or stray words as
+  unrelated. Rhythm isn't detected while the metronome is playing.
+- **Context** (`context.mjs`): retrieved terminology from `glossary.json` and reference
+  grooves from the research corpus.
+
+A named style plays as a regular metronome on drum kit sounds; drum mode is used only
+when a drum loop or specific kick/snare/hat parts are asked for (in drum mode, a style
+loads its pattern). An answer is acted on only above 50% confidence; otherwise that setting is kept. An
+exact value the player can't do (e.g. 340 BPM) is reported, not clamped.
+
+To test locally, put `TYPESAFE_API_KEY=...` in `.env.local` and run `pnpm dev`; Vite
+serves `/api/voice` and Jev's answers are logged to the browser console. `node scripts/voice-eval.mjs` runs a live eval against it and
+reports a score; it measures, it doesn't gate. `scripts/build-styles.mjs` rebuilds the style catalog.
+Never use a `VITE_` prefix or put the key in client code.
 
 ### Research vector database
 
@@ -95,20 +103,3 @@ See `data/README.md` for provenance, corpus coverage, and refresh instructions.
 
 - See example of reusing the Metronome code in `public/example.html`
 
-Voice commands “clear the drum grid” and “reset to defaults” invoke `clearLoopPattern()`
-and `resetToDefaults()` through the browser API.
-
-Voice interpretation uses a shared declarative change policy in `server/change-policy.mjs`: contextual musical changes, deliberate property changes, and rare changes requiring clear current intent. Policies apply to fields or individual choices, before Jev reports confidence; they are product preferences rather than measured frequencies. History supplies context without repeating old commands. The per-item execution threshold remains over 50%.
-
-### Song tempo lookup
-
-Named-song requests use the free, unauthenticated ReccoBeats API, only after Jev
-selects a song phrase with over 50% confidence. An explicit numeric BPM bypasses
-lookup. Search requires an exact normalized title and, when supplied, artist;
-ambiguous titles request the artist. A successful lookup changes only BPM and
-starts playback through the existing API. Failed lookups return no call. Results
-are cached for one hour in a bounded 256-entry Worker-instance cache.
-
-The voice client requests NDJSON progress events so lookup status appears in the
-existing text below the mic before the final API call. Other callers retain JSON.
-No song audio or catalog download, Spotify credentials, or new paid service is used.
