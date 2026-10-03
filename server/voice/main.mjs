@@ -18,7 +18,7 @@ const GUIDANCE = [
   'Choose keep or none when the utterance does not ask to change that thing. Do not change settings as a side effect of an unrelated request.',
   'Recent utterances resolve follow-ups ("faster", "a bit more", "and on four too") but are not requests themselves.',
   'Speech recognition can mishear: "beat" may appear as "beep" and "and" as "end". Alternate transcripts are other guesses at the same speech.',
-  'DIGITS: for an exact number the user said for a setting (as digits or words, even outside the supported range), the digit questions give each decimal place: 128 is hundreds 1, tens 2, ones 8; 95 is hundreds 0. Answer none if no exact number was said for that setting; ignore numbers said for other settings.',
+  'DIGITS: for an exact number the user said for a setting (as digits or words, even outside the supported range), the digit questions give each decimal place: 128 is hundreds 1, tens 2, ones 8; 95 is hundreds 0. Read spoken numbers as numbers first: "one thirty" and "a hundred thirty" are 130 (ones 0), "one oh five" is 105, "ninety" is 90. Answer none if no exact number was said for that setting; ignore numbers said for other settings.',
   'A number right next to a setting\'s name ("volume 60", "swing 30", "tempo 90") sets that setting. A bare number with no other context most likely means tempo in BPM. The player supports 20–320 BPM; a number outside that range still means what the user said.',
 ].join(' ');
 

@@ -21,6 +21,15 @@ const PLACES = [
   ['tens', 10],
   ['ones', 1],
 ];
+/** A digit option described by what it means in that place, with example numbers. */
+function describeDigit(place, d) {
+  if (place === 'hundreds')
+    return d === 0 ? '0: under 100 (e.g. 95)' : `${d}: ${d} hundred and something (e.g. ${d}30)`;
+  if (place === 'tens')
+    return `${d}: ${d} in the tens place (e.g. 1${d}5${d ? `, ${d}0` : ', 105'})`;
+  return `${d}: the number ends in ${d} (e.g. ${120 + d}, ${90 + d})`;
+}
+
 /**
  * One question per decimal place for an exact number the user stated.
  * Each is answerable on its own from the utterance, so they can share a request.
@@ -31,7 +40,7 @@ export function digits(key, what, max) {
     if (size > max) continue;
     const top = size === 100 ? Math.floor(max / 100) : 9;
     const options = { none: `No exact ${what} stated` };
-    for (let d = 0; d <= top; d++) options[String(d)] = String(d);
+    for (let d = 0; d <= top; d++) options[String(d)] = describeDigit(place, d);
     questions[`${key}_${place}`] = choice(
       `${place[0].toUpperCase()}${place.slice(1)} digit of the exact ${what} the user stated (see DIGITS in guidance).`,
       options,
