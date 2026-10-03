@@ -9,6 +9,8 @@ import { Drum, Eraser, Menu } from 'lucide-react';
 import { useApp } from '@/AppContext';
 import { SOUND_PACKS } from '@/hooks';
 import { cn } from '@/lib/utils';
+import { storeTheme } from '@/lib/theme';
+import { sendEvent } from '@/tracking';
 import {
   BpmEditable,
   MachineRange,
@@ -84,36 +86,54 @@ export function Machine({ extras }: MachineProps) {
   const canSwing = app.subDivs % 2 === 0;
   const vizWidth = Math.min(vw, 480) - 30;
 
-  // The screen fills whatever faceplate space the controls leave over: measure
-  // the flex-1 slot and size the pixi canvas to it (capped so desktop doesn't
-  // get a comically tall screen; leftover then centers evenly around it).
+  // The screen fills whatever height the other rows leave (the voice-mode status
+  // under the transport row always keeps its space), shrinking for the subdiv strip.
   const vizBoxRef = useRef<HTMLDivElement | null>(null);
   const [vizHeight, setVizHeight] = useState(160);
-
-  // The subdiv strip stays open (showing "1" when subdivisions are off) until
-  // the Subdivs key collapses it; collapsed, the visualizer takes the space.
-  const [stripOpen, setStripOpen] = useState(app.playSubDivs);
-
   useEffect(() => {
     const el = vizBoxRef.current;
     if (!el) return;
     const observer = new ResizeObserver(() => {
-      const slot = Math.floor(el.getBoundingClientRect().height);
-      // Leave ~30px of faceplate visible around the screen; centering the
-      // frame splits it evenly above and below so it reads as a screen bay.
-      setVizHeight(Math.max(80, Math.min(340, slot - 30)));
+      // The frame's 3px border and offset shadow sit outside the canvas.
+      setVizHeight(Math.max(80, Math.floor(el.getBoundingClientRect().height) - 9));
     });
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
 
+  // The subdiv strip stays open (showing "1" when subdivisions are off) until
+  // the Subdivs key collapses it; collapsed, the visualizer takes the space.
+  // One per beat is the same as off, however it was set (reset, voice, URL).
+  const subDivsOn = app.playSubDivs && app.subDivs > 1;
+  const [stripOpen, setStripOpen] = useState(subDivsOn);
+  // Follow changes made elsewhere (voice, API): the strip shows only while on.
+  useEffect(() => setStripOpen(subDivsOn), [subDivsOn]);
+
   return (
     <main className="fixed inset-0 flex justify-center overflow-hidden bg-[#d8d3c4] font-mono text-stone-900">
-      <div className="flex h-full w-full max-w-[480px] flex-col gap-2 px-3 pb-[max(env(safe-area-inset-bottom),14px)] pt-2.5">
+      <div className="flex h-full w-full max-w-[480px] flex-col gap-3 px-3 pb-[max(env(safe-area-inset-bottom),14px)] pt-2.5">
         {/* faceplate header */}
         <div className="flex items-center justify-between px-0.5">
           <span className="text-[16px] font-bold tracking-[0.3em]">BIPIUM</span>
           <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              title="Use classic theme"
+              className={cn(
+                'h-10 rounded-md border-[3px] border-stone-900 bg-[#f6f3ea] px-2.5',
+                'text-[10px] font-bold uppercase tracking-wider',
+                'shadow-[2px_2px_0_#1c1917] active:translate-x-px active:translate-y-px active:shadow-[1px_1px_0_#1c1917]',
+              )}
+              onClick={() => {
+                storeTheme('classic');
+                sendEvent('set_theme', 'App', 'classic');
+                window.location.assign('/');
+              }}
+            >
+              {/* The full label where the header has room; phones get the short one. */}
+              <span className="hidden sm:inline">Use classic theme</span>
+              <span className="sm:hidden">Classic</span>
+            </button>
             <button
               type="button"
               aria-label={`Change sounds (current: ${packLabel(app.soundPack)})`}
@@ -131,8 +151,6 @@ export function Machine({ extras }: MachineProps) {
             >
               {packLabel(app.soundPack)}
             </button>
-            <ListenControl variant="machine" />
-            <div id="reset-control-machine" />
             <button
               type="button"
               aria-label="Open menu"
@@ -146,8 +164,6 @@ export function Machine({ extras }: MachineProps) {
             </button>
           </div>
         </div>
-
-        <div id="voice-text-machine" className="shrink-0 text-stone-700" />
 
         {/* LCD */}
         <div className="rounded-lg border-[3px] border-stone-900 bg-[#0d2113] px-4 pb-1.5 pt-2 shadow-[5px_5px_0_#1c1917]">
@@ -164,7 +180,7 @@ export function Machine({ extras }: MachineProps) {
             </div>
             <div className="pb-1 text-right text-[11px] font-bold uppercase leading-4 text-[#6cf59a]/80">
               <div>{app.beats} beats</div>
-              <div>{app.playSubDivs ? `subdivs ${subdivShort(app.subDivs)}` : 'no subdivs'}</div>
+              <div>{subDivsOn ? `subdivs ${subdivShort(app.subDivs)}` : 'no subdivs'}</div>
               <div>{app.swingEnabled && canSwing ? `swing ${app.swing}%` : 'swing off'}</div>
             </div>
           </div>
@@ -205,7 +221,7 @@ export function Machine({ extras }: MachineProps) {
           </Key>
           <Key
             label="Toggle subdivisions"
-            active={app.playSubDivs}
+            active={subDivsOn}
             onClick={() => {
               // The key toggles the strip; collapsing always lands on "off",
               // even from the "1" (already off) position.
@@ -227,8 +243,8 @@ export function Machine({ extras }: MachineProps) {
           </Key>
           <Key
             label="Toggle swing"
-            active={app.swingEnabled && app.playSubDivs}
-            disabled={!app.playSubDivs || !canSwing}
+            active={app.swingEnabled && subDivsOn}
+            disabled={!subDivsOn || !canSwing}
             onClick={() => app.setSwingEnabledWithRestore(!app.swingEnabled)}
             className="text-[13px]"
           >
@@ -301,8 +317,8 @@ export function Machine({ extras }: MachineProps) {
           </div>
         )}
 
-        {/* visualizer screen — fills whatever faceplate space is left */}
-        <div ref={vizBoxRef} className="flex min-h-[104px] flex-1 items-center justify-center">
+        {/* visualizer screen: takes the leftover height */}
+        <div ref={vizBoxRef} className="flex min-h-[89px] flex-1 items-start justify-center">
           <div className="relative overflow-hidden rounded border-[3px] border-stone-900 shadow-[3px_3px_0_#1c1917,0_3px_0_#1c1917,3px_0_0_#1c1917]">
             <VisualizerCore width={vizWidth} height={vizHeight} extras={extras} />
             <div className="absolute right-1 top-1 z-30 flex gap-1">
@@ -333,12 +349,12 @@ export function Machine({ extras }: MachineProps) {
         </div>
 
         {/* transport row */}
-        <div className="grid grid-cols-1 gap-2">
+        <div className="flex gap-2">
           {!app.started ? (
             <Key
               label="Start"
               onClick={extras.start}
-              className="h-16 bg-[#e5484d] text-xl tracking-[0.2em] text-white"
+              className="h-16 flex-1 bg-[#e5484d] text-xl tracking-[0.2em] text-white"
             >
               Start
             </Key>
@@ -346,12 +362,17 @@ export function Machine({ extras }: MachineProps) {
             <Key
               label="Stop"
               onClick={extras.stopAll}
-              className="h-16 bg-[#ffd76a] text-xl tracking-[0.2em] text-stone-900"
+              className="h-16 flex-1 bg-[#ffd76a] text-xl tracking-[0.2em] text-stone-900"
             >
               Stop
             </Key>
           )}
+          <ListenControl variant="machine" />
+          <div id="reset-control-machine" />
         </div>
+
+        {/* voice mode status, under the transport keys */}
+        <div id="voice-text-machine" className="h-8 shrink-0 text-stone-700" />
       </div>
     </main>
   );

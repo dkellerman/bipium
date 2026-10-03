@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo } from 'react';
 import { extend } from '@pixi/react';
 import { Graphics, Rectangle, type FederatedPointerEvent } from 'pixi.js';
+import { crispLine } from '@/lib/crisp-line';
 import {
   DRUM_LOOP_LANES,
   type DrumLoopLane,
@@ -125,9 +126,10 @@ export function DrumLoopOverlay({
           });
 
           horizontalLines.forEach(y => {
+            const py = crispLine(y, height);
             g.setStrokeStyle({ width: 1, color: DIV_COLOR });
-            g.moveTo(0, y);
-            g.lineTo(width, y);
+            g.moveTo(0, py);
+            g.lineTo(width, py);
             g.stroke();
           });
         }}

@@ -305,7 +305,7 @@ export function ListenControl({
         aria-label="Reset"
         title="Reset"
         onClick={reset}
-        className="grid size-10 place-items-center rounded-md border-[3px] border-stone-900 bg-[#f6f3ea] shadow-[2px_2px_0_#1c1917] active:translate-x-px active:translate-y-px active:shadow-[1px_1px_0_#1c1917]"
+        className="grid size-16 place-items-center rounded-md border-[3px] border-stone-900 bg-[#f6f3ea] shadow-[2px_2px_0_#1c1917] active:translate-x-px active:translate-y-px active:shadow-[1px_1px_0_#1c1917]"
       >
         <RotateCcw className="size-5" aria-hidden="true" />
       </button>
@@ -331,7 +331,7 @@ export function ListenControl({
           aria-label={label}
           title={label}
           onClick={toggle}
-          className="grid size-10 place-items-center rounded-md border-[3px] border-stone-900 bg-[#f6f3ea] shadow-[2px_2px_0_#1c1917] active:translate-x-px active:translate-y-px active:shadow-[1px_1px_0_#1c1917]"
+          className="grid size-16 place-items-center rounded-md border-[3px] border-stone-900 bg-[#f6f3ea] shadow-[2px_2px_0_#1c1917] active:translate-x-px active:translate-y-px active:shadow-[1px_1px_0_#1c1917]"
         >
           {icon}
         </button>

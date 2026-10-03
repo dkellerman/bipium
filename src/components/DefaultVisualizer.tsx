@@ -1,11 +1,12 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import React, { useRef, useEffect, useCallback, useLayoutEffect } from 'react';
+import React, { useRef, useEffect, useCallback, useLayoutEffect, useState } from 'react';
 import { Application, extend } from '@pixi/react';
 import { Graphics, Text as PixiText } from 'pixi.js';
 import { Visualizer } from '@/core/index';
 import type { DrumLoopLane, DrumLoopPattern, Metronome } from '@/core/index';
 import { isEditableEventTarget } from '@/lib/utils';
 import { DrumLoopOverlay } from '@/components/DrumLoopOverlay';
+import { crispLine } from '@/lib/crisp-line';
 
 interface DefaultVisualizerProps {
   id?: string;
@@ -103,6 +104,7 @@ export function DefaultVisualizer({
   // renderer here instead. Init is async, so the current size is also applied
   // in onInit — without it the first measured size lands before the renderer
   // exists and is lost.
+  const [drawVersion, setDrawVersion] = useState(0);
   const sizeRef = useRef({ width, height });
   sizeRef.current = { width, height };
 
@@ -245,13 +247,16 @@ export function DefaultVisualizer({
         // Skip lines hugging the canvas edges — they read as a stray border.
         if (skipEdgeGridLines && (x < 1 || x > width - 1)) return;
         const isSubDiv = i % subDivs > 0;
+        const px = crispLine(x, width);
         g.setStrokeStyle({ width: 1, color: isSubDiv ? subDivColor : divColor });
-        g.moveTo(x, 0);
-        g.lineTo(x, height);
+        g.moveTo(px, 0);
+        g.lineTo(px, height);
         g.stroke();
       });
     },
-    [showGrid, width, height, barTime, subDivs, gridTimes, skipEdgeGridLines],
+    // drawVersion: rerun once the Application is ready (see onInit).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [showGrid, width, height, barTime, subDivs, gridTimes, skipEdgeGridLines, drawVersion],
   );
 
   const drawNow = useCallback(
@@ -264,22 +269,37 @@ export function DefaultVisualizer({
       g.lineTo(0, height);
       g.stroke();
     },
-    [height, showNow],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [height, showNow, drawVersion],
   );
 
-  // Resizing Pixi's canvas does not reliably rerun Graphics.draw on iOS.
-  useLayoutEffect(() => {
+  // Resizing Pixi's canvas does not reliably rerun Graphics.draw on iOS. The
+  // Application also initializes asynchronously, so a size measured before its
+  // Graphics exist would be skipped and the lines left at the old height: redraw
+  // on every size/grid change, when each Graphics mounts, and when the
+  // Application is ready.
+  const redraw = useCallback(() => {
     applySize();
     drawGrid(gridRef.current);
     drawNow(nowLineRef.current);
   }, [applySize, drawGrid, drawNow]);
+  useLayoutEffect(redraw, [redraw]);
+  // Graphics drawn before the Application finished initializing keep that first
+  // size; bumping this once it's ready makes Pixi rerun the draws at the current size.
+  const onInit = useCallback(
+    (application: any) => {
+      applySize(application);
+      setDrawVersion(v => v + 1);
+    },
+    [applySize],
+  );
 
   return (
     <>
       {mAny && (
         <Application
           ref={appRef}
-          onInit={applySize}
+          onInit={onInit}
           width={width}
           height={height}
           antialias={false}
