@@ -145,15 +145,19 @@ export class GrokRecognition {
                 data.speech_final && words?.length
                   ? this.onsets.between(words[0].start - 1, words[words.length - 1].end + 1)
                   : undefined,
+              // While the metronome plays, its own clicks would read as music and make
+              // commands ("stop") look like lyrics, so phrases aren't flagged then.
               music:
-                data.speech_final && words?.length
+                data.speech_final && words?.length && !this.ignoreRhythm?.()
                   ? Math.max(
                       musicLikelihood(
                         this.onsets.music(words[0].start - 2, words[words.length - 1].end + 1),
                       ),
                       this.instrumentPlaying(),
                     )
-                  : undefined,
+                  : data.speech_final && words?.length
+                    ? 0
+                    : undefined,
               results: [
                 {
                   isFinal: data.speech_final === true,

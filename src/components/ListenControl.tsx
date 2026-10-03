@@ -175,7 +175,7 @@ export function ListenControl({
                 applied: turn.call !== null,
                 outcome: turn.message,
               })),
-              ...(DEV_TOOLS ? { debug: true } : {}),
+              ...(DEV_TOOLS || debug ? { debug: true } : {}),
             }),
             signal: abort.signal,
           });
@@ -184,6 +184,14 @@ export function ListenControl({
           });
           if (version !== generation.current) return;
           if (DEV_TOOLS) logDecisions(result);
+          if (debug) {
+            const action = result.debug?.main?.answers?.action;
+            setDebugLine(
+              `“${prompt}” · music ${(music ?? 0).toFixed(2)} → ${
+                action ? `${action.choice} ${action.confidence.toFixed(2)}` : 'no action'
+              } · ${result.call?.method ?? 'no call'}`,
+            );
+          }
           devLog('voice', {
             prompt,
             current: currentConfig,

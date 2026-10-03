@@ -114,6 +114,9 @@ is acted on only above 0.5 confidence; otherwise that setting stays as it is.
   don't pause rhythm tracking (the stricter over-speech bar applies), phrases reach Jev
   with `heard_music`, and over music a phrase Jev finds unrelated or can't place is
   dropped silently. Jev still decides what every phrase means; clear requests still act.
+  While the metronome plays, phrases are never flagged as music: its own clicks read as
+  percussion and made commands like "stop" look like lyrics (user: "I stopped playing
+  and said stop and it recognized it but didn't act").
 - **Audio-only percussion analysis.** "instrument is fine" / "ok, no jev then":
   PCM onset detection and timing estimation (`server/percussion.mjs` on the relay; now
   superseded in the app by the browser tracker). No transcript parsing.
