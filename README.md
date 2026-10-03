@@ -76,8 +76,8 @@ validates, does arithmetic, and builds the patch. Code lives in `server/voice/`:
   that music evidence is also sent to Jev so it can treat lyrics or stray words as
   unrelated. Rhythm isn't detected while the metronome is playing.
   While listening it shows progress ("Hearing sound…", "Hearing an instrument… finding
-  the tempo", "Got a steady rhythm… keep playing", then the tempo). Add `?voicedebug` to the URL (sticky; `?voicedebug=0`
-  clears it) to show what detection sees: mic level, onsets, state and why no rhythm yet.
+  the tempo", "Got a steady rhythm… keep playing", then the tempo). Add `?voicedebug` to the URL to show what detection
+  sees (only while it's in the URL): mic level, onsets, state and why no rhythm yet.
 - **Context** (`context.mjs`): retrieved terminology from `glossary.json` and reference
   grooves from the research corpus.
 

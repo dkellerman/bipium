@@ -52,12 +52,12 @@ const HEARING_RHYTHM = 'Got a steady rhythm… keep playing.';
 // Progress messages a newer rhythm check may replace (never a voice reply).
 const RHYTHM_PROGRESS = [IDLE, HEARING_SOUND, HEARING_INSTRUMENT, HEARING_RHYTHM];
 
-// `?voicedebug` (sticky; `?voicedebug=0` clears it) shows what rhythm detection sees.
+// `?voicedebug` in the URL shows what rhythm detection sees; only while it's there.
 function voiceDebugEnabled() {
   try {
+    localStorage.removeItem('voiceDebug'); // an earlier version remembered the flag
     const flag = new URLSearchParams(window.location.search).get('voicedebug');
-    if (flag !== null) localStorage.setItem('voiceDebug', flag === '0' ? '' : '1');
-    return localStorage.getItem('voiceDebug') === '1';
+    return flag !== null && flag !== '0';
   } catch {
     return false;
   }
