@@ -802,7 +802,7 @@ function App() {
         </div>
         <div
           id="voice-text-classic"
-          className="w-full shrink-0 px-5 pt-2 text-center text-slate-600"
+          className="w-full shrink-0 px-5 pt-3 text-center text-slate-700"
         />
       </main>
     </AppProvider>

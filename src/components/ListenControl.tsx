@@ -428,7 +428,7 @@ export function ListenControl({
           <div
             role="status"
             aria-live="polite"
-            className="h-8 w-full min-w-0 overflow-hidden text-xs leading-4"
+            className="h-8 w-full min-w-0 overflow-hidden text-center text-xs leading-4"
             title={`${lastHeard ? `Heard: ${lastHeard}\n` : ''}${status}`}
           >
             {status === IDLE && !interim && !lastHeard && !debug ? (
@@ -437,16 +437,23 @@ export function ListenControl({
               </div>
             ) : (
               <>
-                <div className="truncate">
-                  {debug && debugLine && !interim
-                    ? debugLine
-                    : interim
-                      ? `Hearing: ${interim}`
-                      : lastHeard
-                        ? `Heard: ${lastHeard}`
-                        : listening
-                          ? 'Listening…'
-                          : ''}
+                <div className="truncate opacity-60">
+                  {/* What the transcriber heard is lighter and in italics, apart from the app's replies. */}
+                  {debug && debugLine && !interim ? (
+                    debugLine
+                  ) : interim ? (
+                    <>
+                      Hearing: <i>{interim}</i>
+                    </>
+                  ) : lastHeard ? (
+                    <>
+                      Heard: <i>{lastHeard}</i>
+                    </>
+                  ) : listening ? (
+                    'Listening…'
+                  ) : (
+                    ''
+                  )}
                 </div>
                 <div className="flex items-center justify-center gap-1 truncate">
                   {busy && (
