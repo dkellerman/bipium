@@ -20,9 +20,10 @@ const EMPTY_SLOT = Math.log(0.75); // cost of a grid slot with nothing in it
 const NEVER_USED_SLOT = Math.log(0.2); // extra cost when that slot is empty in every beat
 const RECURRENCE_SPREAD = 0.08; // in log beat period
 const SUBDIVISIONS = [1, 2, 3, 4];
-const SWING_COST = Math.log(30); // evidence a swung reading needs beyond a straight one
-const MIN_SWING = 0.1;
-const SWING_SURE = 0.8;
+const SWING_COST = Math.log(3); // evidence a swung reading needs beyond a straight one
+const MIN_SWING = 0.28; // spoken straight counts drift to ~0.25 (a late "and"); triplet swing is 0.33
+const SWING_SURE = 0.6;
+const SWING_STARTS = [0.2, 0.33, 0.45]; // swung fits start light, triplet and hard
 const TEMPO_WINDOW = 0.03; // tempos within 3% are the same answer
 const ON_GRID = 0.1; // an event this close to a slot (in slots) is on the grid
 const BAR_SURE = 0.8;
@@ -44,14 +45,17 @@ function recurrence(events) {
   return gaps[Math.floor(gaps.length / 2)];
 }
 
-const normal = (x, spread) => Math.exp(-0.5 * (x / spread) ** 2) / (spread * Math.sqrt(2 * Math.PI));
+const normal = (x, spread) =>
+  Math.exp(-0.5 * (x / spread) ** 2) / (spread * Math.sqrt(2 * Math.PI));
 
 // Solve the weighted least-squares normal equations (small, so plain elimination).
 function solve(matrix, vector) {
   const n = vector.length;
   const a = matrix.map((row, i) => [...row, vector[i]]);
   for (let c = 0; c < n; c++) {
-    const pivot = a.slice(c).reduce((best, row, i) => (Math.abs(row[c]) > Math.abs(a[best][c]) ? c + i : best), c);
+    const pivot = a
+      .slice(c)
+      .reduce((best, row, i) => (Math.abs(row[c]) > Math.abs(a[best][c]) ? c + i : best), c);
     [a[c], a[pivot]] = [a[pivot], a[c]];
     if (Math.abs(a[c][c]) < 1e-12) return null;
     for (let r = 0; r < n; r++) {
@@ -64,10 +68,13 @@ function solve(matrix, vector) {
 }
 
 /** Refine one hypothesis until it settles, then score it. */
-function fit(times, events, beat, subdivisions, phase, swung, recurs) {
+function fit(times, events, beat, subdivisions, phase, swing, recurs) {
   let slot = beat / subdivisions;
   let start = phase;
-  let delay = 0; // how late every second slot lands, in seconds (swing)
+  // How late every second slot lands, in seconds; a swung fit starts from a guess
+  // (as a share of a slot) since events far from straight would read as outliers.
+  const swung = swing > 0;
+  let delay = swing * slot;
   let result;
   for (let iteration = 0; iteration < 20; iteration++) {
     let score = swung ? -SWING_COST : 0;
@@ -87,7 +94,14 @@ function fit(times, events, beat, subdivisions, phase, swung, recurs) {
       const inlier = (1 - outlierChance) * normal(error, SLOT_SPREAD) * position;
       const outlier = outlierChance; // uniform over a slot
       score += Math.log(inlier + outlier);
-      assigned.push({ event: i, time: times[i], index, odd, error, weight: inlier / (inlier + outlier) });
+      assigned.push({
+        event: i,
+        time: times[i],
+        index,
+        odd,
+        error,
+        weight: inlier / (inlier + outlier),
+      });
     }
     const counted = assigned.filter(a => a.weight > 0.5);
     if (counted.length < 3) return null;
@@ -113,7 +127,16 @@ function fit(times, events, beat, subdivisions, phase, swung, recurs) {
     const hit = new Set(judged.filter(a => Math.abs(a.error) < ON_GRID).map(a => a.index)).size;
     const coverage = hit / slots;
     const chance = 1 - Math.exp((-judged.length / slots) * 2 * ON_GRID);
-    result = { score, slot, start, delay, counted: counted.length, assigned: counted, coverage, chance };
+    result = {
+      score,
+      slot,
+      start,
+      delay,
+      counted: counted.length,
+      assigned: counted,
+      coverage,
+      chance,
+    };
 
     // Weighted least squares: time = start + index * slot (+ delay on odd slots).
     const features = ({ index, odd }) => (swung ? [1, index, odd ? 1 : 0] : [1, index]);
@@ -158,7 +181,10 @@ function fit(times, events, beat, subdivisions, phase, swung, recurs) {
  * the prior chance the event lands on a beat (vs between beats), `outlier` the chance it
  * isn't part of the rhythm at all, and `token` an optional label for recurrence.
  */
-export function estimateRhythm(input = [], { tempoPreference = null, subdivisions: only = null } = {}) {
+export function estimateRhythm(
+  input = [],
+  { tempoPreference = null, subdivisions: only = null } = {},
+) {
   // A known division of the beat (e.g. from what a count-in said) narrows the hypotheses.
   const divisions = only ? [only] : SUBDIVISIONS;
   const events = input.filter(e => Number.isFinite(e.time)).sort((a, b) => a.time - b.time);
@@ -188,19 +214,23 @@ export function estimateRhythm(input = [], { tempoPreference = null, subdivision
     unique.set(`${seed.subdivisions}:${Math.round(Math.log(seed.beat) * 40)}`, seed);
   // Phases: the first events, or with many events the ones most likely on a beat.
   const phases = many
-    ? [...events].sort((a, b) => b.beat - a.beat).slice(0, 6).map(e => e.time)
+    ? [...events]
+        .sort((a, b) => b.beat - a.beat)
+        .slice(0, 6)
+        .map(e => e.time)
     : times.slice(0, 8);
 
   const fits = [];
   for (const { beat, subdivisions } of unique.values())
     for (const phase of phases)
       // Swing only exists between pairs of slots (as in the player).
-      for (const swung of subdivisions % 2 === 0 ? [false, true] : [false]) {
-        const result = fit(times, events, beat, subdivisions, phase, swung, recurs);
+      for (const swing of subdivisions % 2 === 0 ? [0, ...SWING_STARTS] : [0]) {
+        const result = fit(times, events, beat, subdivisions, phase, swing, recurs);
         if (!result || result.bpm < BPM_RANGE[0] || result.bpm > BPM_RANGE[1]) continue;
         // Optional mild preference for common tempos, to settle double/half-time ties.
         if (tempoPreference)
-          result.score -= 0.5 * (Math.log(result.bpm / tempoPreference.center) / tempoPreference.spread) ** 2;
+          result.score -=
+            0.5 * (Math.log(result.bpm / tempoPreference.center) / tempoPreference.spread) ** 2;
         fits.push(result);
       }
   if (!fits.length) return null;
@@ -223,17 +253,23 @@ export function estimateRhythm(input = [], { tempoPreference = null, subdivision
 
   // Subdivisions: whichever reading holds the most probability near that tempo.
   const bySubdivision = new Map();
-  for (const f of near) bySubdivision.set(f.subdivisions, (bySubdivision.get(f.subdivisions) ?? 0) + mass(f));
+  for (const f of near)
+    bySubdivision.set(f.subdivisions, (bySubdivision.get(f.subdivisions) ?? 0) + mass(f));
   const [subdivisions] = [...bySubdivision].sort((a, b) => b[1] - a[1])[0];
   const same = near.filter(f => f.subdivisions === subdivisions);
   const sameMass = same.reduce((sum, f) => sum + mass(f), 0);
   // Swing, cautiously: only when the swung readings clearly win and it's big enough.
   const swung = same.filter(f => f.swing > 0);
   const swungMass = swung.reduce((sum, f) => sum + mass(f), 0);
-  const swingAmount = swungMass ? swung.reduce((sum, f) => sum + mass(f) * f.swing, 0) / swungMass : 0;
+  const swingAmount = swungMass
+    ? swung.reduce((sum, f) => sum + mass(f) * f.swing, 0) / swungMass
+    : 0;
   const swingConfidence = swungMass / sameMass;
   const round = x => Number(x.toFixed(3));
-  const bar = beatsPerBar(same.reduce((a, b) => (b.score > a.score ? b : a)), events);
+  const bar = beatsPerBar(
+    same.reduce((a, b) => (b.score > a.score ? b : a)),
+    events,
+  );
   return {
     bpm,
     confidence: round(nearMass / total),
@@ -244,7 +280,10 @@ export function estimateRhythm(input = [], { tempoPreference = null, subdivision
     chance: round(best.chance),
     subdivisions,
     subdivisionConfidence: round(sameMass / nearMass),
-    swing: swingConfidence >= SWING_SURE && swingAmount >= MIN_SWING ? Math.round(swingAmount * 20) * 5 : 0,
+    swing:
+      swingConfidence >= SWING_SURE && swingAmount >= MIN_SWING
+        ? Math.round(swingAmount * 20) * 5
+        : 0,
     swingConfidence: round(swingConfidence),
     eventsCounted: same.reduce((a, b) => (b.score > a.score ? b : a)).counted,
     beats: bar && bar.confidence >= BAR_SURE ? bar.beats : null,
@@ -260,7 +299,12 @@ function commonGaps(times) {
       const gap = times[j] - times[i];
       if (gap < 0.06 || gap > 3) continue;
       const bin = Math.round(Math.log(gap) * 30);
-      for (const [d, w] of [[-1, 0.5], [0, 1], [1, 0.5]]) bins.set(bin + d, (bins.get(bin + d) ?? 0) + w);
+      for (const [d, w] of [
+        [-1, 0.5],
+        [0, 1],
+        [1, 0.5],
+      ])
+        bins.set(bin + d, (bins.get(bin + d) ?? 0) + w);
     }
   return [...bins]
     .filter(([bin, n]) => n >= (bins.get(bin - 1) ?? 0) && n >= (bins.get(bin + 1) ?? 0))
@@ -283,7 +327,8 @@ function beatsPerBar(best, events) {
   const gaps = [];
   const last = new Map();
   for (const { beat, token, barStart } of beatWords) {
-    if (last.has(token) && beat > last.get(token)) gaps.push({ gap: beat - last.get(token), barStart });
+    if (last.has(token) && beat > last.get(token))
+      gaps.push({ gap: beat - last.get(token), barStart });
     last.set(token, beat);
   }
   if (!gaps.length) return null;

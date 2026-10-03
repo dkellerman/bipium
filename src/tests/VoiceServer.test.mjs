@@ -11,7 +11,11 @@ const current = structuredClone(API_DEFAULT_CONFIG);
 const drumConfig = { ...structuredClone(current), loopMode: true };
 const backbeat = {
   ...drumConfig,
-  loopPattern: { kick: [true, false, true, false], hat: [true, true, true, true], snare: [false, true, false, true] },
+  loopPattern: {
+    kick: [true, false, true, false],
+    hat: [true, true, true, true],
+    snare: [false, true, false, true],
+  },
 };
 
 /** Stub Jev: every question answers keep/none unless overridden. An override can name
@@ -71,8 +75,14 @@ describe('main request', () => {
   it('asks the same questions whatever the wording', () => {
     const keys = prompt =>
       Object.keys(
-        buildMainRequest({ prompt, current, recentTurns: [], alternatives: [], timed: false, context: {} })
-          .questions,
+        buildMainRequest({
+          prompt,
+          current,
+          recentTurns: [],
+          alternatives: [],
+          timed: false,
+          context: {},
+        }).questions,
       );
     expect(keys('make it 120')).toEqual(keys('stop the drums and play a funk beat in 7/8'));
   });
@@ -118,7 +128,13 @@ describe('numbers', () => {
   });
 
   it('ignores digit answers unless the tempo is exact', async () => {
-    stubJev({ action: 'play', tempo: 'keep', tempo_hundreds: '1', tempo_tens: '2', tempo_ones: '0' });
+    stubJev({
+      action: 'play',
+      tempo: 'keep',
+      tempo_hundreds: '1',
+      tempo_tens: '2',
+      tempo_ones: '0',
+    });
     expect((await say('swing it')).message).toBe('Playing.');
   });
 });
@@ -133,7 +149,12 @@ describe('mode and styles', () => {
   it('a style loads its pattern when drums are asked for', async () => {
     stubJev({ action: 'play', style: 'rock', mode: 'drums', tempo: 'style' });
     const patch = (await say('rock drum loop')).call.args[0];
-    expect({ ...current, ...patch }).toMatchObject({ loopMode: true, bpm: 110, subDivs: 2, playSubDivs: true });
+    expect({ ...current, ...patch }).toMatchObject({
+      loopMode: true,
+      bpm: 110,
+      subDivs: 2,
+      playSubDivs: true,
+    });
     expect(patch.loopPattern.snare).toEqual([false, false, true, false, false, false, true, false]);
   });
 
@@ -174,7 +195,11 @@ describe('drum edits', () => {
   it('asks per lane per beat and keeps beats that were not answered', async () => {
     const requests = stubJev({ action: 'drumEdit' }, { snare_3_add: 'Add snare on 3' });
     const config = { ...drumConfig };
-    config.loopPattern = { kick: [true, false, false, false], hat: [true, true, true, true], snare: [false, true, false, true] };
+    config.loopPattern = {
+      kick: [true, false, false, false],
+      hat: [true, true, true, true],
+      snare: [false, true, false, true],
+    };
     const patch = (await say('add a snare on three', config)).call.args[0];
     expect(Object.keys(requests[1].questions)).toContain('snare_3_add');
     expect(patch.loopMode).toBeUndefined(); // already in drum mode
@@ -191,7 +216,11 @@ describe('drum edits', () => {
 
   it('stays within 255 options even on a 12-beat grid of thirty-seconds', () => {
     const config = { ...drumConfig, beats: 12, subDivs: 8, playSubDivs: true };
-    config.loopPattern = { kick: Array(96).fill(true), hat: Array(96).fill(false), snare: Array(96).fill(false) };
+    config.loopPattern = {
+      kick: Array(96).fill(true),
+      hat: Array(96).fill(false),
+      snare: Array(96).fill(false),
+    };
     const { request } = buildDrumRequest({
       prompt: 'x',
       recentTurns: [],
@@ -210,13 +239,24 @@ describe('count-ins', () => {
   const timed = (texts, bpm, perBeat = 1, late = 0) =>
     texts.map((text, i) => ({
       text,
-      start: 1 + Math.floor(i / perBeat) * (60 / bpm) + (i % perBeat) * (60 / bpm / perBeat) + (i % perBeat ? late : 0),
+      start:
+        1 +
+        Math.floor(i / perBeat) * (60 / bpm) +
+        (i % perBeat) * (60 / bpm / perBeat) +
+        (i % perBeat ? late : 0),
     }));
   const eighths = ['1', 'and', '2', 'and', '3', 'and', '4', 'and'];
 
   it('estimates tempo and subdivisions from timing', () => {
-    expect(estimateCountIn({ words: timed(['one', 'two', 'three', 'four'], 100) })).toMatchObject({ bpm: 100, subdivisions: 1 });
-    expect(estimateCountIn({ words: timed(eighths, 120, 2) })).toMatchObject({ bpm: 120, subdivisions: 2, swing: 0 });
+    expect(estimateCountIn({ words: timed(['one', 'two', 'three', 'four'], 100) })).toMatchObject({
+      bpm: 100,
+      subdivisions: 1,
+    });
+    expect(estimateCountIn({ words: timed(eighths, 120, 2) })).toMatchObject({
+      bpm: 120,
+      subdivisions: 2,
+      swing: 0,
+    });
   });
 
   it('never uses number values to place beats', () => {
@@ -236,8 +276,12 @@ describe('count-ins', () => {
   });
 
   it('finds beats per bar only when the count repeats a bar', () => {
-    expect(estimateCountIn({ words: timed('one two three one two three'.split(' '), 90) }).beats).toBe(3);
-    expect(estimateCountIn({ words: timed(['one', 'two', 'three', 'four'], 100) }).beats).toBeNull();
+    expect(
+      estimateCountIn({ words: timed('one two three one two three'.split(' '), 90) }).beats,
+    ).toBe(3);
+    expect(
+      estimateCountIn({ words: timed(['one', 'two', 'three', 'four'], 100) }).beats,
+    ).toBeNull();
     // The classic "one . two . one two three four": the recurring "one" marks the bar.
     const classic = [0, 2, 4, 5, 6, 7].map((beat, i) => ({
       text: ['one', 'two', 'one', 'two', 'three', 'four'][i],
@@ -250,21 +294,45 @@ describe('count-ins', () => {
     // Sixteenths at 80: the transcript kept only the numbers, with smeared timestamps
     // (as the real transcriber does at this speed); the audio has every syllable.
     // Recorded from the real transcriber and onset detector on a rhythmic synthetic count.
-    const onsets = [1.0, 1.38, 1.57, 1.76, 1.94, 2.13, 2.31, 2.51, 2.7, 2.88, 3.06, 3.25, 3.45, 3.63].map(
-      time => ({ time, level: 40 }),
-    );
-    const words = [['One,', 1.12], ['two,', 1.58], ['three,', 2.33], ['four.', 3.27]].map(
-      ([text, start]) => ({ text, start }),
-    );
+    const onsets = [
+      1.0, 1.38, 1.57, 1.76, 1.94, 2.13, 2.31, 2.51, 2.7, 2.88, 3.06, 3.25, 3.45, 3.63,
+    ].map(time => ({ time, level: 40 }));
+    const words = [
+      ['One,', 1.12],
+      ['two,', 1.58],
+      ['three,', 2.33],
+      ['four.', 3.27],
+    ].map(([text, start]) => ({ text, start }));
     expect(estimateCountIn({ words }).confidence).toBeLessThan(0.8);
     expect(estimateCountIn({ words, onsets })).toMatchObject({ bpm: 80, subdivisions: 4 });
   });
 
+  it('hears a swung count as swing, and a slightly late "and" as straight', () => {
+    const count = andAt =>
+      ['One', 'two', 'three', 'four'].flatMap((text, i) => [
+        { text, start: 1 + i * 0.6 },
+        { text: 'and', start: 1 + (i + andAt) * 0.6 },
+      ]);
+    // Triplet feel: the "and" on the last third of the beat.
+    expect(estimateCountIn({ words: count(2 / 3), subdivisions: 2 })).toMatchObject({
+      bpm: 100,
+      swing: 35,
+    });
+    // Spoken straight counts drift a little late; that isn't swing.
+    expect(estimateCountIn({ words: count(0.56), subdivisions: 2 })).toMatchObject({ swing: 0 });
+  });
+
   it('trusts confident word timing without consulting the audio', () => {
     // Real speech can split a word into several onsets or miss one entirely.
-    const words = ['One,', 'two,', 'three,', 'four.'].map((text, i) => ({ text, start: 3.24 + i * 0.41 }));
+    const words = ['One,', 'two,', 'three,', 'four.'].map((text, i) => ({
+      text,
+      start: 3.24 + i * 0.41,
+    }));
     const messy = [3.13, 3.2, 3.27, 3.55, 3.79, 3.93, 4.02].map(time => ({ time, level: 50 }));
-    expect(estimateCountIn({ words, onsets: messy })).toMatchObject({ subdivisions: 1, source: 'words' });
+    expect(estimateCountIn({ words, onsets: messy })).toMatchObject({
+      subdivisions: 1,
+      source: 'words',
+    });
   });
 
   it('applies the count-in only when Jev calls it one', async () => {
@@ -273,26 +341,44 @@ describe('count-ins', () => {
     const result = await say('1 and 2 and 3 and 4 and', current, { transcriptionWords });
     expect(result.call.args[0]).toMatchObject({ bpm: 120, subDivs: 2, playSubDivs: true });
     stubJev({ action: 'play' });
-    expect((await say('1 and 2 and 3 and 4 and', current, { transcriptionWords })).message).toBe('Playing.');
+    expect((await say('1 and 2 and 3 and 4 and', current, { transcriptionWords })).message).toBe(
+      'Playing.',
+    );
   });
 
   it('fits the timing within the division Jev read from the count', async () => {
     // "triplet" is one word for two syllables, so word timing alone can't be sure.
     const words = [];
     for (let beat = 0; beat < 4; beat++)
-      words.push({ text: String(beat + 1), start: 1 + beat * 0.66 }, { text: 'triplet', start: 1.22 + beat * 0.66 });
+      words.push(
+        { text: String(beat + 1), start: 1 + beat * 0.66 },
+        { text: 'triplet', start: 1.22 + beat * 0.66 },
+      );
     words.unshift({ text: '.', start: 0.5 });
-    expect(estimateCountIn({ words, subdivisions: 3 })).toMatchObject({ bpm: 91, subdivisions: 3, subdivisionConfidence: 1 });
+    expect(estimateCountIn({ words, subdivisions: 3 })).toMatchObject({
+      bpm: 91,
+      subdivisions: 3,
+      subdivisionConfidence: 1,
+    });
     stubJev({ action: 'countOff', countFeel: '3' });
-    const result = await say('1 triplet 2 triplet 3 triplet 4 triplet', current, { transcriptionWords: words });
+    const result = await say('1 triplet 2 triplet 3 triplet 4 triplet', current, {
+      transcriptionWords: words,
+    });
     expect(result.call.args[0]).toMatchObject({ bpm: 91, subDivs: 3, playSubDivs: true });
   });
 
   it('turns earlier subdivisions off when the count is plain beats', async () => {
-    const transcriptionWords = ['One,', 'two,', 'three,', 'four.'].map((text, i) => ({ text, start: 1 + i * 0.5 }));
+    const transcriptionWords = ['One,', 'two,', 'three,', 'four.'].map((text, i) => ({
+      text,
+      start: 1 + i * 0.5,
+    }));
     stubJev({ action: 'countOff' });
     const eighthsOn = { ...current, subDivs: 2, playSubDivs: true };
-    eighthsOn.loopPattern = { kick: Array(8).fill(false), hat: Array(8).fill(false), snare: Array(8).fill(false) };
+    eighthsOn.loopPattern = {
+      kick: Array(8).fill(false),
+      hat: Array(8).fill(false),
+      snare: Array(8).fill(false),
+    };
     const result = await say('One, two, three, four.', eighthsOn, { transcriptionWords });
     expect(result.call.args[0]).toMatchObject({ bpm: 120, playSubDivs: false });
   });
@@ -332,6 +418,8 @@ describe('responses', () => {
     stubJev({ action: 'stop' });
     expect((await say('stop')).debug).toBeUndefined();
     stubJev({ action: 'stop' });
-    expect((await say('stop', current, { debug: true })).debug.main.answers.action.choice).toBe('stop');
+    expect((await say('stop', current, { debug: true })).debug.main.answers.action.choice).toBe(
+      'stop',
+    );
   });
 });
