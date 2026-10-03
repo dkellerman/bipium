@@ -459,7 +459,7 @@ export function ListenControl({
                       </span>
                       <button
                         type="button"
-                        className="shrink-0 rounded-full bg-emerald-700 px-2 py-px text-[11px] font-semibold text-white hover:bg-emerald-800"
+                        className="shrink-0 rounded-full bg-emerald-700 px-2 text-[11px] font-semibold leading-4 text-white hover:bg-emerald-800"
                         onClick={() => {
                           window.dispatchEvent(new Event('bipium:unlock-audio'));
                           runtime()?.start();
