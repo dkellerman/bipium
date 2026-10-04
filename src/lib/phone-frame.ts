@@ -3,9 +3,8 @@
 // sees the box instead.
 
 export const PHONE_WIDTH = 480; // the column width the desktop layout already uses
-const MAX_HEIGHT = 932;
-export const PHONE_BEZEL = 8;
-const MARGIN = 16; // space around the frame
+export const PHONE_BEZEL = 8; // drawn over the column's own edge padding, not added to it
+const MARGIN = 8; // space above and below the frame
 
 let framed: boolean | null = null;
 
@@ -26,9 +25,9 @@ export function phoneFramed() {
   return framed;
 }
 
-/** The phone screen's height: as tall as the window allows. */
+/** The phone's height: the window's, less a small margin. */
 export function phoneHeight() {
-  return Math.min(MAX_HEIGHT, window.innerHeight - 2 * (MARGIN + PHONE_BEZEL));
+  return window.innerHeight - 2 * MARGIN;
 }
 
 /** The space the app has: the phone screen when framed, otherwise the window. */
