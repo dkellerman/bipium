@@ -18,7 +18,7 @@ A metronome web app. https://bipium.com
 - Values are stored in the session for stickiness through refreshes
 - All parameters configurable via URL, you can copy a link to the clipboard
 - Browser runtime API at `window.bpm`, including loop mode and loop pattern controls
-- On desktop only (wide window, mouse, no touchscreen), the player is shown in a phone-shaped frame: the real page in a phone-sized iframe. `?noframe` turns it off.
+- On desktop only (wide window, mouse, no touchscreen), the player is styled as a phone: the app renders inside a phone-sized box, the same 480px column width it already uses. `?noframe` turns it off.
 - Runtime API can override individual `bar` / `beat` / `half` / `subDiv` / `user` sounds by URL
 
 ## Tech

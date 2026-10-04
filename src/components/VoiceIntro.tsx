@@ -168,6 +168,7 @@ export function VoiceIntro({
         </div>
       </div>
     </div>,
-    document.body,
+    // Inside the phone screen on desktop (see PhoneFrame), otherwise the page.
+    document.getElementById('phone-screen') ?? document.body,
   );
 }

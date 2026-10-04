@@ -1,0 +1,40 @@
+// On desktop the player is styled as a phone: the app renders inside a phone-sized box
+// (see PhoneFrame). Code that sizes itself from the window uses viewportSize() so it
+// sees the box instead.
+
+export const PHONE_WIDTH = 480; // the column width the desktop layout already uses
+const MAX_HEIGHT = 932;
+export const PHONE_BEZEL = 8;
+const MARGIN = 16; // space around the frame
+
+let framed: boolean | null = null;
+
+/**
+ * Desktop only: a wide, tall window with a mouse (hover-capable fine pointer) and no
+ * touchscreen, so phones and tablets (including iPads with a trackpad) never get it.
+ */
+export function phoneFramed() {
+  if (framed !== null) return framed;
+  if (typeof window === 'undefined') return (framed = false);
+  framed =
+    !new URLSearchParams(window.location.search).has('noframe') &&
+    ['/', '/machine'].includes(window.location.pathname) &&
+    navigator.maxTouchPoints === 0 &&
+    window.matchMedia(
+      '(min-width: 900px) and (min-height: 700px) and (pointer: fine) and (hover: hover)',
+    ).matches;
+  return framed;
+}
+
+/** The phone screen's height: as tall as the window allows. */
+export function phoneHeight() {
+  return Math.min(MAX_HEIGHT, window.innerHeight - 2 * (MARGIN + PHONE_BEZEL));
+}
+
+/** The space the app has: the phone screen when framed, otherwise the window. */
+export function viewportSize() {
+  if (typeof window === 'undefined') return { width: 390, height: 844 };
+  return phoneFramed()
+    ? { width: PHONE_WIDTH, height: phoneHeight() }
+    : { width: window.innerWidth, height: window.innerHeight };
+}

@@ -11,6 +11,7 @@ import { cn, isEditableEventTarget } from '@/lib/utils';
 import { sendOneEvent } from '@/tracking';
 import { DefaultVisualizer } from '@/components/DefaultVisualizer';
 import { DrumLaneLabels } from './DrumLaneLabels';
+import { viewportSize } from '@/lib/phone-frame';
 
 export interface MachineExtras {
   renderedVisualizerMode: 'default' | 'drumLoop';
@@ -41,13 +42,10 @@ export const subdivShort = (value: number) =>
   SUBDIV_OPTIONS.find(option => option.value === value)?.short ?? String(value);
 
 export function useViewport() {
-  const [size, setSize] = useState(() => ({
-    width: typeof window !== 'undefined' ? window.innerWidth : 390,
-    height: typeof window !== 'undefined' ? window.innerHeight : 844,
-  }));
+  const [size, setSize] = useState(viewportSize);
 
   useEffect(() => {
-    const onResize = () => setSize({ width: window.innerWidth, height: window.innerHeight });
+    const onResize = () => setSize(viewportSize());
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
