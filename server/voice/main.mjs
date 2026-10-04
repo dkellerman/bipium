@@ -29,8 +29,8 @@ const playerState = config => ({
   subdivisions_audible: config.playSubDivs,
   swing_percent: config.swing,
   volume_percent: config.volume,
-  mode: config.loopMode ? 'drums' : 'click',
-  sounds: config.soundPack === 'drumkit' ? 'drum kit' : 'beeps',
+  mode: config.loopMode ? 'custom drum mode' : 'regular metronome',
+  sounds: config.soundPack === 'drumkit' ? 'drum kit sounds' : 'beeps',
   repeat_bars: config.loopRepeats || 'forever',
   drum_grid: describeGrid(config),
 });
@@ -187,7 +187,7 @@ export function buildMainRequest({
     sounds: choice('Which sounds should play?', {
       keep: 'No change',
       beeps: 'Electronic beeps or classic metronome clicks',
-      drumkit: 'Acoustic drum kit sounds',
+      drumkit: 'Acoustic drum kit sounds (in either mode)',
     }),
   };
   return {

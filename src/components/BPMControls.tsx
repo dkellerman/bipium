@@ -92,12 +92,12 @@ export function BPMControls() {
   }, [editingBPM]);
 
   return (
-    <div className="contents *:mx-[18px] *:self-stretch *:py-2">
+    <div className="contents *:mx-[18px] *:self-stretch">
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-1 pt-4! *:first:justify-self-start *:last:justify-self-end">
         <Button
           type="button"
           variant="outline"
-          className="size-24 rounded-full p-0 text-2xl"
+          className="size-24 rounded-full p-0 text-2xl pointer-fine:h-[46px] pointer-fine:text-xl"
           title="Tap tempo"
           aria-label="Tap tempo"
           onClick={() => handleTap()}
@@ -120,7 +120,7 @@ export function BPMControls() {
               size={5}
               className={cn(
                 'h-10 w-[140px] border-b border-dotted border-slate-500 bg-transparent px-1',
-                'text-center text-4xl leading-none outline-none',
+                'text-center text-4xl leading-none outline-none pointer-fine:text-3xl',
               )}
               onBlur={event => {
                 const target = event.target as HTMLInputElement;
@@ -140,7 +140,7 @@ export function BPMControls() {
               type="button"
               className={cn(
                 'whitespace-nowrap border-b border-dotted border-slate-500',
-                'text-4xl leading-none',
+                'text-4xl leading-none pointer-fine:text-3xl',
               )}
               onClick={() => {
                 setEditingBPM(true);
@@ -165,7 +165,8 @@ export function BPMControls() {
           disableDecrement={bpm <= 20}
           incrementLabel="Increase BPM"
           decrementLabel="Decrease BPM"
-          // Tap and this pair are both 96px wide, so the readout is centered between them.
+          // Tap and this pair are both 96px wide, so the readout is centered between them (on
+          // desktop Tap is a pill as tall as these buttons).
           buttonClassName="size-[46px] p-2 sm:size-[46px]"
         />
       </div>

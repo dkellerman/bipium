@@ -770,7 +770,7 @@ function App() {
               <Button
                 type="button"
                 className={cn(
-                  'h-15 bg-emerald-700 px-10 text-2xl text-white',
+                  'h-15 bg-emerald-700 px-10 text-2xl text-white pointer-fine:text-xl',
                   'hover:bg-emerald-800 sm:h-14',
                 )}
                 onClick={event => {
@@ -785,7 +785,7 @@ function App() {
               <Button
                 type="button"
                 className={cn(
-                  'h-15 bg-red-700 px-10 text-2xl text-white',
+                  'h-15 bg-red-700 px-10 text-2xl text-white pointer-fine:text-xl',
                   'hover:bg-red-800 sm:h-14',
                 )}
                 onClick={event => {

@@ -2,7 +2,7 @@
 // (see PhoneFrame). Code that sizes itself from the window uses viewportSize() so it
 // sees the box instead.
 
-export const PHONE_WIDTH = 430; // an iPhone 14 Plus / Pro Max
+export const PHONE_WIDTH = 460;
 export const PHONE_BEZEL = 8; // drawn over the column's own edge padding, not added to it
 
 let framed: boolean | null = null;

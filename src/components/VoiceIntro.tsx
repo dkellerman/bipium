@@ -54,7 +54,7 @@ export function VoiceIntro({
   }, []);
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
       <div
         aria-hidden="true"
         className="absolute inset-0 bg-black/60"
@@ -65,10 +65,10 @@ export function VoiceIntro({
         aria-modal="true"
         aria-labelledby="voice-intro-title"
         className={cn(
-          'relative flex max-h-[88dvh] w-full flex-col text-left sm:max-h-[85vh] sm:max-w-lg',
+          'relative flex max-h-[85dvh] w-full flex-col text-left sm:max-h-[85vh] sm:max-w-lg',
           machine
-            ? 'rounded-t-xl border-[3px] border-stone-900 bg-[#f6f3ea] text-stone-900 shadow-[4px_4px_0_#1c1917] sm:rounded-xl'
-            : 'rounded-t-2xl bg-white text-slate-900 shadow-xl sm:rounded-2xl',
+            ? 'rounded-xl border-[3px] border-stone-900 bg-[#f6f3ea] text-stone-900 shadow-[4px_4px_0_#1c1917]'
+            : 'rounded-2xl bg-white text-slate-900 shadow-xl',
         )}
       >
         <div className="px-5 pt-5 sm:px-6">
@@ -125,7 +125,7 @@ export function VoiceIntro({
 
         <div
           className={cn(
-            'flex flex-col gap-3 border-t px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:pb-5',
+            'flex flex-col gap-3 border-t px-5 pb-5 pt-3 sm:flex-row sm:items-center sm:justify-between sm:px-6',
             machine ? 'border-stone-900/20' : 'border-slate-200',
           )}
         >

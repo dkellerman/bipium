@@ -124,7 +124,9 @@ export function ListenControl({
     setListening(false);
     setInterim('');
     setBusy(false);
-    setStatus('Listening stopped.');
+    // The transcript line clears; its row keeps its space.
+    setStatus('');
+    setOpen(false);
   };
   useEffect(
     () => () => {
@@ -337,6 +339,7 @@ export function ListenControl({
     recognition.onerror = event => {
       if (sr.current !== recognition) return;
       stop();
+      setOpen(true); // errors stay visible
       setStatus(
         event.error === 'not-allowed'
           ? 'Microphone permission was denied. Allow microphone access to use voice mode.'
@@ -350,6 +353,7 @@ export function ListenControl({
       recognition.start();
     } catch {
       stop();
+      setOpen(true);
       setStatus('Could not start the microphone. Please try again.');
     }
   };

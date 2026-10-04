@@ -94,6 +94,14 @@ const cases = [
   { prompt: 'give me a rock beat', current: config({ soundPack: 'defaults' }), patch: { soundPack: 'drumkit' }, absent: ['loopMode'] },
   { prompt: 'rock drum loop', current: config(), patch: { loopMode: true } },
   { prompt: 'make it 90', current: config({ loopMode: true }), patch: { bpm: 90 }, absent: ['loopMode'] },
+  { prompt: 'drum sounds', current: config({ soundPack: 'defaults' }), patch: { soundPack: 'drumkit' }, absent: ['loopMode'] },
+  {
+    prompt: 'go back to drums',
+    current: config({ soundPack: 'defaults' }),
+    recentTurns: [{ prompt: 'switch to beeps', applied: true, outcome: 'beeps' }],
+    patch: { soundPack: 'drumkit' },
+    absent: ['loopMode'],
+  },
   // Operations
   { prompt: 'stop', current: config(), method: 'stop' },
   { prompt: 'clear the drums', current: config({ loopMode: true }), method: 'clearLoopPattern' },
@@ -132,7 +140,12 @@ for (const test of cases) {
   const response = await fetch(new URL('/api/voice', origin), {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ prompt: test.prompt, currentConfig: test.current, debug: true }),
+    body: JSON.stringify({
+      prompt: test.prompt,
+      currentConfig: test.current,
+      recentTurns: test.recentTurns,
+      debug: true,
+    }),
   });
   const data = await response.json();
   if (!response.ok) {

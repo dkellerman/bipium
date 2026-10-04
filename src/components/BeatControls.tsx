@@ -65,7 +65,7 @@ function PlaySubDivsRow() {
             onCheckedChange={value => setPlaySubDivsWithTracking(value)}
           />
         </div>
-        <label className="cursor-pointer text-lg leading-none">Play sub divs</label>
+        <label className="cursor-pointer text-lg leading-none pointer-fine:text-base">Play sub divs</label>
         {playSubDivs && (
           <div
             className="ml-4 flex items-center gap-1.5"
@@ -75,7 +75,7 @@ function PlaySubDivsRow() {
               checked={swingEnabled}
               onCheckedChange={value => setSwingEnabledWithRestore(value)}
             />
-            <span className="text-lg leading-none">Swing</span>
+            <span className="text-lg leading-none pointer-fine:text-base">Swing</span>
           </div>
         )}
       </div>
@@ -89,7 +89,7 @@ function BeatsRow() {
   return (
     <div className="flex w-full items-center justify-center gap-2">
       <div className="flex items-center gap-2">
-        <label className="text-base leading-none">Beats:</label>
+        <label className="text-base leading-none pointer-fine:text-sm">Beats:</label>
         <Select
           value={String(beats)}
           onValueChange={raw => {
@@ -98,7 +98,7 @@ function BeatsRow() {
             sendEvent('set_beats', 'App', value, value);
           }}
         >
-          <SelectTrigger aria-label="Beats per bar" className="h-14 min-w-20 text-xl sm:h-12">
+          <SelectTrigger aria-label="Beats per bar" className="h-14 min-w-20 text-xl sm:h-12 pointer-fine:px-2.5 pointer-fine:text-base">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -156,7 +156,7 @@ function SubDivsRow() {
           sendEvent('set_subdivs', 'App', value, value);
         }}
       >
-        <SelectTrigger aria-label="Subdivisions" className="h-14 min-w-0 flex-1 text-base sm:h-12">
+        <SelectTrigger aria-label="Subdivisions" className="h-14 min-w-0 flex-1 text-base sm:h-12 pointer-fine:px-2 pointer-fine:text-sm">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -225,7 +225,7 @@ function SwingControls() {
     <div className="pt-4! pb-0!">
       <div className="flex items-start gap-3">
         <div className="shrink-0">
-          <div className="flex items-center gap-2 text-lg leading-none text-slate-500 [&_*]:[text-box:trim-both_cap_alphabetic]">
+          <div className="flex items-center gap-2 text-lg leading-none text-slate-500 pointer-fine:text-base [&_*]:[text-box:trim-both_cap_alphabetic]">
             <span>Swing:</span>
             <div className="flex items-center gap-1.5">
               {editingSwing ? (
@@ -295,7 +295,7 @@ function SwingControls() {
               </Button>
             </div>
           </div>
-          {!canSwing && <div className="text-xs text-slate-500">even sub divs only</div>}
+          {!canSwing && <div className="text-xs text-slate-500 pointer-fine:text-[11px]">even sub divs only</div>}
         </div>
         <div className="min-w-0 flex-1 pl-3 pr-6">
           <Range
@@ -313,7 +313,7 @@ function SwingControls() {
             slim
           />
         </div>
-        <div>
+        <div className="relative -top-0.5">
           <StepButtons
             onIncrement={() => {
               if (!canSwing || swing >= 100) return;
@@ -342,7 +342,7 @@ export function BeatControls() {
   const { playSubDivs, swingEnabled } = useApp();
 
   return (
-    <div className="contents *:mx-4 *:w-auto! *:self-stretch *:py-2">
+    <div className="contents *:mx-4 *:w-auto! *:self-stretch">
       <PlaySubDivsRow />
       <RowGap />
       <BeatsRow />

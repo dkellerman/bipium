@@ -113,8 +113,8 @@ function summarize(patch, style) {
   if ('volume' in patch) parts.push(`volume ${patch.volume}`);
   if ('loopRepeats' in patch)
     parts.push(patch.loopRepeats ? `${patch.loopRepeats} bars` : 'repeat forever');
-  if ('soundPack' in patch) parts.push(patch.soundPack === 'drumkit' ? 'drum kit' : 'beeps');
-  if ('loopMode' in patch) parts.push(patch.loopMode ? 'drum mode' : 'click mode');
+  if ('soundPack' in patch) parts.push(patch.soundPack === 'drumkit' ? 'drum kit sounds' : 'beeps');
+  if ('loopMode' in patch) parts.push(patch.loopMode ? 'custom drum mode' : 'regular metronome');
   return parts.join(' · ');
 }
 

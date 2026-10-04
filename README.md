@@ -13,7 +13,7 @@ A metronome web app. https://bipium.com
 - Drum loop mode with editable kick / hat / snare steps
 - Loop playback can run forever or stop after a chosen number of cycles
 - Mobile-first layout
-- On desktop (wide window, mouse, no touchscreen) the player is shown at phone width (430px) inside a phone-shaped bezel; `?noframe` turns it off
+- On desktop (wide window, mouse, no touchscreen) the player is shown at phone width (460px) inside a phone-shaped bezel; `?noframe` turns it off
 - Configurable sounds
 - Set volume
 - Values are stored in the session for stickiness through refreshes
