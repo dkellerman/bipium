@@ -23,7 +23,12 @@ if (rootElement) {
   const app = (
     <Router>
       <div
-        className="min-h-dvh bg-linear-to-b from-[#f8fbff] via-[#eef6ff] to-[#f8fbff]"
+        // Framed, the page background is drawn once around the phone (see PhoneFrame).
+        className={
+          phoneFramed()
+            ? 'min-h-dvh'
+            : 'min-h-dvh bg-linear-to-b from-[#f8fbff] via-[#eef6ff] to-[#f8fbff]'
+        }
         style={{ touchAction: 'pan-y pinch-zoom' }}
       >
         <Routes>
