@@ -110,10 +110,7 @@ export function Machine({ extras }: MachineProps) {
   useEffect(() => setStripOpen(subDivsOn), [subDivsOn]);
 
   return (
-    <main
-      data-theme="machine"
-      className="fixed inset-0 flex justify-center overflow-hidden bg-[#d8d3c4] font-mono text-stone-900"
-    >
+    <main className="fixed inset-0 flex justify-center overflow-hidden bg-[#d8d3c4] font-mono text-stone-900">
       <div className="flex h-full w-full max-w-[480px] flex-col gap-3 px-3 pb-[max(env(safe-area-inset-bottom),14px)] pt-2.5">
         {/* faceplate header */}
         <div className="flex items-center justify-between px-0.5">

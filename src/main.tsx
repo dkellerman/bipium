@@ -6,8 +6,6 @@ import { getStoredTheme } from '@/lib/theme';
 import About from '@/pages/About';
 import ApiPage from '@/pages/ApiPage';
 import MachinePage from '@/machine/MachinePage';
-import { PhoneFrame } from '@/components/PhoneFrame';
-import { phoneFramed } from '@/lib/phone-frame';
 import './index.css';
 
 /* The site root serves the stored theme; /machine renders the machine theme
@@ -20,28 +18,21 @@ const rootElement = document.getElementById('root');
 
 if (rootElement) {
   const root = createRoot(rootElement);
-  const app = (
-    <Router>
-      <div
-        // Framed, the page background is drawn once around the phone (see PhoneFrame).
-        className={
-          phoneFramed()
-            ? 'min-h-dvh'
-            : 'min-h-dvh bg-linear-to-b from-[#f8fbff] via-[#eef6ff] to-[#f8fbff]'
-        }
-        style={{ touchAction: 'pan-y pinch-zoom' }}
-      >
-        <Routes>
-          <Route path="/" element={<ThemedRoot />} />
-          <Route path="/machine" element={<MachinePage />} />
-          <Route path="/apidocs" element={<ApiPage />} />
-          <Route path="/about" element={<About />} />
-        </Routes>
-      </div>
-    </Router>
-  );
-  // On desktop the player is styled as a phone (see PhoneFrame).
   root.render(
-    <React.StrictMode>{phoneFramed() ? <PhoneFrame>{app}</PhoneFrame> : app}</React.StrictMode>,
+    <React.StrictMode>
+      <Router>
+        <div
+          className="min-h-dvh bg-linear-to-b from-[#f8fbff] via-[#eef6ff] to-[#f8fbff]"
+          style={{ touchAction: 'pan-y pinch-zoom' }}
+        >
+          <Routes>
+            <Route path="/" element={<ThemedRoot />} />
+            <Route path="/machine" element={<MachinePage />} />
+            <Route path="/apidocs" element={<ApiPage />} />
+            <Route path="/about" element={<About />} />
+          </Routes>
+        </div>
+      </Router>
+    </React.StrictMode>,
   );
 }

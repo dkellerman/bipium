@@ -41,7 +41,6 @@ import {
 import { cn, isEditableEventTarget } from '@/lib/utils';
 import { sendEvent, sendFrameRate } from '@/tracking';
 import type { ApiConfig, BooleanInput, NumberInput } from '@/types';
-import { viewportSize } from '@/lib/phone-frame';
 
 const int = (value: NumberInput) => {
   const parsed = Number.parseInt(String(value), 10);
@@ -132,7 +131,9 @@ function App() {
 
   const [showSideBar, setShowSideBar] = useState(false);
   const [copiedURL, setCopiedURL] = useState<string | null>(null);
-  const [viewportWidth, setViewportWidth] = useState(() => viewportSize().width);
+  const [viewportWidth, setViewportWidth] = useState(
+    typeof window !== 'undefined' ? window.innerWidth : 390,
+  );
   const [, setUpdate] = useState(false);
   const forceRender = () => setUpdate(value => !value);
 
@@ -555,7 +556,7 @@ function App() {
   }, [showSideBar]);
 
   useEffect(() => {
-    const onResize = () => setViewportWidth(viewportSize().width);
+    const onResize = () => setViewportWidth(window.innerWidth);
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
