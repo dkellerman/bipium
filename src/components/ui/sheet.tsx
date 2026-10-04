@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import type { WithChildrenProps } from '../../types';
@@ -102,7 +103,9 @@ const SheetContent = ({ side = 'right', className, children }: SheetContentProps
     return null;
   }
 
-  return (
+  // Rendered on the page itself, so on desktop it slides in from the window's edge
+  // rather than inside the phone frame.
+  return createPortal(
     <>
       <button
         type="button"
@@ -137,7 +140,8 @@ const SheetContent = ({ side = 'right', className, children }: SheetContentProps
           <span className="sr-only">Close</span>
         </button>
       </aside>
-    </>
+    </>,
+    document.body,
   );
 };
 

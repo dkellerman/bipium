@@ -61,9 +61,9 @@ export function buildMainRequest({
         ? 'What does the user want the player to do? Music is being heard (state.heard_music): words not clearly addressed to the player are most likely lyrics or singing, so choose unrelated unless the request to the player is clear.'
         : 'What does the user want the player to do?',
       {
-        play: 'Start or change the beat: tempo, meter, subdivisions, feel, volume, sounds, mode, a style or groove, or just play',
+        play: 'Start or change the beat: tempo, meter or time signature, beats per bar, subdivisions, feel, volume, sounds, mode, a style or groove, or just play',
         drumEdit:
-          'Change specific drum hits: add, remove or move kick, snare or hat hits, including follow-ups such as "and on four too"',
+          'Change specific drum hits: add, remove or move kick, snare or hat hits, including follow-ups such as "and on four too". Only for named drum hits; tempo, meter, time signature, beats or subdivisions are play, and this switches the player into custom drum mode',
         ...(hasCountOff
           ? {
               countOff:
@@ -238,8 +238,14 @@ const numberWithoutChange = (answers, key, setting) =>
  * Turn main answers into a plan: the action plus a config patch of what changed.
  * Values the user stated that the player can't do come back as `problem`.
  */
+/** Confidence needed to switch from the regular metronome into custom drum mode. */
+const DRUM_MODE_SURE = 0.9;
+
 export function readMainAnswers(answers, current) {
-  const action = picked(answers.action);
+  let action = picked(answers.action);
+  // Drum mode is a last resort: leaving the regular metronome for it takes a sure answer.
+  if (action === 'drumEdit' && !current.loopMode && !(answers.action.confidence >= DRUM_MODE_SURE))
+    action = null;
   const plan = { action, patch: {}, problems: [] };
   if (action === 'countOff') {
     const feel = picked(answers.countFeel);
@@ -337,7 +343,8 @@ export function readMainAnswers(answers, current) {
   // Mode: regular metronome unless drums are asked for. Drum edits and explicit
   // requests switch to drum mode; a style alone keeps the current mode.
   const mode = picked(answers.mode);
-  if (action === 'drumEdit' || mode === 'drums') patch.loopMode = true;
+  const drumsSure = current.loopMode || answers.mode?.confidence >= DRUM_MODE_SURE;
+  if (action === 'drumEdit' || (mode === 'drums' && drumsSure)) patch.loopMode = true;
   else if (mode === 'click') patch.loopMode = false;
 
   return plan;

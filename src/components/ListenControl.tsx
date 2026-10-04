@@ -81,11 +81,12 @@ export function ListenControl({
 }) {
   const [target, setTarget] = useState<HTMLElement | null>(null);
   const [resetTarget, setResetTarget] = useState<HTMLElement | null>(null);
+  const [open, setOpen] = useState(false);
+  // Looked up again whenever voice mode opens, in case the page re-rendered its slots.
   useEffect(() => {
     setTarget(document.getElementById(`voice-text-${variant}`));
     setResetTarget(document.getElementById(`reset-control-${variant}`));
-  }, [variant]);
-  const [open, setOpen] = useState(false);
+  }, [variant, open]);
   const [listening, setListening] = useState(false);
   const [interim, setInterim] = useState('');
   const [lastHeard, setLastHeard] = useState('');
@@ -451,7 +452,7 @@ export function ListenControl({
           <div
             role="status"
             aria-live="polite"
-            className="h-8 w-full min-w-0 overflow-hidden text-center text-xs leading-4"
+            className="h-full w-full min-w-0 overflow-hidden text-center text-xs leading-4 [.voice-roomy_&]:text-[13px] [.voice-roomy_&]:leading-5"
             title={`${lastHeard ? `Heard: ${lastHeard}\n` : ''}${status}`}
           >
             {status === IDLE && !interim && !lastHeard && !debug ? (

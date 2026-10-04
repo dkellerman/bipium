@@ -187,6 +187,15 @@ describe('mode and styles', () => {
     expect(patch).toEqual({ loopMode: false });
   });
 
+  it('only leaves the regular metronome for drum mode on a sure answer', async () => {
+    stubJev({ action: ['drumEdit', 0.85] });
+    expect((await say('me four four time')).call).toBeNull();
+    stubJev({ action: 'play', mode: ['drums', 0.8] });
+    expect((await say('some drums maybe')).call?.args[0]?.loopMode).toBeUndefined();
+    stubJev({ action: ['drumEdit', 0.85] }, {});
+    expect((await say('kick on four', drumConfig)).call).not.toBeNull();
+  });
+
   it('keeps the current mode for ordinary setting changes', async () => {
     stubJev({ action: 'play', ...tempo('0', '9', '0') });
     expect((await say('90', drumConfig)).call.args[0]).toEqual({ bpm: 90 });

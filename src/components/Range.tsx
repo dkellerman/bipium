@@ -7,6 +7,9 @@ interface RangeProps {
   ticks?: number[];
   labelRotation?: number;
   tickClassName?: string;
+  /** The slider's box is just its track (the thumb overflows), so it lines up with
+   *  neighbours by the track itself. */
+  slim?: boolean;
   disabled?: boolean;
   min: number;
   max: number;
@@ -20,6 +23,7 @@ export const Range = ({
   ticks: customTicks = [],
   labelRotation = 0,
   tickClassName,
+  slim = false,
   disabled = false,
   min,
   max,
@@ -46,11 +50,18 @@ export const Range = ({
         step={step}
         value={[value]}
         disabled={disabled}
+        className={slim ? 'h-auto' : undefined}
         onValueChange={vals => callback?.(vals[0])}
       />
 
       {hasTicks && (
-        <div className={cn('relative select-none', compactTicks ? '-mt-3 h-6' : '-mt-5 h-10')}>
+        <div
+          className={cn(
+            'relative select-none',
+            compactTicks ? 'h-6' : 'h-10',
+            slim ? (compactTicks ? 'mt-2' : 'mt-0') : compactTicks ? '-mt-3' : '-mt-5',
+          )}
+        >
           {customTicks.map((tick, idx) => {
             const left = `${((tick - min) / (max - min)) * 100}%`;
             const isFirst = idx === 0;

@@ -22,6 +22,7 @@ import {
   type DrumLoopTiming,
 } from '@/core/index';
 import { BPMControls } from '@/components/BPMControls';
+import { RowGap } from '@/components/RowGap';
 import { BeatControls } from '@/components/BeatControls';
 import { DefaultVisualizer } from '@/components/DefaultVisualizer';
 import { DrumLoopView } from '@/components/DrumLoopView';
@@ -41,6 +42,7 @@ import {
 import { cn, isEditableEventTarget } from '@/lib/utils';
 import { sendEvent, sendFrameRate } from '@/tracking';
 import type { ApiConfig, BooleanInput, NumberInput } from '@/types';
+import { viewportSize } from '@/lib/phone-frame';
 
 const int = (value: NumberInput) => {
   const parsed = Number.parseInt(String(value), 10);
@@ -131,9 +133,7 @@ function App() {
 
   const [showSideBar, setShowSideBar] = useState(false);
   const [copiedURL, setCopiedURL] = useState<string | null>(null);
-  const [viewportWidth, setViewportWidth] = useState(
-    typeof window !== 'undefined' ? window.innerWidth : 390,
-  );
+  const [viewportWidth, setViewportWidth] = useState(() => viewportSize().width);
   const [, setUpdate] = useState(false);
   const forceRender = () => setUpdate(value => !value);
 
@@ -556,7 +556,7 @@ function App() {
   }, [showSideBar]);
 
   useEffect(() => {
-    const onResize = () => setViewportWidth(window.innerWidth);
+    const onResize = () => setViewportWidth(viewportSize().width);
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
@@ -662,7 +662,7 @@ function App() {
       <main
         className={cn(
           'mx-auto flex min-h-dvh w-full max-w-[480px] flex-col items-center',
-          'bg-white pb-2 text-slate-900 shadow-[0_2px_8px_rgba(0,0,0,0.08)]',
+          'bg-white text-slate-900 shadow-[0_2px_8px_rgba(0,0,0,0.08)]',
         )}
       >
         <NavBar>
@@ -670,7 +670,7 @@ function App() {
             type="button"
             variant="ghost"
             size="icon"
-            className="absolute right-2 top-1 size-9"
+            className="absolute right-4 top-1 size-9"
             title="Open settings"
             aria-label="Open settings"
             onClick={() => setShowSideBar(true)}
@@ -682,19 +682,19 @@ function App() {
 
         <SettingsDrawer />
 
-        <Card className={cn('mt-2 w-[calc(100%-16px)]', 'border-0 bg-transparent shadow-none')}>
-          <CardContent className="p-0">
+        {/* Flattened, so every row is spaced by the page's own column. */}
+        <Card className="contents">
+          <CardContent className="contents">
             <BPMControls />
+            <RowGap />
             <BeatControls />
           </CardContent>
         </Card>
+        <RowGap />
 
         {visualizers.map((id, index) => (
           <Card
-            className={cn(
-              'w-[calc(100%-16px)]',
-              index === 0 ? (playSubDivs && swingEnabled ? '-mt-px' : 'mt-2') : '-mt-px',
-            )}
+            className={cn('my-2 w-[calc(100%-16px)]', index > 0 && '-mt-px')}
             key={`v-${index}`}
           >
             <CardContent className="p-1.5">
@@ -763,46 +763,49 @@ function App() {
           </Card>
         ))}
 
-        <div className="relative mt-2">
-          {!started ? (
-            <Button
-              type="button"
-              className={cn(
-                'h-15 bg-emerald-700 px-10 text-2xl text-white',
-                'hover:bg-emerald-800 sm:h-14',
-              )}
-              onClick={event => {
-                event.preventDefault();
-                start();
-                sendEvent('start');
-              }}
-            >
-              Start
-            </Button>
-          ) : (
-            <Button
-              type="button"
-              className={cn(
-                'h-15 bg-red-700 px-10 text-2xl text-white',
-                'hover:bg-red-800 sm:h-14',
-              )}
-              onClick={event => {
-                event.preventDefault();
-                stop();
-                sendEvent('stop');
-              }}
-            >
-              Stop
-            </Button>
-          )}
-          <div className="absolute left-full top-1/2 ml-3 flex -translate-y-1/2 items-center gap-1">
-            <ListenControl />
-            <div id="reset-control-classic" />
+        <RowGap />
+        <div className="flex w-full justify-center">
+          <div className="relative">
+            {!started ? (
+              <Button
+                type="button"
+                className={cn(
+                  'h-15 bg-emerald-700 px-10 text-2xl text-white',
+                  'hover:bg-emerald-800 sm:h-14',
+                )}
+                onClick={event => {
+                  event.preventDefault();
+                  start();
+                  sendEvent('start');
+                }}
+              >
+                Start
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                className={cn(
+                  'h-15 bg-red-700 px-10 text-2xl text-white',
+                  'hover:bg-red-800 sm:h-14',
+                )}
+                onClick={event => {
+                  event.preventDefault();
+                  stop();
+                  sendEvent('stop');
+                }}
+              >
+                Stop
+              </Button>
+            )}
+            <div className="absolute left-full top-1/2 ml-3 flex -translate-y-1/2 items-center gap-1">
+              <ListenControl />
+              <div id="reset-control-classic" />
+            </div>
           </div>
         </div>
         <div
           id="voice-text-classic"
-          className="w-full shrink-0 px-5 pt-3 text-center text-slate-700"
+          className="voice-roomy h-14 w-full shrink-0 px-5 py-1.5 text-center text-slate-700"
         />
       </main>
     </AppProvider>

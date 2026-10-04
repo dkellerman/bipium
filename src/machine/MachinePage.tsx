@@ -40,6 +40,7 @@ import { Machine } from './Machine';
 import { MachineDrawer } from './MachineDrawer';
 import type { MachineExtras } from './shared';
 import './machine.css';
+import { viewportSize } from '@/lib/phone-frame';
 
 const int = (value: NumberInput) => {
   const parsed = Number.parseInt(String(value), 10);
@@ -128,9 +129,7 @@ function MachinePage() {
 
   const [showSideBar, setShowSideBar] = useState(false);
   const [copiedURL, setCopiedURL] = useState<string | null>(null);
-  const [viewportWidth, setViewportWidth] = useState(
-    typeof window !== 'undefined' ? window.innerWidth : 390,
-  );
+  const [viewportWidth, setViewportWidth] = useState(() => viewportSize().width);
   const [, setUpdate] = useState(false);
   const forceRender = () => setUpdate(value => !value);
 
@@ -562,7 +561,7 @@ function MachinePage() {
   }, [showSideBar]);
 
   useEffect(() => {
-    const onResize = () => setViewportWidth(window.innerWidth);
+    const onResize = () => setViewportWidth(viewportSize().width);
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);

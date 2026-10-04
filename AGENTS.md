@@ -140,6 +140,9 @@ is acted on only above 0.5 confidence; otherwise that setting stays as it is.
 
 - A named style plays as a regular metronome on drum-kit sounds; drum mode only when a
   drum loop or specific kick/snare/hat parts are asked for.
+- Leaving the regular metronome for drum mode needs a sure answer from Jev (0.9, not the
+  usual 0.5); otherwise the phrase isn't acted on. User, 2026-10-03: "try not to go into
+  drum mode unless it absolutely has to". Already in drum mode, the usual bar applies.
 - Voice mode must not change playback volume or apply any gain; no ducking or boosting.
   Mic capture requests automatic gain control and noise suppression off (noise
   suppression keeps only voice and erases the instruments rhythm tracking listens for).

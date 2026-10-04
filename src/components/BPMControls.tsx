@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { RowGap } from './RowGap';
 import { Button } from '@/components/ui/button';
 import { Range } from './Range';
 import { StepButtons } from './StepButtons';
@@ -91,12 +92,12 @@ export function BPMControls() {
   }, [editingBPM]);
 
   return (
-    <div className="space-y-1 p-2.5 pb-0">
-      <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-1">
+    <div className="contents *:mx-[18px] *:self-stretch *:py-2">
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-1 pt-4! *:first:justify-self-start *:last:justify-self-end">
         <Button
           type="button"
           variant="outline"
-          className="size-20 rounded-full p-0 text-2xl"
+          className="size-20 rounded-full p-0 text-2xl max-sm:size-[92px]"
           title="Tap tempo"
           aria-label="Tap tempo"
           onClick={() => handleTap()}
@@ -164,10 +165,13 @@ export function BPMControls() {
           disableDecrement={bpm <= 20}
           incrementLabel="Increase BPM"
           decrementLabel="Decrease BPM"
+          // On phones the pair and Tap are both 92px wide, so the readout fits centered between them.
+          buttonClassName="max-sm:size-11 max-sm:p-2"
         />
       </div>
 
-      <div className="-mb-1 px-5">
+      <RowGap />
+      <div className="px-5 pt-0! pb-0.5!">
         <Range
           min={bpmMin}
           max={bpmMax}

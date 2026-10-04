@@ -8,6 +8,8 @@ interface StepButtonsProps {
   disableDecrement: boolean;
   incrementLabel: string;
   decrementLabel: string;
+  /** Extra classes for both buttons (e.g. a size override). */
+  buttonClassName?: string;
 }
 
 export function StepButtons({
@@ -17,6 +19,7 @@ export function StepButtons({
   disableDecrement,
   incrementLabel,
   decrementLabel,
+  buttonClassName,
 }: StepButtonsProps) {
   return (
     <div className="flex items-center gap-1">
@@ -24,7 +27,7 @@ export function StepButtons({
         type="button"
         variant="outline"
         size="icon"
-        className={cn('size-14 p-3 text-3xl', 'sm:size-12 sm:p-2')}
+        className={cn('size-14 p-3 text-3xl', 'sm:size-12 sm:p-2', buttonClassName)}
         disabled={disableIncrement}
         title={incrementLabel}
         aria-label={incrementLabel}
@@ -36,7 +39,7 @@ export function StepButtons({
         type="button"
         variant="outline"
         size="icon"
-        className={cn('size-14 p-3 text-3xl', 'sm:size-12 sm:p-2')}
+        className={cn('size-14 p-3 text-3xl', 'sm:size-12 sm:p-2', buttonClassName)}
         disabled={disableDecrement}
         title={decrementLabel}
         aria-label={decrementLabel}

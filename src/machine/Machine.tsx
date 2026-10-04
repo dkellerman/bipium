@@ -77,6 +77,10 @@ function Key({
   );
 }
 
+const VIZ_HEIGHT = 160; // desktop
+const VIZ_MIN = 110; // phones
+const VIZ_FRAME = 9; // border and shadow around the canvas
+
 export function Machine({ extras }: MachineProps) {
   const app = useApp();
   const tap = useTapTempo();
@@ -86,17 +90,18 @@ export function Machine({ extras }: MachineProps) {
   const canSwing = app.subDivs % 2 === 0;
   const vizWidth = Math.min(vw, 480) - 30;
 
-  // The screen fills whatever height the other rows leave (the voice-mode status
-  // under the transport row always keeps its space), shrinking for the subdiv strip.
+  // Desktop: the screen keeps a fixed height and spare height sits above it. Phones:
+  // the screen takes the spare height between VIZ_MIN and 220px, and anything past
+  // that is shared evenly between the sections.
   const vizBoxRef = useRef<HTMLDivElement | null>(null);
-  const [vizHeight, setVizHeight] = useState(160);
+  const [vizHeight, setVizHeight] = useState(VIZ_HEIGHT);
   useEffect(() => {
     const el = vizBoxRef.current;
     if (!el) return;
-    const observer = new ResizeObserver(() => {
+    const observer = new ResizeObserver(() =>
       // The frame's 3px border and offset shadow sit outside the canvas.
-      setVizHeight(Math.max(80, Math.floor(el.getBoundingClientRect().height) - 9));
-    });
+      setVizHeight(Math.max(VIZ_MIN, Math.floor(el.getBoundingClientRect().height) - VIZ_FRAME)),
+    );
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
@@ -109,9 +114,68 @@ export function Machine({ extras }: MachineProps) {
   // Follow changes made elsewhere (voice, API): the strip shows only while on.
   useEffect(() => setStripOpen(subDivsOn), [subDivsOn]);
 
+  // On phones, swing gets its own row under the subdivisions when the spare height
+  // above the screen can hold it, and goes back beside them when the page runs out of room.
+  const columnRef = useRef<HTMLDivElement | null>(null);
+  const swingRef = useRef<HTMLDivElement | null>(null);
+  const [swingOwnRow, setSwingOwnRow] = useState(false);
+  const swingRowSpace = useRef(80); // its height plus the column gap, once measured
+  useEffect(() => {
+    const column = columnRef.current;
+    const box = vizBoxRef.current;
+    if (!column || !box) return;
+    // Phones only; on desktop it stays beside the subdivisions.
+    if (window.matchMedia('(pointer: fine)').matches) return;
+    const check = () => {
+      if (swingOwnRow) {
+        if (swingRef.current) swingRowSpace.current = swingRef.current.offsetHeight + 12;
+        if (column.scrollHeight > column.clientHeight + 1) setSwingOwnRow(false);
+      } else if (box.offsetHeight - VIZ_FRAME - VIZ_MIN >= swingRowSpace.current)
+        setSwingOwnRow(true);
+    };
+    check();
+    const observer = new ResizeObserver(check);
+    observer.observe(column);
+    observer.observe(box);
+    return () => observer.disconnect();
+  }, [swingOwnRow]);
+
+  const swingPanel = app.playSubDivs && app.swingEnabled && canSwing && (
+    <div
+      ref={swingRef}
+      className={cn('flex shrink-0 items-start gap-1.5', swingOwnRow ? 'w-full' : 'w-[150px]')}
+    >
+      <MachineRange
+        label="Swing"
+        min={0}
+        max={50}
+        value={app.swing}
+        onChange={value => {
+          // Dragging to zero is the same as turning swing off.
+          if (value === 0) app.setSwingEnabledWithRestore(false);
+          else app.setSwing(value);
+        }}
+        className={RANGE_PANEL}
+        ticks={SWING_TICKS}
+        labelRotation={-60}
+        tickClassName="text-stone-700 hover:text-stone-900"
+        tickLineClassName="bg-stone-700"
+      />
+      <span className="mt-3.5 w-9 shrink-0 text-right text-xs font-bold tabular-nums">
+        {app.swing}%
+      </span>
+    </div>
+  );
+
   return (
-    <main className="fixed inset-0 flex justify-center overflow-hidden bg-[#d8d3c4] font-mono text-stone-900">
-      <div className="flex h-full w-full max-w-[480px] flex-col gap-3 px-3 pb-[max(env(safe-area-inset-bottom),14px)] pt-2.5">
+    <main
+      data-theme="machine"
+      className="fixed inset-0 flex justify-center overflow-hidden bg-[#d8d3c4] font-mono text-stone-900"
+    >
+      <div
+        ref={columnRef}
+        className="flex h-full w-full max-w-[480px] flex-col justify-between gap-3 px-3 pb-[max(env(safe-area-inset-bottom),14px)] pt-2.5"
+      >
         {/* faceplate header */}
         <div className="flex items-center justify-between px-0.5">
           <span className="text-[16px] font-bold tracking-[0.3em]">BIPIUM</span>
@@ -290,35 +354,22 @@ export function Machine({ extras }: MachineProps) {
                   </button>
                 ))}
               </div>
-              {app.playSubDivs && app.swingEnabled && canSwing && (
-                <div className="flex w-[150px] shrink-0 items-start gap-1.5">
-                  <MachineRange
-                    label="Swing"
-                    min={0}
-                    max={50}
-                    value={app.swing}
-                    onChange={value => {
-                      // Dragging to zero is the same as turning swing off.
-                      if (value === 0) app.setSwingEnabledWithRestore(false);
-                      else app.setSwing(value);
-                    }}
-                    className={RANGE_PANEL}
-                    ticks={SWING_TICKS}
-                    labelRotation={-60}
-                    tickClassName="text-stone-700 hover:text-stone-900"
-                    tickLineClassName="bg-stone-700"
-                  />
-                  <span className="mt-3.5 w-9 shrink-0 text-right text-xs font-bold tabular-nums">
-                    {app.swing}%
-                  </span>
-                </div>
-              )}
+              {!swingOwnRow && swingPanel}
             </>
           </div>
         )}
+        {stripOpen && swingOwnRow && swingPanel}
 
-        {/* visualizer screen: takes the leftover height */}
-        <div ref={vizBoxRef} className="flex min-h-[89px] flex-1 items-start justify-center">
+        <div aria-hidden className="-mt-3 hidden flex-1 pointer-fine:block" />
+
+        {/* visualizer screen */}
+        <div
+          ref={vizBoxRef}
+          className={cn(
+            'flex min-h-[119px] max-h-[229px] flex-1 items-start justify-center',
+            'pointer-fine:h-[169px] pointer-fine:max-h-none pointer-fine:flex-none',
+          )}
+        >
           <div className="relative overflow-hidden rounded border-[3px] border-stone-900 shadow-[3px_3px_0_#1c1917,0_3px_0_#1c1917,3px_0_0_#1c1917]">
             <VisualizerCore width={vizWidth} height={vizHeight} extras={extras} />
             <div className="absolute right-1 top-1 z-30 flex gap-1">

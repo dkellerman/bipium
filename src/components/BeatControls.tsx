@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { RowGap } from './RowGap';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -221,15 +222,13 @@ function SwingControls() {
   if (!swingEnabled) return null;
 
   return (
-    <div className="pt-1">
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-lg leading-none text-slate-500">
+    <div className="pt-4! pb-0!">
+      <div className="flex items-start gap-3">
+        <div className="shrink-0">
+          <div className="flex items-center gap-2 text-lg leading-none text-slate-500 [&_*]:[text-box:trim-both_cap_alphabetic]">
             <span>Swing:</span>
             <div className="flex items-center gap-1.5">
-              {!canSwing ? (
-                <span className="text-slate-500">even sub divs only</span>
-              ) : editingSwing ? (
+              {editingSwing ? (
                 <span
                   className={cn(
                     'inline-flex items-center gap-0.5 border-b border-dotted border-slate-500',
@@ -277,23 +276,44 @@ function SwingControls() {
                   {formatSwing(swing)}%
                 </button>
               )}
-              {canSwing && !editingSwing && swing > 0 && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="size-5 rounded-full p-0 text-slate-500 hover:text-slate-700"
-                  aria-label="Reset swing to 0"
-                  onClick={() => {
-                    setSwing(0);
-                    sendOneEvent('update_swing', '', 0, 0);
-                  }}
-                >
-                  <X className="size-3" />
-                </Button>
-              )}
+              {/* Always laid out, so the row doesn't shift when it appears. */}
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  '-my-1 size-5 rounded-full p-0 text-slate-500 hover:text-slate-700',
+                  !(canSwing && !editingSwing && swing > 0) && 'invisible',
+                )}
+                aria-label="Reset swing to 0"
+                onClick={() => {
+                  setSwing(0);
+                  sendOneEvent('update_swing', '', 0, 0);
+                }}
+              >
+                <X className="size-3" />
+              </Button>
             </div>
           </div>
+          {!canSwing && <div className="text-xs text-slate-500">even sub divs only</div>}
+        </div>
+        <div className="min-w-0 flex-1 pl-3 pr-6">
+          <Range
+            min={0}
+            max={50}
+            step={1}
+            value={Math.min(50, swing)}
+            onDrag={value => {
+              const next = validSwing(float(value), swing);
+              setSwing(next);
+              sendOneEvent('update_swing', '', next, next);
+            }}
+            disabled={!canSwing}
+            ticks={[0, 15, 33, 50]}
+            slim
+          />
+        </div>
+        <div>
           <StepButtons
             onIncrement={() => {
               if (!canSwing || swing >= 100) return;
@@ -313,37 +333,24 @@ function SwingControls() {
             decrementLabel="Decrease swing"
           />
         </div>
-
-        <div className="w-full pl-4 pr-0">
-          <Range
-            min={0}
-            max={100}
-            step={1}
-            value={swing}
-            onDrag={value => {
-              const next = validSwing(float(value), swing);
-              setSwing(next);
-              sendOneEvent('update_swing', '', next, next);
-            }}
-            disabled={!canSwing}
-            ticks={[0, 15, 33, 50]}
-          />
-        </div>
       </div>
     </div>
   );
 }
 
 export function BeatControls() {
-  const { playSubDivs } = useApp();
+  const { playSubDivs, swingEnabled } = useApp();
 
   return (
-    <div className="space-y-4 px-2 pt-2 pb-0">
+    <div className="contents *:mx-4 *:w-auto! *:self-stretch *:py-2">
       <PlaySubDivsRow />
+      <RowGap />
       <BeatsRow />
       {playSubDivs && (
         <>
+          <RowGap />
           <SubDivsRow />
+          {swingEnabled && <RowGap />}
           <SwingControls />
         </>
       )}
