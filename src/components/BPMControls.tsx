@@ -97,7 +97,7 @@ export function BPMControls() {
         <Button
           type="button"
           variant="outline"
-          className="size-20 rounded-full p-0 text-2xl max-sm:size-[92px]"
+          className="size-24 rounded-full p-0 text-2xl"
           title="Tap tempo"
           aria-label="Tap tempo"
           onClick={() => handleTap()}
@@ -165,8 +165,8 @@ export function BPMControls() {
           disableDecrement={bpm <= 20}
           incrementLabel="Increase BPM"
           decrementLabel="Decrease BPM"
-          // On phones the pair and Tap are both 92px wide, so the readout fits centered between them.
-          buttonClassName="max-sm:size-11 max-sm:p-2"
+          // Tap and this pair are both 96px wide, so the readout is centered between them.
+          buttonClassName="size-[46px] p-2 sm:size-[46px]"
         />
       </div>
 
