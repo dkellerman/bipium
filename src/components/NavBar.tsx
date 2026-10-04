@@ -7,7 +7,7 @@ export const NavBar = ({ children }: WithChildrenProps) => (
   <nav
     className={cn(
       'relative w-full border-b border-slate-200 bg-linear-to-b from-[#edf3f9] to-[#dfe9f4]',
-      'px-4 pt-1.5 pb-2 shadow-sm',
+      'px-4 pt-1.5 pb-2 shadow-sm pointer-fine:pt-2.5 pointer-fine:pb-3',
     )}
   >
     <h1
