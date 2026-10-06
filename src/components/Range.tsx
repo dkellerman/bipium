@@ -40,7 +40,8 @@ export const Range = ({
     <div
       className={cn(
         'w-full',
-        hasTicks && (compactTicks ? 'pb-5' : 'pb-8'),
+        // Room for the rotated labels; on phones a little less, so the next row sits closer.
+        hasTicks && (compactTicks ? 'pb-5' : 'pb-8 pointer-coarse:pb-6'),
         disabled && 'pointer-events-none opacity-55',
       )}
     >
