@@ -1,4 +1,4 @@
-import { setCapturing } from '@/lib/audio-session';
+import { micEchoCancellation, setCapturing } from '@/lib/audio-session';
 import { OnsetDetector, type Onset } from './onsets';
 import {
   musicLikelihood,
@@ -86,9 +86,9 @@ export class GrokRecognition {
           channelCount: 1,
           // Echo cancellation stays off: on iPhone it routes playback through call
           // processing, louder and crackling on the drum kit (voice mode must not change
-          // playback). Noise suppression stays off: it keeps only voice, erasing the
-          // instruments and claps rhythm tracking needs.
-          echoCancellation: false,
+          // playback; `?mic` compares, temporarily). Noise suppression stays off: it keeps
+          // only voice, erasing the instruments and claps rhythm tracking needs.
+          echoCancellation: micEchoCancellation(),
           noiseSuppression: false,
           autoGainControl: false,
         },

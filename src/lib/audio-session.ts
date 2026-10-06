@@ -11,6 +11,23 @@ const session = () =>
 
 let capturing = false;
 
+// Temporary, to compare on a phone how iOS routes playback while voice mode has the mic:
+// `?mic=aec` echo cancellation on; `?mic=auto` the session left to the browser while
+// capturing; `?mic=aec-auto` both; `?mic=playback` the session kept at playback.
+// Without it: echo cancellation off, play-and-record.
+const micMode =
+  typeof location === 'undefined' ? null : new URLSearchParams(location.search).get('mic');
+
+/** Whether voice mode's mic asks for echo cancellation (see `?mic`). */
+export const micEchoCancellation = () => micMode === 'aec' || micMode === 'aec-auto';
+
+const capturingType = () =>
+  micMode === 'auto' || micMode === 'aec-auto'
+    ? 'auto'
+    : micMode === 'playback'
+      ? 'playback'
+      : 'play-and-record';
+
 function setType(type: string) {
   const current = session();
   if (!current || current.type === type) return;
@@ -29,5 +46,5 @@ export function preferPlayback() {
 /** Around mic capture: play-and-record while on, back to playback after. */
 export function setCapturing(on: boolean) {
   capturing = on;
-  setType(on ? 'play-and-record' : 'playback');
+  setType(on ? capturingType() : 'playback');
 }
