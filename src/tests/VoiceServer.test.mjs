@@ -148,7 +148,8 @@ describe('numbers', () => {
     stubJev({ action: 'play', ...by('tempo', 'faster', '0', '0', '5') });
     expect((await say('five BPM faster')).call.args[0]).toEqual({ bpm: current.bpm + 5 });
     stubJev({ action: 'play', ...by('volume', 'louder', '0', '2', '0') });
-    expect((await say('volume up twenty')).call.args[0]).toEqual({ volume: current.volume + 20 });
+    const half = { ...current, volume: 50 };
+    expect((await say('volume up twenty', half)).call.args[0]).toEqual({ volume: 70 });
     stubJev({ action: 'play', ...by('swing', 'less', '0', '1', '0') });
     expect((await say('ten less swing')).call).toBeNull(); // swing is 0: reported, not clamped
     stubJev({ action: 'play', tempo: 'faster' }); // no number stated: the default step

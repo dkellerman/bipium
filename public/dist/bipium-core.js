@@ -6296,7 +6296,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
     playSubDivs: true,
     swing: 0,
     soundPack: "drumkit",
-    volume: 35,
+    volume: 100,
     loopMode: false,
     loopRepeats: 0,
     soundUrls: {},

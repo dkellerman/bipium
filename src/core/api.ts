@@ -292,7 +292,7 @@ export const API_DEFAULT_CONFIG: ApiConfig = {
   playSubDivs: true,
   swing: 0,
   soundPack: 'drumkit',
-  volume: 35,
+  volume: 100,
   loopMode: false,
   loopRepeats: 0,
   soundUrls: {},
