@@ -33,8 +33,9 @@ export function PhoneFrame({ children }: { children: ReactNode }) {
         {/* The bezel sits outside the screen, so the UI itself is unchanged. */}
         <div
           aria-hidden
-          className="pointer-events-none absolute rounded-[36px] border-neutral-900 shadow-[0_24px_60px_rgba(15,23,42,0.3)]"
-          style={{ inset: -PHONE_BEZEL, borderWidth: PHONE_BEZEL }}
+          className="pointer-events-none absolute border-neutral-900 shadow-[0_24px_60px_rgba(15,23,42,0.3)]"
+          // The bezel follows the screen's 28px corners.
+          style={{ inset: -PHONE_BEZEL, borderWidth: PHONE_BEZEL, borderRadius: 28 + PHONE_BEZEL }}
         />
       </div>
     </div>

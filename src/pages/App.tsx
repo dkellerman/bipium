@@ -675,7 +675,7 @@ function App() {
             type="button"
             variant="ghost"
             size="icon"
-            className="absolute right-4 top-1 size-9 pointer-fine:top-2"
+            className="absolute right-0 top-1/2 size-9 -translate-y-1/2"
             title="Open settings"
             aria-label="Open settings"
             onClick={() => setShowSideBar(true)}
