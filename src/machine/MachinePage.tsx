@@ -41,6 +41,7 @@ import { MachineDrawer } from './MachineDrawer';
 import type { MachineExtras } from './shared';
 import './machine.css';
 import { viewportSize } from '@/lib/phone-frame';
+import { preferPlayback } from '@/lib/audio-session';
 
 const int = (value: NumberInput) => {
   const parsed = Number.parseInt(String(value), 10);
@@ -149,6 +150,7 @@ function MachinePage() {
   const startedRef = useRef(started);
   useEffect(() => {
     const unlock = () => {
+      preferPlayback();
       void audioContext.current.resume().catch(() => undefined);
     };
     window.addEventListener('bipium:unlock-audio', unlock);
@@ -233,6 +235,7 @@ function MachinePage() {
   // context in an 'interrupted' state that the core's suspended-only resume
   // check never clears, leaving the clock (and the visualizer) frozen.
   const resumeAudioContext = useCallback(() => {
+    preferPlayback();
     void audioContext.current.resume().catch(() => undefined);
   }, []);
 

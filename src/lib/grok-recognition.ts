@@ -1,3 +1,4 @@
+import { setCapturing } from '@/lib/audio-session';
 import { OnsetDetector, type Onset } from './onsets';
 import {
   musicLikelihood,
@@ -78,6 +79,7 @@ export class GrokRecognition {
       // Create/resume during the user's tap for Safari's audio activation policy.
       this.context = new AudioContext({ sampleRate: 48000 });
       const resumed = this.context.resume();
+      setCapturing(true);
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           channelCount: 1,
@@ -91,6 +93,7 @@ export class GrokRecognition {
       });
       if (this.cancelled) {
         stream.getTracks().forEach(track => track.stop());
+        setCapturing(false);
         return;
       }
       this.stream = stream;
@@ -293,5 +296,6 @@ export class GrokRecognition {
     this.source?.disconnect();
     this.stream?.getTracks().forEach(track => track.stop());
     void this.context?.close().catch(() => {});
+    setCapturing(false);
   }
 }

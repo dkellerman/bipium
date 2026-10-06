@@ -8,6 +8,7 @@ import ApiPage from '@/pages/ApiPage';
 import MachinePage from '@/machine/MachinePage';
 import { PhoneFrame } from '@/components/PhoneFrame';
 import { phoneFramed } from '@/lib/phone-frame';
+import { preferPlayback } from '@/lib/audio-session';
 import './index.css';
 
 /* The site root serves the stored theme; /machine renders the machine theme
@@ -24,6 +25,9 @@ try {
     localStorage.setItem('volumeDefault100', '1');
   }
 } catch {}
+
+// A metronome is media: play through the silent switch, on the speaker (see audio-session).
+preferPlayback();
 
 const rootElement = document.getElementById('root');
 
