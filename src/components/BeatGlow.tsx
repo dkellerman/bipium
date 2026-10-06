@@ -1,7 +1,7 @@
-/* A faint green streak in the header's bottom shadow, swinging like a pendulum while the
- * metronome plays: one crossing per beat (left to right, then back), brightest mid-swing
- * and a little brighter on the downbeat. Timed from the metronome's scheduled beats on
- * the audio clock, so it stays with the sound. Hidden with reduced motion. */
+/* A faint green streak in the header's bottom shadow while the metronome plays: one
+ * crossing per beat, always left to right, brightest mid-way and a little brighter on the
+ * downbeat. Timed from the metronome's scheduled beats on the audio clock, so it stays
+ * with the sound. Hidden with reduced motion. */
 import { useEffect, useRef } from 'react';
 import { useApp } from '@/AppContext';
 
@@ -23,9 +23,7 @@ export function BeatGlow() {
         return;
       }
       const phase = Math.min(1, (now - last.time) / metronome.beatTime);
-      // Alternate direction each beat, like a pendulum between ticks.
-      const forward = (last.bar * last.beats + last.beat) % 2 === 0;
-      const x = forward ? phase : 1 - phase;
+      const x = phase; // left to right, once per beat
       const peak = last.beat === 1 ? 0.75 : 0.5;
       el.style.opacity = String(peak * Math.sin(Math.PI * phase));
       // The streak is 40% of the edge, centered: its center travels the full width.
