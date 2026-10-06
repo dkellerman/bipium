@@ -1,5 +1,8 @@
 import { AudioNode, Click, FinalSoundSpec, ScheduledAudio, Sound, SoundPack } from './types';
 
+/** Fade at the end of each sound, in seconds. */
+const FADE = 0.005;
+
 export const DEFAULT_SOUNDS: SoundPack = {
   name: 'Beeps',
   bar: 880.0,
@@ -31,7 +34,10 @@ export class Clicker {
   }: ClickerOptions) {
     this.audioContext = audioContext;
     this.volume = volume;
+    // The master volume. Each sound has its own gain (see playSoundAt), so sounds never
+    // change a level another sound is still ringing through.
     this.gainNode = this.audioContext.createGain();
+    this.gainNode.gain.value = volume / 100;
     this.gainNode.connect(this.audioContext.destination);
     this.resolveScheduledSounds = resolveScheduledSounds;
     // Numeric fallback clicks are available immediately, even while samples load.
@@ -71,6 +77,7 @@ export class Clicker {
 
   setVolume(volume: number) {
     this.volume = volume;
+    this.gainNode.gain.setValueAtTime(volume / 100, this.audioContext.currentTime);
   }
 
   setResolveScheduledSounds(resolveScheduledSounds?: ClickerOptions['resolveScheduledSounds']) {
@@ -142,14 +149,24 @@ export class Clicker {
   ): AudioNode {
     if (this.audioContext?.state === 'suspended') this.audioContext.resume();
 
+    // Its own level, faded out over the last few ms instead of cut off mid-waveform:
+    // either would be heard as a click.
+    const start = Math.max(time, this.audioContext.currentTime);
+    const end = start + clickLength;
+    const level = this.audioContext.createGain();
+    level.gain.setValueAtTime(relativeVolume, start);
+    level.gain.setValueAtTime(relativeVolume, Math.max(start, end - FADE));
+    level.gain.linearRampToValueAtTime(0, end);
+    level.connect(this.gainNode);
+
     let audioNode: AudioNode;
     if (typeof sound === 'number') {
       // freq
       audioNode = this.audioContext.createOscillator();
-      audioNode.connect(this.gainNode);
+      audioNode.connect(level);
       audioNode.frequency.value = sound;
-      audioNode.start(time);
-      audioNode.stop(time + clickLength);
+      audioNode.start(start);
+      audioNode.stop(end);
     } else {
       // buffer
       audioNode = this.audioContext.createBufferSource();
@@ -158,11 +175,10 @@ export class Clicker {
       } catch (e) {
         console.error(e);
       }
-      audioNode.connect(this.gainNode);
-      audioNode.start(time, 0, clickLength);
+      audioNode.connect(level);
+      audioNode.start(start, 0, clickLength);
     }
-
-    this.gainNode.gain.setValueAtTime((this.volume * relativeVolume) / 100, time);
+    audioNode.onended = () => level.disconnect();
     return audioNode;
   }
 
