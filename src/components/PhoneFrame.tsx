@@ -5,10 +5,18 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { PHONE_BEZEL, PHONE_WIDTH, phoneHeight } from '@/lib/phone-frame';
 
+const oddSpace = () => ((document.documentElement.clientWidth - PHONE_WIDTH) % 2 === 1 ? 1 : 0);
+
 export function PhoneFrame({ children }: { children: ReactNode }) {
   const [height, setHeight] = useState(phoneHeight);
+  // Centered in an odd-width window the screen would sit on a half pixel, and the screen
+  // layer (the transform) then blurs everything in it: a 1px nudge keeps it whole.
+  const [nudge, setNudge] = useState(oddSpace);
   useEffect(() => {
-    const onResize = () => setHeight(phoneHeight());
+    const onResize = () => {
+      setHeight(phoneHeight());
+      setNudge(oddSpace());
+    };
     window.addEventListener('resize', onResize);
     // The page itself never scrolls; only the phone screen does.
     const root = document.documentElement;
@@ -22,7 +30,7 @@ export function PhoneFrame({ children }: { children: ReactNode }) {
   return (
     // Around the phone, the page background the theme has without the frame.
     <div className="flex h-dvh items-center justify-center overflow-hidden bg-linear-to-b from-[#f8fbff] via-[#eef6ff] to-[#f8fbff] has-[[data-theme=machine]]:bg-[#d8d3c4] has-[[data-theme=machine]]:bg-none">
-      <div className="relative" style={{ width: PHONE_WIDTH, height }}>
+      <div className="relative" style={{ width: PHONE_WIDTH, height, marginLeft: nudge }}>
         <div
           id="phone-screen"
           className="h-full w-full overflow-x-hidden overflow-y-auto rounded-[28px] [scrollbar-width:none] *:h-full [&_.min-h-dvh]:min-h-full"
