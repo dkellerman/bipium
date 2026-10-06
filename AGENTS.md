@@ -147,8 +147,11 @@ is acted on only above 0.5 confidence; otherwise that setting stays as it is.
   usual 0.5); otherwise the phrase isn't acted on. User, 2026-10-03: "try not to go into
   drum mode unless it absolutely has to". Already in drum mode, the usual bar applies.
 - Voice mode must not change playback volume or apply any gain; no ducking or boosting.
-  Mic capture requests automatic gain control and noise suppression off (noise
-  suppression keeps only voice and erases the instruments rhythm tracking listens for).
+  Mic capture requests automatic gain control, noise suppression and echo cancellation
+  off (noise suppression keeps only voice and erases the instruments rhythm tracking
+  listens for; on iPhone, echo cancellation puts playback through call processing, louder
+  and crackling on the drum kit). With the mic on, iOS keeps its own volume level, set
+  with the volume buttons; that's the system's, not ours.
 
 ## The shared Pixi visualizer (do not regress)
 
