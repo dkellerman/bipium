@@ -118,7 +118,7 @@ function MachinePage() {
   const [swing, setSwing] = useSetting('swing', 0, float);
   const [swingEnabled, setSwingEnabled] = useSetting('swingEnabled', false, bool);
   const [playSubDivs, setPlaySubDivs] = useSetting('playSubDivs', false, bool);
-  const [volume, setVolume] = useSetting('volume', 100, int, localStorage);
+  const [volume, setVolume] = useSetting('volume', 50, int, localStorage);
   const [muted, setMuted] = useState(false);
   const [started, setStarted] = useState(false);
   const [soundPack, setSoundPack] = useSetting('soundPack', 'drumkit', String);

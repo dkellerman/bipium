@@ -17,12 +17,13 @@ function ThemedRoot() {
   return getStoredTheme() === 'machine' ? <MachinePage /> : <App />;
 }
 
-// Volume used to default to 35% (the machine theme and the API); every visit saves the
-// current value, so a saved 35 is that old default. Once, move it to the new 100% default.
+// Every visit saves the current volume, so a saved 35 or 100 is an old default (35%, then
+// 100%, which was too loud). Once, move it to the 50% default.
 try {
-  if (!localStorage.getItem('volumeDefault100')) {
-    if (localStorage.getItem('volume') === '35') localStorage.setItem('volume', '100');
-    localStorage.setItem('volumeDefault100', '1');
+  if (!localStorage.getItem('volumeDefault50')) {
+    if (['35', '100'].includes(localStorage.getItem('volume') ?? ''))
+      localStorage.setItem('volume', '50');
+    localStorage.setItem('volumeDefault50', '1');
   }
 } catch {}
 

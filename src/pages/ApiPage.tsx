@@ -16,7 +16,7 @@ const BASIC_SAMPLE: ApiConfig = {
   playSubDivs: true,
   swing: 0,
   soundPack: 'drumkit',
-  volume: 100,
+  volume: 50,
   soundUrls: {},
   loopMode: false,
   loopRepeats: 0,

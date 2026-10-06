@@ -121,7 +121,7 @@ function App() {
   const [swing, setSwing] = useSetting('swing', 0, float);
   const [swingEnabled, setSwingEnabled] = useSetting('swingEnabled', false, bool);
   const [playSubDivs, setPlaySubDivs] = useSetting('playSubDivs', true, bool);
-  const [volume, setVolume] = useSetting('volume', 100, int, localStorage, {
+  const [volume, setVolume] = useSetting('volume', 50, int, localStorage, {
     preserveOnReset: true,
   });
   const [muted, setMuted] = useState(false);
