@@ -76,7 +76,7 @@ export function VoiceIntro({
             Voice mode
             <span
               className={cn(
-                'rounded px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide',
+                'rounded px-1.5 py-0.5 text-px-11 font-semibold uppercase tracking-wide',
                 machine ? 'border-2 border-stone-900 bg-[#ffd76a]' : 'bg-amber-100 text-amber-800',
               )}
             >

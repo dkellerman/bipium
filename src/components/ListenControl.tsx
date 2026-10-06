@@ -456,7 +456,7 @@ export function ListenControl({
           <div
             role="status"
             aria-live="polite"
-            className="h-full w-full min-w-0 overflow-hidden text-center text-xs leading-4 [.voice-roomy_&]:text-[13px] [.voice-roomy_&]:leading-5"
+            className="h-full w-full min-w-0 overflow-hidden text-center text-xs leading-4 [.voice-roomy_&]:text-px-13 [.voice-roomy_&]:leading-5"
             title={`${lastHeard ? `Heard: ${lastHeard}\n` : ''}${status}`}
           >
             {status === IDLE && !interim && !lastHeard && !debug ? (
@@ -494,7 +494,7 @@ export function ListenControl({
                       </span>
                       <button
                         type="button"
-                        className="shrink-0 rounded-full bg-emerald-700 px-2 text-[11px] font-semibold leading-4 text-white hover:bg-emerald-800"
+                        className="shrink-0 rounded-full bg-emerald-700 px-2 text-px-11 font-semibold leading-4 text-white hover:bg-emerald-800"
                         onClick={() => {
                           window.dispatchEvent(new Event('bipium:unlock-audio'));
                           playAlong.current = true;

@@ -62,7 +62,7 @@ function Key({
       aria-pressed={active}
       disabled={disabled}
       className={cn(
-        'h-14 rounded-md border-[3px] border-stone-900 text-[15px] font-bold uppercase',
+        'h-14 rounded-md border-[3px] border-stone-900 text-px-15 font-bold uppercase',
         'shadow-[3px_3px_0_#1c1917] transition-[transform,box-shadow,background-color] duration-75',
         'active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0_#1c1917]',
         'disabled:opacity-40',
@@ -178,14 +178,14 @@ export function Machine({ extras }: MachineProps) {
       >
         {/* faceplate header */}
         <div className="flex items-center justify-between px-0.5">
-          <span className="text-[16px] font-bold tracking-[0.3em]">BIPIUM</span>
+          <span className="text-px-16 font-bold tracking-[0.3em]">BIPIUM</span>
           <div className="flex items-center gap-1.5">
             <button
               type="button"
               title="Use classic theme"
               className={cn(
                 'h-10 rounded-md border-[3px] border-stone-900 bg-[#f6f3ea] px-2.5',
-                'text-[10px] font-bold uppercase tracking-wider',
+                'text-px-10 font-bold uppercase tracking-wider',
                 'shadow-[2px_2px_0_#1c1917] active:translate-x-px active:translate-y-px active:shadow-[1px_1px_0_#1c1917]',
               )}
               onClick={() => {
@@ -204,7 +204,7 @@ export function Machine({ extras }: MachineProps) {
               title="Change sounds"
               className={cn(
                 'h-10 rounded-md border-[3px] border-stone-900 bg-[#f6f3ea] px-2.5',
-                'text-[10px] font-bold uppercase tracking-wider',
+                'text-px-10 font-bold uppercase tracking-wider',
                 'shadow-[2px_2px_0_#1c1917] active:translate-x-px active:translate-y-px active:shadow-[1px_1px_0_#1c1917]',
               )}
               onClick={() => {
@@ -235,14 +235,14 @@ export function Machine({ extras }: MachineProps) {
             <div className="flex items-baseline gap-2">
               <BpmEditable
                 displayClassName={cn(
-                  'text-[54px] font-bold leading-none tabular-nums text-[#6cf59a]',
+                  'text-px-54 font-bold leading-none tabular-nums text-[#6cf59a]',
                   '[text-shadow:0_0_14px_rgba(108,245,154,0.55)]',
                 )}
-                inputClassName="w-[140px] text-[54px] font-bold leading-none text-[#6cf59a]"
+                inputClassName="w-[140px] text-px-54 font-bold leading-none text-[#6cf59a]"
               />
               <span className="text-xs font-bold text-[#6cf59a]/70">BPM</span>
             </div>
-            <div className="pb-1 text-right text-[11px] font-bold uppercase leading-4 text-[#6cf59a]/80">
+            <div className="pb-1 text-right text-px-11 font-bold uppercase leading-4 text-[#6cf59a]/80">
               <div>{app.beats} beats</div>
               <div>{subDivsOn ? `subdivs ${subdivShort(app.subDivs)}` : 'no subdivs'}</div>
               <div>{app.swingEnabled && canSwing ? `swing ${app.swing}%` : 'swing off'}</div>
@@ -301,7 +301,7 @@ export function Machine({ extras }: MachineProps) {
                 if (app.swingEnabled) app.setSwingEnabledWithRestore(false);
               }
             }}
-            className="text-[13px]"
+            className="text-px-13"
           >
             Subdivs
           </Key>
@@ -310,7 +310,7 @@ export function Machine({ extras }: MachineProps) {
             active={app.swingEnabled && subDivsOn}
             disabled={!subDivsOn || !canSwing}
             onClick={() => app.setSwingEnabledWithRestore(!app.swingEnabled)}
-            className="text-[13px]"
+            className="text-px-13"
           >
             Swing
           </Key>
@@ -330,7 +330,7 @@ export function Machine({ extras }: MachineProps) {
                     aria-label={option.label}
                     title={option.label}
                     className={cn(
-                      'h-11 min-w-0 flex-1 rounded border-2 border-stone-900 text-[13px] font-bold',
+                      'h-11 min-w-0 flex-1 rounded border-2 border-stone-900 text-px-13 font-bold',
                       'shadow-[2px_2px_0_#1c1917] active:translate-x-px active:translate-y-px active:shadow-[1px_1px_0_#1c1917]',
                       (app.playSubDivs ? app.subDivs : 1) === option.value
                         ? 'bg-stone-900 text-[#6cf59a]'

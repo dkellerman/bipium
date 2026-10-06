@@ -295,7 +295,7 @@ function SwingControls() {
               </Button>
             </div>
           </div>
-          {!canSwing && <div className="text-xs text-slate-500 pointer-fine:text-[11px]">even sub divs only</div>}
+          {!canSwing && <div className="text-xs text-slate-500 pointer-fine:text-px-11">even sub divs only</div>}
         </div>
         <div className="min-w-0 flex-1 pl-3 pr-6">
           <Range

@@ -74,8 +74,8 @@ export const Range = ({
                 key={`tick-${tick}`}
                 disabled={disabled}
                 className={cn(
-                  'absolute top-0 h-10 px-0.5 text-[18px] leading-none text-slate-600',
-                  'hover:text-slate-800 disabled:cursor-not-allowed sm:text-[17px]',
+                  'absolute top-0 h-10 px-0.5 text-px-18 leading-none text-slate-600',
+                  'hover:text-slate-800 disabled:cursor-not-allowed sm:text-px-17',
                   tickClassName,
                 )}
                 style={{ left, transform: `translateX(${xOffset})` }}

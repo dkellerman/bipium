@@ -48,7 +48,7 @@ export function DrumLaneLabels({ height = 124, visible = true }: DrumLaneLabelsP
           const { label, shortLabel } = laneMeta[lane];
           return (
             <div
-              className="flex items-center justify-start whitespace-nowrap bg-transparent pl-1.5 text-[11px] font-black leading-none tracking-tight text-slate-100"
+              className="flex items-center justify-start whitespace-nowrap bg-transparent pl-1.5 text-px-11 font-black leading-none tracking-tight text-slate-100"
               key={lane}
               style={{ height: rowHeight }}
               title={label}

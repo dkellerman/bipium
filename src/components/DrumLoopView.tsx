@@ -43,7 +43,7 @@ export function DrumLoopView({ height = 124, visible = true }: DrumLoopViewProps
           const { label, shortLabel } = laneMeta[lane];
           return (
             <div
-              className="flex items-center justify-center bg-transparent text-[10px] font-black leading-none tracking-tight text-slate-100"
+              className="flex items-center justify-center bg-transparent text-px-10 font-black leading-none tracking-tight text-slate-100"
               key={lane}
               style={{ height: rowHeight }}
               title={label}

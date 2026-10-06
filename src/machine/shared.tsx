@@ -238,7 +238,7 @@ export function MachineRange({
               className={cn(
                 // w-6/h-9 is the tap target; the visible label stays small and
                 // centered so the layout doesn't change.
-                'absolute top-0 h-9 w-6 text-[11px] leading-none',
+                'absolute top-0 h-9 w-6 text-px-11 leading-none',
                 tickClassName,
               )}
               style={{ left, transform: `translateX(${xOffset})` }}

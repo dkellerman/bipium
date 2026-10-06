@@ -1,3 +1,33 @@
 @import 'tailwindcss';
 
 @source './**/*.{js,jsx,ts,tsx}';
+
+/* Every font size goes through --text-scale: phones get all text one small notch smaller,
+   and nothing else (spacing, radii, widths) changes. */
+:root {
+  --text-scale: 1;
+}
+@media (pointer: coarse) {
+  :root {
+    --text-scale: 0.9375;
+  }
+}
+@theme {
+  --text-xs: calc(0.75rem * var(--text-scale));
+  --text-sm: calc(0.875rem * var(--text-scale));
+  --text-base: calc(1rem * var(--text-scale));
+  --text-lg: calc(1.125rem * var(--text-scale));
+  --text-xl: calc(1.25rem * var(--text-scale));
+  --text-2xl: calc(1.5rem * var(--text-scale));
+  --text-3xl: calc(1.875rem * var(--text-scale));
+  --text-4xl: calc(2.25rem * var(--text-scale));
+}
+@layer base {
+  body {
+    font-size: calc(1rem * var(--text-scale));
+  }
+}
+/* Fixed pixel sizes on the same scale: text-px-15 is 15px on desktop. */
+@utility text-px-* {
+  font-size: calc(--value(number) * 1px * var(--text-scale));
+}

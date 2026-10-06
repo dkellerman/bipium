@@ -19,7 +19,7 @@ export function MachineDrawer() {
       <SheetContent
         side="right"
         className={
-          'w-[320px] border-l border-slate-300 bg-slate-50 px-5 pt-12 text-[15px] sm:w-[320px]'
+          'w-[320px] border-l border-slate-300 bg-slate-50 px-5 pt-12 text-px-15 sm:w-[320px]'
         }
       >
         <div className="mt-2 space-y-6">
@@ -48,7 +48,7 @@ export function MachineDrawer() {
             <Button
               type="button"
               variant="link"
-              className="h-auto p-0 text-[15px]"
+              className="h-auto p-0 text-px-15"
               onClick={event => {
                 event.preventDefault();
                 sendEvent('reset');
@@ -61,7 +61,7 @@ export function MachineDrawer() {
             <Button
               type="button"
               variant="link"
-              className="h-auto p-0 text-[15px]"
+              className="h-auto p-0 text-px-15"
               onClick={event => {
                 event.preventDefault();
                 copyConfigurationURL();
@@ -72,7 +72,7 @@ export function MachineDrawer() {
             </Button>
 
             {copiedURL && (
-              <p className="text-[13px] text-slate-600">
+              <p className="text-px-13 text-slate-600">
                 Copied{' '}
                 <a className="underline" href={copiedURL} target="_blank" rel="noreferrer">
                   configuration URL
@@ -84,7 +84,7 @@ export function MachineDrawer() {
 
           <Separator />
 
-          <div className="space-y-1.5 text-[15px]">
+          <div className="space-y-1.5 text-px-15">
             <Link className="underline" to="/about">
               About
             </Link>

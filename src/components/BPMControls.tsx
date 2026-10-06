@@ -97,7 +97,7 @@ export function BPMControls() {
         <Button
           type="button"
           variant="outline"
-          className="size-24 rounded-full p-0 text-2xl pointer-fine:h-[46px] pointer-fine:text-xl"
+          className="h-[46px] w-24 rounded-full p-0 text-2xl pointer-fine:text-xl"
           title="Tap tempo"
           aria-label="Tap tempo"
           onClick={() => handleTap()}
@@ -165,8 +165,8 @@ export function BPMControls() {
           disableDecrement={bpm <= 20}
           incrementLabel="Increase BPM"
           decrementLabel="Decrease BPM"
-          // Tap and this pair are both 96px wide, so the readout is centered between them (on
-          // desktop Tap is a pill as tall as these buttons).
+          // Tap and this pair are both 96px wide, so the readout is centered between them (Tap
+          // is a pill as tall as these buttons).
           buttonClassName="size-[46px] p-2 sm:size-[46px]"
         />
       </div>
@@ -182,7 +182,7 @@ export function BPMControls() {
             setBpm(validBpm(value));
           }}
           labelRotation={-60}
-          tickClassName="text-[19px] sm:text-[18px]"
+          tickClassName="text-px-19 sm:text-px-18"
           ticks={[50, 80, 100, 120, 140, 160, 180, 200, 220, 240, bpmMax]}
         />
       </div>

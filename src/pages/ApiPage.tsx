@@ -454,7 +454,7 @@ export default function ApiPage() {
               <tbody>
                 {METHOD_DOCS.map(entry => (
                   <tr key={entry.method} className="border-b border-slate-100">
-                    <td className="py-2 pr-3 font-mono text-[12px]">{entry.method}</td>
+                    <td className="py-2 pr-3 font-mono text-px-12">{entry.method}</td>
                     <td className="py-2 text-slate-700">{entry.summary}</td>
                   </tr>
                 ))}
@@ -563,11 +563,11 @@ export default function ApiPage() {
               Mirrors <code>window.bpm.schemaJson</code>.
             </p>
             <p className="mt-2 font-mono text-xs text-slate-900">config</p>
-            <pre className="mt-1 max-h-44 overflow-auto rounded border border-slate-200 bg-white p-2 text-[11px] text-slate-700">
+            <pre className="mt-1 max-h-44 overflow-auto rounded border border-slate-200 bg-white p-2 text-px-11 text-slate-700">
               {schemaJson ? JSON.stringify(schemaJson.config, null, 2) : 'Runtime not ready yet.'}
             </pre>
             <p className="mt-2 font-mono text-xs text-slate-900">configPatch</p>
-            <pre className="mt-1 max-h-44 overflow-auto rounded border border-slate-200 bg-white p-2 text-[11px] text-slate-700">
+            <pre className="mt-1 max-h-44 overflow-auto rounded border border-slate-200 bg-white p-2 text-px-11 text-slate-700">
               {schemaJson
                 ? JSON.stringify(schemaJson.configPatch, null, 2)
                 : 'Runtime not ready yet.'}
