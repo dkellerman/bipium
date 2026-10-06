@@ -90,6 +90,11 @@ const cases = [
   { prompt: 'sixteenth notes', current: config(), patch: { subDivs: 4 } },
   { prompt: 'funky', current: config({ divisions: 1 }), patch: { subDivs: 4 } },
   { prompt: 'slow funk', current: config({ divisions: 1 }), patch: { subDivs: 4 } },
+  {
+    prompt: 'Funky beats at about eighty five beats per minute.',
+    current: config({ divisions: 1 }),
+    patch: { bpm: 85, subDivs: 4 },
+  },
   // Mode and styles
   { prompt: 'just the click please', current: config({ loopMode: true }), patch: { loopMode: false } },
   { prompt: 'switch to drum mode', current: config(), patch: { loopMode: true } },

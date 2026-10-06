@@ -43,15 +43,22 @@ const glossaryIndex = glossary.map(entry => ({
 }));
 
 const thumpRefs = corpus.refs.filter(r => r.source === 'Thump');
+// Names alone, so a style the user names isn't drowned out by the rest of the sentence
+// ("beats per minute", numbers) matching words in the reference write-ups.
+const thumpNames = thumpRefs.map(r => ({ name: r.title, vector: vectorize(r.title, corpus.idf) }));
 
-/** Names of the catalog styles closest to the text, for Jev to choose among. */
+/** Names of the catalog styles closest to the text, for Jev to choose among: the closest
+ * by name, then the closest by reference write-up. */
 export function candidateStyles(text, count = 16) {
   const query = vectorize(text, corpus.idf);
-  return thumpRefs
-    .map(r => ({ name: r.title, score: similarity(query, r.vector) }))
-    .sort((a, b) => b.score - a.score)
-    .slice(0, count)
-    .map(x => x.name);
+  const ranked = items =>
+    items
+      .map(r => ({ name: r.name ?? r.title, score: similarity(query, r.vector) }))
+      .filter(x => x.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .map(x => x.name);
+  const byName = ranked(thumpNames).slice(0, count / 2);
+  return [...new Set([...byName, ...ranked(thumpRefs)])].slice(0, count);
 }
 
 export function retrieveContext(text, { grooves = 4, terms = 8 } = {}) {
