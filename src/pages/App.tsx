@@ -680,7 +680,7 @@ function App() {
             aria-label="Open settings"
             onClick={() => setShowSideBar(true)}
           >
-            <Settings className="size-6" />
+            <Settings className="size-[22px]" />
             <span className="sr-only">Open settings</span>
           </Button>
         </NavBar>

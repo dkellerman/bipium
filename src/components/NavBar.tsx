@@ -12,18 +12,10 @@ export const NavBar = ({ children }: WithChildrenProps) => (
   >
     {/* Relative to the title, so header buttons can center on it at any font size. */}
     <div className="relative">
-      <h1
-        className={cn(
-          'm-0 text-center text-2xl font-medium leading-none tracking-tight text-emerald-800',
-          'sm:text-3xl',
-        )}
-      >
-        <Link className="no-underline" to="/">
-          <span className="text-emerald-800">B</span>
-          <span className="text-emerald-600">i</span>
-          <span className="text-emerald-800">p</span>
-          <span className="text-emerald-600">iu</span>
-          <span className="text-emerald-800">m</span>
+      <h1 className={cn('m-0 text-left text-2xl leading-none', 'sm:text-3xl')}>
+        {/* The drawn logo (public/logo.svg), sized like the title text it replaces. */}
+        <Link className="inline-block align-top no-underline" to="/">
+          <img src="/logo.svg" alt="Bipium" className="-my-[0.06em] block h-[1.12em] w-auto" />
         </Link>
       </h1>
       {children}
