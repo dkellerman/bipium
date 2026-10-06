@@ -86,19 +86,25 @@ when a drum loop or specific kick/snare/hat parts are asked for (in drum mode, a
 loads its pattern). An answer is acted on only above 50% confidence; otherwise that setting is kept. An
 exact value the player can't do (e.g. 340 BPM) is reported, not clamped.
 
-To test locally, put `TYPESAFE_API_KEY=...` in `.env.local` and run `pnpm dev`; Vite
+To test locally, put `TYPESAFE_API_KEY=...` and `OPENROUTER_API_KEY=...` in `.env.local` and run `pnpm dev`; Vite
 serves `/api/voice` and Jev's answers are logged to the browser console. `node scripts/voice-eval.mjs` runs a live eval against it and
 reports a score; it measures, it doesn't gate. `scripts/build-styles.mjs` rebuilds the style catalog.
 Never use a `VITE_` prefix or put the key in client code.
 
-### Research vector database
+### Vector store (retrieval for Jev)
 
-`data/reference-patterns.sqlite` stores all 673 indexed research references with
-normalized character n-gram TF-IDF vectors, source URLs, notes, and drum patterns.
-`server/reference-index.json` is its read-only runtime export: the Worker searches
-these vectors directly in memory, without a separate paid vector service. The
-SQLite database and source archives remain in source control and are not public
-web assets. They are independent of user prompt history.
+`server/voice/embeddings.json` holds an embedding (`voyageai/voyage-4` through OpenRouter)
+for every catalog style, every recorded groove in the research corpus and every glossary
+term, with the text Jev reads for each. Each phrase is embedded at request time and the
+most similar entries go into Jev's prompt as examples; the most similar styles are what
+the style question offers. Rebuild with `node scripts/build-embeddings.mjs` after changing
+the styles, the corpus or the glossary. The server needs `OPENROUTER_API_KEY` (in
+`.env.local` locally, and as a site setting in production); without it voice says so and
+changes nothing.
+
+`data/reference-patterns.sqlite` is the research corpus (673 references with source URLs,
+notes and drum patterns, plus the older word-count TF-IDF vectors, no longer used at
+runtime); `server/reference-index.json` is its export, read by the build scripts.
 
 See `data/README.md` for provenance, corpus coverage, and refresh instructions.
 

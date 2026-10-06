@@ -5,6 +5,8 @@ import { buildMainRequest } from '../../server/voice/main.mjs';
 import { buildDrumRequest } from '../../server/voice/drums.mjs';
 import { positionsOf } from '../../server/voice/grid.mjs';
 import { estimateCountIn } from '../../server/voice/count-in.mjs';
+import { unpack } from '../../server/voice/embed.mjs';
+import store from '../../server/voice/embeddings.json';
 import { API_DEFAULT_CONFIG } from '../core/api';
 
 const current = structuredClone(API_DEFAULT_CONFIG);
@@ -18,11 +20,26 @@ const backbeat = {
   },
 };
 
+/** A stand-in phrase embedding: the stored embedding of a known entry, so retrieval
+ * returns that entry and its neighbours. */
+const embeddingOf = key => {
+  const vector = unpack(store.items.find(item => item.key === key).vector);
+  return Array.from(vector);
+};
+
 /** Stub Jev: every question answers keep/none unless overridden. An override can name
- * an option by its description, e.g. 'Add snare on 3'. */
+ * an option by its description, e.g. 'Add snare on 3'. Phrases embed like `similarTo`
+ * (a style name; default Rock). */
 function stubJev(...stages) {
   const requests = [];
-  const fetcher = vi.fn(async (_url, init) => {
+  let similarTo = 'Rock';
+  const fetcher = vi.fn(async (url, init) => {
+    if (String(url).includes('openrouter.ai')) {
+      const { input } = JSON.parse(init.body);
+      return Response.json({
+        data: input.map((_, index) => ({ index, embedding: embeddingOf(similarTo) })),
+      });
+    }
     const request = JSON.parse(init.body);
     requests.push(request);
     const overrides = stages[requests.length - 1] ?? {};
@@ -38,6 +55,10 @@ function stubJev(...stages) {
     return Response.json({ answers, usage: { input_tokens: 1 } });
   });
   vi.stubGlobal('fetch', fetcher);
+  requests.similarTo = name => {
+    similarTo = name;
+    return requests;
+  };
   return requests;
 }
 
@@ -47,7 +68,7 @@ const say = async (prompt, config = current, extra = {}) => {
       method: 'POST',
       body: JSON.stringify({ prompt, currentConfig: config, ...extra }),
     }),
-    { TYPESAFE_API_KEY: 'secret' },
+    { TYPESAFE_API_KEY: 'secret', OPENROUTER_API_KEY: 'secret' },
   );
   return response.json();
 };
@@ -65,6 +86,7 @@ describe('main request', () => {
       alternatives: [],
       timed: false,
       context: {},
+      styleNames: ['Rock', 'Funk'],
     });
     for (const question of Object.values(request.questions)) {
       expect(question.type).toBe('choice');
@@ -82,6 +104,7 @@ describe('main request', () => {
           alternatives: [],
           timed: false,
           context: {},
+          styleNames: ['Rock', 'Funk'],
         }).questions,
       );
     expect(keys('make it 120')).toEqual(keys('stop the drums and play a funk beat in 7/8'));
@@ -165,7 +188,7 @@ describe('mode and styles', () => {
   });
 
   it('funk on the regular metronome plays sixteenths', async () => {
-    stubJev({ action: 'play', style: 'funk', tempo: 'style' });
+    stubJev({ action: 'play', style: 'funk', tempo: 'style' }).similarTo('Funk');
     const plain = { ...current, subDivs: 1, playSubDivs: false };
     const patch = (await say('funky', plain)).call.args[0];
     expect(patch).toMatchObject({ bpm: 100, subDivs: 4, playSubDivs: true });
@@ -173,7 +196,7 @@ describe('mode and styles', () => {
   });
 
   it('subdivisions the user asks for win over the style', async () => {
-    stubJev({ action: 'play', style: 'funk', subDivs: '2' });
+    stubJev({ action: 'play', style: 'funk', subDivs: '2' }).similarTo('Funk');
     const patch = (await say('funk in eighths', { ...current, subDivs: 1 })).call.args[0];
     expect(patch).toMatchObject({ subDivs: 2 });
   });

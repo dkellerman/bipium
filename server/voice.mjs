@@ -8,7 +8,7 @@ import { buildMainRequest, readMainAnswers } from './voice/main.mjs';
 import { buildDrumRequest, readDrumAnswers } from './voice/drums.mjs';
 import { describeGridChanges, positionsOf, stylePositions } from './voice/grid.mjs';
 import { estimateCountIn } from './voice/count-in.mjs';
-import { candidateStyles, retrieveContext } from './voice/context.mjs';
+import { retrieve } from './voice/context.mjs';
 
 const schemas = createSchemas(new Set(['drumkit', 'defaults']));
 const headers = { 'Cache-Control': 'no-store' };
@@ -131,11 +131,10 @@ async function interpret(input, env, signal) {
       .map(t => t.said),
     prompt,
   ].join(' ');
-  const context = retrieveContext(query);
-  const styleNames = candidateStyles(query);
-
   // While the metronome plays, singing is never read as words (not even sent to Jev).
   if (input.playing && input.sung >= SUNG) return { output: { call: null, message: '' }, trace };
+
+  const { context, styleNames } = await retrieve(env, query, signal);
 
   const timed = (words?.length ?? 0) >= 3;
   const main = buildMainRequest({
@@ -221,7 +220,9 @@ async function interpret(input, env, signal) {
       config: next,
       base,
       style,
-      context,
+      // Hit edits work on the grid itself (or the chosen style's pattern): other styles'
+      // patterns are noise there, so only the terminology goes along.
+      context: { terminology: context.terminology },
     });
     const drumResult = await askJev(env, drums.request, signal);
     trace.drums = { request: drums.request, answers: drumResult.answers, usage: drumResult.usage };

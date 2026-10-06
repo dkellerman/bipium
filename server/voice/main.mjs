@@ -5,9 +5,6 @@ import { choice, digits, picked, readDigits } from './jev.mjs';
 import { describeGrid } from './grid.mjs';
 import styles from './styles.json' with { type: 'json' };
 
-// Always offered; the rest of the catalog is offered when retrieval finds it relevant.
-const BASICS = styles.slice(0, 11).map(s => s.name);
-
 export const BPM_RANGE = [20, 320];
 
 export const styleKey = name => name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
@@ -50,7 +47,8 @@ export function buildMainRequest({
   context,
   styleNames = [],
 }) {
-  const offered = [...new Set([...BASICS, ...styleNames])]
+  // The styles most similar to the phrase (see context.mjs); none are always offered.
+  const offered = styleNames
     .map(name => STYLES[styleKey(name)])
     .filter(Boolean);
   // A count-in is only offered when there's word timing to measure it from.

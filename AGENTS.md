@@ -58,8 +58,11 @@ is acted on only above 0.5 confidence; otherwise that setting stays as it is.
 - `server/voice/drums.mjs`: drum edits; per lane, a whole-lane question plus remove/add
   questions per beat over the actual grid (or the chosen style's pattern).
 - `server/voice/count-in.mjs` + `rhythm.mjs`: count-in timing (see the register).
-- `server/voice/context.mjs`, `glossary.json`, `styles.json`: retrieved context and the
-  style catalog (`scripts/build-styles.mjs`).
+- `server/voice/context.mjs`, `embed.mjs`, `embeddings.json`: RAG. The phrase is embedded
+  (OpenRouter) and the most similar styles, grooves and glossary terms go into the prompt
+  as examples; the similar styles are the style question's options. Similarity only, no
+  hand-picked or always-offered entries. `glossary.json`, `styles.json` are the sources
+  (`scripts/build-styles.mjs`, then `scripts/build-embeddings.mjs`).
 - `src/lib/onsets.ts`, `rhythm-tracker.ts`, `rhythm-worker.ts`: browser-side onset
   detection, music evidence (held notes, sharp percussion) and live rhythm tracking from
   the mic. Music evidence keeps rhythm tracking going through speech (singing over a
