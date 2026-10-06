@@ -76,8 +76,9 @@ export class GrokRecognition {
   }
   private async connect() {
     try {
-      // Create/resume during the user's tap for Safari's audio activation policy.
-      this.context = new AudioContext({ sampleRate: 48000 });
+      // Create/resume during the user's tap for Safari's audio activation policy. The
+      // hardware's own rate: a forced one crackles; voice-capture.js converts to 48 kHz.
+      this.context = new AudioContext();
       const resumed = this.context.resume();
       setCapturing(true);
       const stream = await navigator.mediaDevices.getUserMedia({
