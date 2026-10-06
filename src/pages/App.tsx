@@ -28,6 +28,7 @@ import { DefaultVisualizer } from '@/components/DefaultVisualizer';
 import { DrumLoopView } from '@/components/DrumLoopView';
 import { NavBar } from '@/components/NavBar';
 import { SettingsDrawer } from '@/components/SettingsDrawer';
+import { BeatGlow } from '@/components/BeatGlow';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { AppProvider } from '@/AppContext';
@@ -670,7 +671,7 @@ function App() {
           'bg-white text-slate-900 shadow-[0_2px_8px_rgba(0,0,0,0.08)]',
         )}
       >
-        <NavBar>
+        <NavBar edge={<BeatGlow />}>
           <Button
             type="button"
             variant="ghost"

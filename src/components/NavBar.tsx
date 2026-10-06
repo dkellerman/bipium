@@ -1,9 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import type { ReactNode } from 'react';
 import type { WithChildrenProps } from '@/types';
 
-export const NavBar = ({ children }: WithChildrenProps) => (
+export const NavBar = ({ children, edge }: WithChildrenProps & { edge?: ReactNode }) => (
   <nav
     className={cn(
       'relative w-full border-b border-slate-200 bg-linear-to-b from-[#edf3f9] to-[#dfe9f4]',
@@ -20,5 +21,6 @@ export const NavBar = ({ children }: WithChildrenProps) => (
       </h1>
       {children}
     </div>
+    {edge}
   </nav>
 );
