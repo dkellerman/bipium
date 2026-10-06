@@ -22,6 +22,11 @@ const SECTIONS: { title: string; note?: string; say: string[] }[] = [
     note: 'With the metronome stopped, play or clap steadily, then say “start”. Stop it to have it listen again.',
     say: [],
   },
+  {
+    title: 'Tune a guitar',
+    note: 'With the metronome stopped, pluck an open string or strum all six and let them ring. A tuner pops up.',
+    say: [],
+  },
   { title: 'Drum parts', say: ['snare on 2 and 4', 'hi-hat on every eighth', 'clear the drums'] },
   { title: 'Control', say: ['start', 'stop', 'reset', 'stop listening'] },
 ];

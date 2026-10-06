@@ -3,7 +3,7 @@
 ## Entry Point
 
 - Global runtime object: `window.bpm`
-- Native WebMCP progressively exposes the complete runtime API through `document.modelContext` when the browser supports it. Its tools cover discovery and state, validation, playback, every configuration control, loop patterns, sound URLs, query parsing and serialization, and tapping.
+- Native WebMCP progressively exposes the complete runtime API through `document.modelContext` when the browser supports it. Its tools cover discovery and state, validation, playback, every configuration control, loop patterns, sound URLs, query parsing and serialization, tapping, and the guitar tuner.
 
 ## Validate First
 
@@ -47,6 +47,36 @@ All parameters are optional. Any defined argument is validated and applied befor
 - `window.bpm.tap()`
 - `window.bpm.getSoundPacks()`
 - `window.bpm.now()`
+- `window.bpm.startTuner()`
+- `window.bpm.stopTuner()`
+- `window.bpm.getTunerState()`
+
+## Guitar Tuner
+
+- `window.bpm.startTuner()` shows the tuner and listens with the user's microphone (the browser may ask for permission). Returns a promise of the tuner state. It rejects while the metronome is playing (stop it first), when the microphone is denied, or when the browser keeps audio suspended until the user taps the page.
+- `window.bpm.getTunerState()` returns what the tuner shows, or showed last.
+- `window.bpm.stopTuner()` closes it and stops its microphone.
+
+The tuner hears open strings: one plucked string, a few, or a strum of all six. It closes after 45 s with no string ringing, and when the metronome starts. Voice mode opens it on its own when it hears open strings.
+
+```ts
+{
+  available: boolean;        // false in players without a tuner
+  showing: boolean;
+  listening: boolean;        // the mic is listening for strings
+  tuning: string | null;     // e.g. "Standard", "Drop D", "Whole step down"
+  tuningConfirmed: boolean;  // false while it's a guess from single strings
+  wholeGuitarCents: number | null; // the guitar's own reference against A440
+  strings: {                 // low string first
+    note: string;            // e.g. "E", "F♯"
+    octave: number;
+    cents: number | null;    // against the guitar's reference (A440 until three strings are heard)
+    ringing: boolean;
+  }[];
+}
+```
+
+Strings are read against each other (relative pitch) once three have been heard, together or one at a time; `wholeGuitarCents` says how far the whole guitar is from A440.
 
 ## Zod Schemas
 

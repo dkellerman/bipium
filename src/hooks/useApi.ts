@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { tunerControls } from '@/lib/tuner-store';
 import { AudioContext } from 'standardized-audio-context';
 import {
   API_DEFAULT_CONFIG,
@@ -148,6 +149,7 @@ export function useApi(onConfigChange?: (config: ApiConfig) => void) {
       },
       now: () => audioContextRef.current?.currentTime ?? 0,
       getSoundPacks: () => ['defaults', 'drumkit'],
+      tuner: tunerControls(() => startedRef.current),
     });
 
     applyConfig(configRef.current);

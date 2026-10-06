@@ -752,6 +752,7 @@
       this.onmessage({ data: "tick" });
     }
   }
+  const FADE = 5e-3;
   const DEFAULT_SOUNDS = {
     name: "Beeps",
     bar: 880,
@@ -771,6 +772,7 @@
       this.audioContext = audioContext;
       this.volume = volume;
       this.gainNode = this.audioContext.createGain();
+      this.gainNode.gain.value = volume / 100;
       this.gainNode.connect(this.audioContext.destination);
       this.resolveScheduledSounds = resolveScheduledSounds;
       this.sounds = Object.fromEntries(
@@ -806,6 +808,7 @@
     }
     setVolume(volume) {
       this.volume = volume;
+      this.gainNode.gain.setValueAtTime(volume / 100, this.audioContext.currentTime);
     }
     setResolveScheduledSounds(resolveScheduledSounds) {
       this.resolveScheduledSounds = resolveScheduledSounds;
@@ -857,13 +860,20 @@
     }
     playSoundAt(sound, time2, clickLength, relativeVolume = 1) {
       if (this.audioContext?.state === "suspended") this.audioContext.resume();
+      const start = Math.max(time2, this.audioContext.currentTime);
+      const end = start + clickLength;
+      const level = this.audioContext.createGain();
+      level.gain.setValueAtTime(relativeVolume, start);
+      level.gain.setValueAtTime(relativeVolume, Math.max(start, end - FADE));
+      level.gain.linearRampToValueAtTime(0, end);
+      level.connect(this.gainNode);
       let audioNode;
       if (typeof sound === "number") {
         audioNode = this.audioContext.createOscillator();
-        audioNode.connect(this.gainNode);
+        audioNode.connect(level);
         audioNode.frequency.value = sound;
-        audioNode.start(time2);
-        audioNode.stop(time2 + clickLength);
+        audioNode.start(start);
+        audioNode.stop(end);
       } else {
         audioNode = this.audioContext.createBufferSource();
         try {
@@ -871,10 +881,10 @@
         } catch (e) {
           console.error(e);
         }
-        audioNode.connect(this.gainNode);
-        audioNode.start(time2, 0, clickLength);
+        audioNode.connect(level);
+        audioNode.start(start, 0, clickLength);
       }
-      this.gainNode.gain.setValueAtTime(this.volume * relativeVolume / 100, time2);
+      audioNode.onended = () => level.disconnect();
       return audioNode;
     }
     click(t = 0) {
@@ -6139,6 +6149,40 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
       },
       signal
     );
+    register(
+      context,
+      {
+        name: "start_tuner",
+        title: "Start Bipium guitar tuner",
+        description: "Show the guitar tuner and listen with the user's microphone (the browser may ask for permission). Only while the metronome is stopped. Then read it with get_tuner_state while the user plucks or strums open strings.",
+        inputSchema: EMPTY_INPUT_SCHEMA,
+        execute: async () => JSON.stringify(await runtime2.startTuner())
+      },
+      signal
+    );
+    register(
+      context,
+      {
+        name: "stop_tuner",
+        title: "Stop Bipium guitar tuner",
+        description: "Close the guitar tuner and stop its microphone.",
+        inputSchema: EMPTY_INPUT_SCHEMA,
+        execute: async () => JSON.stringify(runtime2.stopTuner())
+      },
+      signal
+    );
+    register(
+      context,
+      {
+        name: "get_tuner_state",
+        title: "Get Bipium tuner state",
+        description: "Return the guitar tuner's reading: the tuning, the whole guitar against A440, and each open string's cents against the guitar's own reference (low string first), with which strings are ringing now.",
+        inputSchema: EMPTY_INPUT_SCHEMA,
+        annotations: { readOnlyHint: true },
+        execute: async () => JSON.stringify(runtime2.getTunerState())
+      },
+      signal
+    );
     return () => controller.abort();
   }
   const API_VERSION = 1;
@@ -6150,6 +6194,15 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
     agents: "/agents.txt"
   };
   const BIPIUM_API_DISCOVERY = API_DISCOVERY;
+  const UNAVAILABLE_TUNER = {
+    available: false,
+    showing: false,
+    listening: false,
+    tuning: null,
+    tuningConfirmed: false,
+    wholeGuitarCents: null,
+    strings: []
+  };
   function createLane(stepCount) {
     return Array.from({ length: stepCount }, () => false);
   }
@@ -6723,6 +6776,20 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
       },
       now() {
         return controls.now();
+      },
+      async startTuner() {
+        if (!controls.tuner) throw new Error("This player has no tuner.");
+        if (controls.isPlaying())
+          throw new Error("The tuner only listens while the metronome is stopped. Stop it first.");
+        await controls.tuner.start();
+        return controls.tuner.getState();
+      },
+      stopTuner() {
+        controls.tuner?.stop();
+        return controls.tuner?.getState() ?? { ...UNAVAILABLE_TUNER };
+      },
+      getTunerState() {
+        return controls.tuner?.getState() ?? { ...UNAVAILABLE_TUNER };
       }
     };
   }

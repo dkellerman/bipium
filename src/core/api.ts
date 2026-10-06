@@ -46,6 +46,40 @@ export interface ApiSchemaJson {
 
 export type ValidationResult = { ok: true; value: ApiConfig } | { ok: false; error: string };
 
+/** One open string on the tuner, low string first. */
+export interface ApiTunerString {
+  note: string;
+  octave: number;
+  /** Against the guitar's own reference (or A440 until three strings are heard). */
+  cents: number | null;
+  ringing: boolean;
+}
+
+/** What the guitar tuner shows, or showed last. */
+export interface ApiTunerState {
+  /** Whether this player has a tuner (the standalone core library doesn't). */
+  available: boolean;
+  showing: boolean;
+  /** Whether the mic is listening for strings. */
+  listening: boolean;
+  tuning: string | null;
+  /** False while the tuning is a guess from single strings. */
+  tuningConfirmed: boolean;
+  /** The guitar's reference against A440, once three strings are heard. */
+  wholeGuitarCents: number | null;
+  strings: ApiTunerString[];
+}
+
+const UNAVAILABLE_TUNER: ApiTunerState = {
+  available: false,
+  showing: false,
+  listening: false,
+  tuning: null,
+  tuningConfirmed: false,
+  wholeGuitarCents: null,
+  strings: [],
+};
+
 export interface RuntimeApi {
   version: number;
   entrypoint: 'window.bpm';
@@ -93,6 +127,10 @@ export interface RuntimeApi {
   tap(): void;
   getSoundPacks(): string[];
   now(): number;
+  /** Show the guitar tuner and listen with the mic; only while the metronome is stopped. */
+  startTuner(): Promise<ApiTunerState>;
+  stopTuner(): ApiTunerState;
+  getTunerState(): ApiTunerState;
 }
 
 export type BipiumApiConfig = ApiConfig;
@@ -689,6 +727,12 @@ export interface RuntimeControls {
   tap: () => void;
   now: () => number;
   getSoundPacks: () => string[];
+  /** The page's guitar tuner, if it has one. */
+  tuner?: {
+    start: () => Promise<void>;
+    stop: () => void;
+    getState: () => ApiTunerState;
+  };
 }
 export type BipiumRuntimeControls = RuntimeControls;
 
@@ -829,6 +873,20 @@ export function createRuntimeApi(controls: RuntimeControls): RuntimeApi {
     },
     now() {
       return controls.now();
+    },
+    async startTuner() {
+      if (!controls.tuner) throw new Error('This player has no tuner.');
+      if (controls.isPlaying())
+        throw new Error('The tuner only listens while the metronome is stopped. Stop it first.');
+      await controls.tuner.start();
+      return controls.tuner.getState();
+    },
+    stopTuner() {
+      controls.tuner?.stop();
+      return controls.tuner?.getState() ?? { ...UNAVAILABLE_TUNER };
+    },
+    getTunerState() {
+      return controls.tuner?.getState() ?? { ...UNAVAILABLE_TUNER };
     },
   };
 }

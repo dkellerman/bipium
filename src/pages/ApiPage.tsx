@@ -134,6 +134,17 @@ const METHOD_DOCS = [
     summary: 'Reset the loop pattern to the seeded default for the current timing.',
   },
   {
+    method: 'window.bpm.startTuner()',
+    summary:
+      'Show the guitar tuner and listen with the microphone (only while stopped); resolves to the tuner state.',
+  },
+  {
+    method: 'window.bpm.getTunerState()',
+    summary:
+      'Return the tuning, the whole guitar against A440, and each open string: cents and whether it rings.',
+  },
+  { method: 'window.bpm.stopTuner()', summary: 'Close the tuner and stop its microphone.' },
+  {
     method: 'window.bpm.validateConfig(input)',
     summary: 'Validate config-like input and return { ok, value|error }.',
   },

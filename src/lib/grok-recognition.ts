@@ -1,5 +1,6 @@
 import { micEchoCancellation, setCapturing } from '@/lib/audio-session';
 import { OnsetDetector, type Onset } from './onsets';
+import { GuitarTuner, type TunerReading } from './tuner';
 import {
   musicLikelihood,
   RhythmStabilizer,
@@ -8,7 +9,7 @@ import {
 } from './rhythm-tracker';
 
 export type RhythmStatus = {
-  state: 'analyzing' | 'paused for speech' | 'metronome playing';
+  state: 'analyzing' | 'paused for speech' | 'metronome playing' | 'tuning';
   /** Loudest mic level since the last check, dBFS. */
   level: number;
   /** Onsets heard in the last 8 s. */
@@ -49,6 +50,10 @@ export class GrokRecognition {
   onrhythmcandidate: (() => void) | null = null;
   /** Every rhythm check: what the mic picked up and why no rhythm was found yet. */
   onrhythmstatus: ((status: RhythmStatus) => void) | null = null;
+  /** Open guitar strings heard ringing (see tuner.ts). */
+  ontuning: ((reading: TunerReading) => void) | null = null;
+  /** While the tuner shows, every analysis updates it and rhythm isn't tracked. */
+  showingTuner = false;
   private peak = -Infinity; // loudest chunk (dBFS) since the last check
   /** True while rhythm shouldn't be detected (the metronome is playing). */
   ignoreRhythm: (() => boolean) | null = null;
@@ -63,6 +68,7 @@ export class GrokRecognition {
   private ready = false;
   // Fed exactly the audio sent to the transcriber, so onset times share its clock.
   private readonly onsets = new OnsetDetector(RATE);
+  private readonly tuner = new GuitarTuner(RATE);
   private readonly recording = new DevAudioRecorder(2 * RATE);
   private audioTime = 0;
   private lastSpeech = -Infinity;
@@ -72,6 +78,9 @@ export class GrokRecognition {
   private rhythmWorker?: Worker;
   private readonly rhythm = new RhythmStabilizer();
   start() {
+    this.tuner.onreading = reading => {
+      if (!this.cancelled) this.ontuning?.(reading);
+    };
     void this.connect();
   }
   private async connect() {
@@ -213,6 +222,10 @@ export class GrokRecognition {
     this.recording.push(pcm);
     this.onsets.push(pcm);
     this.audioTime += pcm.length / RATE;
+    // Like rhythm, the tuner only listens while the metronome is stopped.
+    this.tuner.enabled = !this.ignoreRhythm?.();
+    this.tuner.live = this.showingTuner;
+    this.tuner.push(pcm);
     let sum = 0;
     for (let i = 0; i < pcm.length; i++) sum += (pcm[i] / 32768) ** 2;
     this.peak = Math.max(this.peak, 10 * Math.log10(sum / pcm.length + 1e-12));
@@ -227,6 +240,13 @@ export class GrokRecognition {
       this.rhythm.next(null);
       this.noteSteady(null, this.audioTime);
       status('metronome playing');
+      return;
+    }
+    // Plucks and strums while tuning aren't a rhythm.
+    if (this.showingTuner) {
+      this.rhythm.next(null);
+      this.noteSteady(null, this.audioTime);
+      status('tuning');
       return;
     }
     // Speech pauses rhythm tracking, unless the audio shows music (singing over an

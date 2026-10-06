@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { createPortal, flushSync } from 'react-dom';
 import { Mic, Square, LoaderCircle, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,9 @@ import { GrokRecognition, type RhythmStatus, type TranscriptWord } from '@/lib/g
 import type { Onset } from '@/lib/onsets';
 import { devLog } from '@/lib/dev-log';
 import { VoiceIntro } from '@/components/VoiceIntro';
+import { TunerPopup } from '@/components/TunerPopup';
+import { tunerStore } from '@/lib/tuner-store';
+import type { TunerReading } from '@/lib/tuner';
 import { voiceIntroHidden } from '@/lib/voice-intro';
 import type { ApiConfig, RuntimeApi } from '@/core/api';
 
@@ -116,7 +119,20 @@ export function ListenControl({
     generation = useRef(0),
     controller = useRef<AbortController | null>(null),
     queue = useRef(Promise.resolve());
+  // The guitar tuner: shown when voice mode hears open strings, or opened through the API.
+  const tuner = useSyncExternalStore(tunerStore.subscribe, tunerStore.showing);
+  useEffect(() => {
+    if (sr.current) sr.current.showingTuner = !!tuner;
+  }, [tuner]);
+  // Local development: `bipiumTuner(reading)` in the console shows the tuner (null hides it).
+  useEffect(() => {
+    if (!DEV_TOOLS) return;
+    const w = window as unknown as { bipiumTuner?: (reading: TunerReading | null) => void };
+    w.bipiumTuner = tunerStore.show;
+    return () => void delete w.bipiumTuner;
+  }, []);
   const stop = () => {
+    if (active.current) tunerStore.setVoiceListening(false);
     active.current = false;
     generation.current++;
     controller.current?.abort();
@@ -130,6 +146,7 @@ export function ListenControl({
   };
   useEffect(
     () => () => {
+      if (active.current) tunerStore.setVoiceListening(false);
       active.current = false;
       generation.current++;
       controller.current?.abort();
@@ -266,6 +283,7 @@ export function ListenControl({
       if (!active.current || sr.current !== recognition) return;
       if (debug) setDebugLine(describeRhythmStatus(rhythmStatus));
       if (rhythmStatus.state === 'metronome playing') {
+        tunerStore.close();
         if (heardTempoRef.current && statusRef.current === heardTempoRef.current.status)
           playAlong.current = true;
       } else playAlong.current = false;
@@ -312,6 +330,12 @@ export function ListenControl({
       setHeardTempo({ label: heard, status: statusText });
       setStatus(statusText);
     };
+    // Never while the metronome plays (the recognizer doesn't analyze then either).
+    recognition.ontuning = reading => {
+      if (!active.current || sr.current !== recognition || metronomePlaying()) return;
+      recognition.showingTuner = true;
+      tunerStore.report(reading);
+    };
     recognition.onready = () => {
       if (active.current && sr.current === recognition) setStatus(IDLE);
     };
@@ -347,6 +371,9 @@ export function ListenControl({
       );
     };
     active.current = true;
+    // Voice mode's mic takes over the tuner's, if the API had opened one.
+    tunerStore.setVoiceListening(true);
+    recognition.showingTuner = !!tunerStore.showing();
     setListening(true);
     setStatus('Connecting microphone…');
     try {
@@ -450,6 +477,7 @@ export function ListenControl({
           onCancel={() => setIntro(false)}
         />
       )}
+      {tuner && <TunerPopup reading={tuner} variant={variant} onClose={tunerStore.close} />}
       {open &&
         target &&
         createPortal(

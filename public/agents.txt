@@ -21,6 +21,12 @@ Loop helpers:
 - `window.bpm.resetLoopPattern()`
 - `window.bpm.getLoopPattern()`
 
+Guitar tuner (needs the microphone; only while the metronome is stopped):
+
+- `window.bpm.startTuner()` then ask the user to pluck or strum open strings
+- `window.bpm.getTunerState()` for the tuning, `wholeGuitarCents`, and each string's `cents` and `ringing`
+- `window.bpm.stopTuner()`
+
 Swing guidance:
 
 - Prefer `swing: 0` unless swing/shuffle is explicitly requested or the groove strongly implies it

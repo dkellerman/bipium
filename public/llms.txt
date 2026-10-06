@@ -5,7 +5,7 @@ Machine-readable guidance for autonomous agents.
 ## Canonical Entrypoints
 
 - Runtime API: `window.bpm`
-- Native WebMCP: supported browsers discover the complete `window.bpm` API through `document.modelContext`, including discovery, validation, playback, configuration, loop patterns, sound settings, query conversion, and tapping
+- Native WebMCP: supported browsers discover the complete `window.bpm` API through `document.modelContext`, including discovery, validation, playback, configuration, loop patterns, sound settings, query conversion, tapping, and the guitar tuner
 - Human docs: `/apidocs`
 - Machine docs: `/api.md`
 
@@ -42,6 +42,13 @@ Machine-readable guidance for autonomous agents.
 - Use `window.bpm.setLoopPattern(pattern)` to apply a full loop pattern.
 - Use `window.bpm.resetLoopPattern()` to reseed the default pattern for the current timing.
 - Use `window.bpm.getLoopPattern()` to inspect the current pattern.
+
+## Guitar Tuner
+
+- `window.bpm.startTuner()` shows the tuner and listens with the microphone; only while the metronome is stopped. It rejects if the microphone is denied or the page needs a tap first.
+- `window.bpm.getTunerState()` returns the tuning, `wholeGuitarCents` (against A440), and each open string (low string first) with `cents` against the guitar's own reference and whether it's `ringing`.
+- `window.bpm.stopTuner()` closes it.
+- Ask the user to pluck or strum open strings, then read the state.
 
 ## URL Support
 

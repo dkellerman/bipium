@@ -68,6 +68,8 @@ is acted on only above 0.5 confidence; otherwise that setting stays as it is.
   the mic. Music evidence keeps rhythm tracking going through speech (singing over a
   guitar, clapping while talking) and reaches Jev as `heard_music` context, so Jev can
   treat lyrics as unrelated. That's context for Jev, not a rule.
+- `src/lib/tuner.ts`, `tuner-store.ts`, `src/components/TunerPopup.tsx`: the guitar tuner
+  (see the register); also `window.bpm.startTuner()` and the WebMCP tuner tools.
 
 ## Testing
 
@@ -132,6 +134,25 @@ is acted on only above 0.5 confidence; otherwise that setting stays as it is.
   never read as words: it's dropped before Jev ("when you're playing, your singing should
   not be interpreted as words"). With the metronome stopped, singing still counts as
   music evidence for rhythm tracking.
+- **Guitar tuner (2026-10-06, prototype).** In voice mode, open strings ringing (any
+  number of them) pop up a six-string tuner that shows whichever strings are ringing ("can
+  we just show tuners for whatever strings are playing currently?"). User: "if you play
+  ALL [six] strings (strummed) it would detect that sound and pop up some kind of
+  [six]-way tuner ... OR with a single guitar string", "If you started *playing* guitar I
+  wouldn't want to popup", and "it should tune as close to what you have, and maybe ALSO
+  indicate that the whole thing is off, but it should use relative pitch". Audio only:
+  when nearly all strings ring they're fitted against a table of common tunings (a single
+  string from another tuning moves to the first tuning in the table with a string there,
+  shown as a guess until a strum confirms it); strings are read against the guitar's own
+  median offset once three or more have been heard, together or one at a time, and that
+  offset is shown against A440. Steady room sound (hum, rumble) is learned and ignored. It
+  opens only for strings that fade like plucks, and any strong pitch that isn't a ringing
+  open string (chords, fretted notes) means nothing is shown: spectral checks, not rules
+  about playing. Like rhythm, it never listens while the metronome plays; while it shows,
+  rhythm isn't tracked. The API and WebMCP can also open it on request (`startTuner`, "add
+  mcp/webmcp/api/docs"), with a mic of its own when voice mode is off. Not approved:
+  reading tuning from words, or detecting tuning while playing along (discussed as a later
+  step).
 - **Audio-only percussion analysis.** "instrument is fine" / "ok, no jev then":
   PCM onset detection and timing estimation (`server/percussion.mjs` on the relay; now
   superseded in the app by the browser tracker). No transcript parsing.

@@ -34,7 +34,7 @@ The `src/core` directory contains an app-independent metronome implementation wi
 ## Experimental GPT Sites copy
 
 This branch preserves the current classic and machine interfaces, `window.bpm`,
-all 18 native WebMCP tools, URL configuration, and the standalone core library.
+all 21 native WebMCP tools, URL configuration, and the standalone core library.
 The Listen control uses browser speech recognition. The previous
 OpenAI request flow and Vercel model endpoint are removed. No reCAPTCHA or app login
 is present; the original Vercel deployment is separate.

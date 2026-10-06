@@ -5,6 +5,7 @@
  * and renders the Machine faceplate. Self-contained in src/machine/.
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { tunerControls } from '@/lib/tuner-store';
 import qs from 'query-string';
 import copyToClipboard from 'copy-to-clipboard';
 import { AudioContext } from 'standardized-audio-context';
@@ -483,6 +484,7 @@ function MachinePage() {
       },
       now: () => audioContext.current.currentTime,
       getSoundPacks: () => Object.keys(SOUND_PACKS),
+      tuner: tunerControls(() => startedRef.current),
     });
 
     return installWindowBpm(runtime);

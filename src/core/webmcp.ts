@@ -323,5 +323,44 @@ export function registerBipiumWebMcp(runtime: RuntimeApi, context?: Registration
     signal,
   );
 
+  register(
+    context,
+    {
+      name: 'start_tuner',
+      title: 'Start Bipium guitar tuner',
+      description:
+        "Show the guitar tuner and listen with the user's microphone (the browser may ask for permission). Only while the metronome is stopped. Then read it with get_tuner_state while the user plucks or strums open strings.",
+      inputSchema: EMPTY_INPUT_SCHEMA,
+      execute: async () => JSON.stringify(await runtime.startTuner()),
+    },
+    signal,
+  );
+
+  register(
+    context,
+    {
+      name: 'stop_tuner',
+      title: 'Stop Bipium guitar tuner',
+      description: 'Close the guitar tuner and stop its microphone.',
+      inputSchema: EMPTY_INPUT_SCHEMA,
+      execute: async () => JSON.stringify(runtime.stopTuner()),
+    },
+    signal,
+  );
+
+  register(
+    context,
+    {
+      name: 'get_tuner_state',
+      title: 'Get Bipium tuner state',
+      description:
+        "Return the guitar tuner's reading: the tuning, the whole guitar against A440, and each open string's cents against the guitar's own reference (low string first), with which strings are ringing now.",
+      inputSchema: EMPTY_INPUT_SCHEMA,
+      annotations: { readOnlyHint: true },
+      execute: async () => JSON.stringify(runtime.getTunerState()),
+    },
+    signal,
+  );
+
   return () => controller.abort();
 }

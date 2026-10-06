@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   API_DEFAULT_CONFIG,
   createRuntimeApi,
@@ -74,6 +74,34 @@ describe('browser api loop support', () => {
     expect(next.soundUrls).toEqual(config.soundUrls);
     expect(next.loopPattern).toEqual(config.loopPattern);
     expect(next.subDivs).toBe(2);
+  });
+
+  it('opens the tuner only while stopped, and reports none without one', async () => {
+    const controls = {
+      getConfig: () => createConfig(),
+      applyConfig: () => {},
+      startPlayback: () => {},
+      stopPlayback: () => {},
+      togglePlayback: () => false,
+      isPlaying: () => false,
+      tap: () => {},
+      now: () => 0,
+      getSoundPacks: () => ['defaults', 'drumkit'],
+    };
+    const bare = createRuntimeApi(controls);
+    expect(bare.getTunerState()).toMatchObject({ available: false, showing: false });
+    await expect(bare.startTuner()).rejects.toThrow('no tuner');
+
+    let playing = true;
+    const state = { available: true, showing: true, listening: true } as never;
+    const tuner = { start: vi.fn(async () => {}), stop: vi.fn(), getState: () => state };
+    const runtime = createRuntimeApi({ ...controls, isPlaying: () => playing, tuner });
+    await expect(runtime.startTuner()).rejects.toThrow('metronome is stopped');
+    expect(tuner.start).not.toHaveBeenCalled();
+    playing = false;
+    await expect(runtime.startTuner()).resolves.toBe(state);
+    runtime.stopTuner();
+    expect(tuner.stop).toHaveBeenCalledOnce();
   });
 
   it('exposes loop helpers on the runtime api', () => {

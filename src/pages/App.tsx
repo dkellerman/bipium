@@ -2,6 +2,7 @@ import { ListenControl } from '@/components/ListenControl';
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import qs from 'query-string';
+import { tunerControls } from '@/lib/tuner-store';
 import copyToClipboard from 'copy-to-clipboard';
 import { AudioContext } from 'standardized-audio-context';
 import { Drum, Eraser, Settings } from 'lucide-react';
@@ -481,6 +482,7 @@ function App() {
       },
       now: () => audioContext.current.currentTime,
       getSoundPacks: () => Object.keys(SOUND_PACKS),
+      tuner: tunerControls(() => startedRef.current),
     });
 
     return installWindowBpm(runtime);

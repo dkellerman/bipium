@@ -57,6 +57,9 @@ function createRuntime() {
     tap: vi.fn(),
     getSoundPacks: vi.fn(() => ['defaults', 'drumkit']),
     now: vi.fn(() => 1),
+    startTuner: vi.fn(async () => ({ available: true, showing: true })),
+    stopTuner: vi.fn(() => ({ available: true, showing: false })),
+    getTunerState: vi.fn(() => ({ available: true, showing: true, tuning: 'Standard' })),
   } as unknown as RuntimeApi;
 }
 
@@ -96,6 +99,9 @@ describe('registerBipiumWebMcp', () => {
       'apply_bipium_query',
       'tap_bipium',
       'get_metronome_state',
+      'start_tuner',
+      'stop_tuner',
+      'get_tuner_state',
     ]);
 
     const byName = Object.fromEntries(
@@ -139,6 +145,16 @@ describe('registerBipiumWebMcp', () => {
       { signal: byName.apply_bipium_query.signal },
     );
     expect(runtime.applyQuery).toHaveBeenCalledWith('?bpm=96');
+
+    await byName.start_tuner.tool.execute({}, { signal: byName.start_tuner.signal });
+    expect(runtime.startTuner).toHaveBeenCalledOnce();
+    const tuner = await byName.get_tuner_state.tool.execute(
+      {},
+      { signal: byName.get_tuner_state.signal },
+    );
+    expect(JSON.parse(tuner as string)).toMatchObject({ tuning: 'Standard' });
+    await byName.stop_tuner.tool.execute({}, { signal: byName.stop_tuner.signal });
+    expect(runtime.stopTuner).toHaveBeenCalledOnce();
 
     unregister();
     expect(signals.every(signal => signal.aborted)).toBe(true);
