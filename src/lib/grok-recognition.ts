@@ -84,9 +84,11 @@ export class GrokRecognition {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           channelCount: 1,
-          // Echo cancellation removes the metronome's own output. Noise suppression stays
-          // off: it keeps only voice, erasing the instruments and claps rhythm tracking needs.
-          echoCancellation: true,
+          // Echo cancellation stays off: on iPhone it routes playback through call
+          // processing, louder and crackling on the drum kit (voice mode must not change
+          // playback). Noise suppression stays off: it keeps only voice, erasing the
+          // instruments and claps rhythm tracking needs.
+          echoCancellation: false,
           noiseSuppression: false,
           autoGainControl: false,
         },
