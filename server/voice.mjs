@@ -228,6 +228,12 @@ async function interpret(input, env, signal) {
     positions = readDrumAnswers(drumResult.answers, drums.slots, base, next.beats);
   } else if (style && next.loopMode) {
     positions = stylePositions(style, next.beats);
+  } else if (style && !('subDivs' in patch) && !('playSubDivs' in patch)) {
+    // On the regular metronome a style keeps its feel: the subdivisions its pattern uses.
+    const plain = { beats: next.beats, subDivs: 1, playSubDivs: false };
+    const { subDivs } = fitDrumLoopGrid(plain, stylePositions(style, next.beats));
+    Object.assign(patch, { subDivs, playSubDivs: subDivs > 1 });
+    next = mergeConfig(current, patch, schemas);
   }
   if (positions) {
     try {

@@ -61,7 +61,7 @@ export function buildMainRequest({
         ? 'What does the user want the player to do? Music is being heard (state.heard_music): words not clearly addressed to the player are most likely lyrics or singing, so choose unrelated unless the request to the player is clear.'
         : 'What does the user want the player to do?',
       {
-        play: 'Start or change the beat: tempo, meter or time signature, beats per bar, subdivisions, feel, volume, sounds, mode, a style or groove, or just play',
+        play: 'Start or change the beat: tempo, meter or time signature, beats per bar, subdivisions, feel, volume, sounds, mode, a style or groove (naming one alone is enough), or just play',
         drumEdit:
           'Change specific drum hits: add, remove or move kick, snare or hat hits, including follow-ups such as "and on four too". Only for named drum hits; tempo, meter, time signature, beats or subdivisions are play, and this switches the player into custom drum mode',
         ...(hasCountOff

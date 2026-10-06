@@ -157,10 +157,25 @@ describe('numbers', () => {
 });
 
 describe('mode and styles', () => {
-  it('a style alone stays a regular beat, on drum kit sounds, at its tempo', async () => {
+  it('a style alone stays a regular beat, on drum kit sounds, at its tempo and feel', async () => {
+    const plain = { ...current, soundPack: 'defaults', subDivs: 1, playSubDivs: false };
     stubJev({ action: 'play', style: 'rock', tempo: 'style' });
-    const patch = (await say('rock beat', { ...current, soundPack: 'defaults' })).call.args[0];
-    expect(patch).toEqual({ bpm: 110, soundPack: 'drumkit' });
+    const patch = (await say('rock beat', plain)).call.args[0];
+    expect(patch).toEqual({ bpm: 110, soundPack: 'drumkit', subDivs: 2, playSubDivs: true });
+  });
+
+  it('funk on the regular metronome plays sixteenths', async () => {
+    stubJev({ action: 'play', style: 'funk', tempo: 'style' });
+    const plain = { ...current, subDivs: 1, playSubDivs: false };
+    const patch = (await say('funky', plain)).call.args[0];
+    expect(patch).toMatchObject({ bpm: 100, subDivs: 4, playSubDivs: true });
+    expect(patch.loopMode).toBeUndefined();
+  });
+
+  it('subdivisions the user asks for win over the style', async () => {
+    stubJev({ action: 'play', style: 'funk', subDivs: '2' });
+    const patch = (await say('funk in eighths', { ...current, subDivs: 1 })).call.args[0];
+    expect(patch).toMatchObject({ subDivs: 2 });
   });
 
   it('a style loads its pattern when drums are asked for', async () => {

@@ -88,6 +88,8 @@ const cases = [
   { prompt: 'volume 60', current: config(), patch: { volume: 60 } },
   { prompt: 'waltz time', current: config(), patch: { beats: 3 } },
   { prompt: 'sixteenth notes', current: config(), patch: { subDivs: 4 } },
+  { prompt: 'funky', current: config({ divisions: 1 }), patch: { subDivs: 4 } },
+  { prompt: 'slow funk', current: config({ divisions: 1 }), patch: { subDivs: 4 } },
   // Mode and styles
   { prompt: 'just the click please', current: config({ loopMode: true }), patch: { loopMode: false } },
   { prompt: 'switch to drum mode', current: config(), patch: { loopMode: true } },
