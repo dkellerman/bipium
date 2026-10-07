@@ -23,6 +23,7 @@ const ANALYZE_EVERY = 2; // seconds of audio between rhythm analyses
 const QUIET_FOR = 8; // seconds without speech before rhythm is analyzed
 const STEADY_STREAK = 2; // consecutive analyses agreeing on a pulse before it counts as music
 const STEADY_RECENT = 4; // seconds a held rhythm keeps counting as music
+const SHARP = 0.6; // onset sharpness of a clap or hit (as in OnsetDetector.music)
 
 export type TranscriptWord = { text: string; start: number; end: number };
 export type RecognitionEvent = {
@@ -50,6 +51,8 @@ export class GrokRecognition {
   onrhythmcandidate: (() => void) | null = null;
   /** Every rhythm check: what the mic picked up and why no rhythm was found yet. */
   onrhythmstatus: ((status: RhythmStatus) => void) | null = null;
+  /** A sharp sound (clap, snap, drum hit) just heard while rhythm is listened for. */
+  onhit: ((onset: Onset) => void) | null = null;
   /** Open guitar strings heard ringing (see tuner.ts). */
   ontuning: ((reading: TunerReading) => void) | null = null;
   /** While the tuner shows, every analysis updates it and rhythm isn't tracked. */
@@ -72,6 +75,7 @@ export class GrokRecognition {
   private readonly recording = new DevAudioRecorder(2 * RATE);
   private audioTime = 0;
   private lastSpeech = -Infinity;
+  private lastHit = -Infinity; // the last onset passed to `onhit`
   // A steady rhythm heard in consecutive analyses: an instrument (or clapping) is playing.
   private steady = { at: -Infinity, streak: 0, confidence: 0, pulse: 0 };
   private nextAnalysis = ANALYZE_EVERY;
@@ -222,6 +226,12 @@ export class GrokRecognition {
     this.recording.push(pcm);
     this.onsets.push(pcm);
     this.audioTime += pcm.length / RATE;
+    // Sharp onsets as they're found, for feedback while rhythm is listened for.
+    for (const onset of this.onsets.between(this.lastHit + 1e-6, this.audioTime)) {
+      this.lastHit = onset.time;
+      if (onset.sharpness >= SHARP && !this.ignoreRhythm?.() && !this.showingTuner)
+        this.onhit?.(onset);
+    }
     // Like rhythm, the tuner only listens while the metronome is stopped.
     this.tuner.enabled = !this.ignoreRhythm?.();
     this.tuner.live = this.showingTuner;

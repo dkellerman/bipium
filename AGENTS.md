@@ -109,8 +109,10 @@ is acted on only above 0.5 confidence; otherwise that setting stays as it is.
   start it"; a spoken confirmation step was rejected. It never starts playback; saying
   "play" does. Rhythm isn't detected at all while the metronome plays ("don't detect
   instrument while it's playing"). When one is reported, the status says "Hearing …"
-  and to say "start" or press Start; while playing is being analyzed it shows only
-  "Instrument detected…" ("just enough to show it categorized as an instrument").
+  and to say "start" or press Start. Before that, every sharp hit (clap, snap, drum)
+  pulses the voice button and a few in a row show "Hearing a rhythm… keep going" (user:
+  "it would also be nice if it showed SOMETHING"; chose pulse + text), replacing an older
+  reply but not one in progress or a tempo already shown.
   `?voicedebug` in the URL adds a diagnostics line, only while it's in the URL.
 - **Instrument over stray words (2026-10-03).** The transcriber sometimes turns an
   instrument into words ("Mm"). User: "if it's low confidence probably better to make sure

@@ -49,10 +49,13 @@ function logDecisions(result: VoiceResult) {
   console.groupEnd();
 }
 const IDLE = 'Listening for your next phrase…';
-// Shown while playing is being analyzed, until a tempo is found.
-const INSTRUMENT = 'Instrument detected…';
+// Shown while claps or playing are heard, until a tempo is found.
+const HEARING_RHYTHM = 'Hearing a rhythm… keep going';
 // Progress messages a newer rhythm check may replace (never a voice reply).
-const RHYTHM_PROGRESS = [IDLE, INSTRUMENT];
+const RHYTHM_PROGRESS = [IDLE, HEARING_RHYTHM];
+const CONNECTING = 'Connecting microphone…';
+const HITS_SHOWN = 3; // sharp hits within HIT_WINDOW before the rhythm message shows
+const HIT_WINDOW = 4000; // ms
 
 // `?voicedebug` in the URL shows what rhythm detection sees; only while it's there.
 function voiceDebugEnabled() {
@@ -106,6 +109,11 @@ export function ListenControl({
   const heardTempoRef = useRef(heardTempo);
   heardTempoRef.current = heardTempo;
   const [busy, setBusy] = useState(false);
+  const busyRef = useRef(busy);
+  busyRef.current = busy;
+  // Recent sharp hits (claps, snaps), for feedback before a tempo is found.
+  const hits = useRef<number[]>([]);
+  const iconRef = useRef<SVGSVGElement>(null);
   const [history, setHistory] = useState<VoiceResult[]>(() => {
     try {
       return JSON.parse(sessionStorage.getItem('bipium-voice-history') || '[]').slice(-10);
@@ -273,10 +281,31 @@ export function ListenControl({
     const metronomePlaying = () => !!runtime()?.isStarted();
     recognition.ignoreRhythm = metronomePlaying;
     // Feedback while a rhythm is being confirmed, so playing never looks ignored.
+    // Every clap pulses the button; a few in a row say a rhythm is being heard, replacing
+    // an older reply (not one still being worked on, or a tempo already heard).
+    recognition.onhit = () => {
+      if (!active.current || sr.current !== recognition || metronomePlaying()) return;
+      if (!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)
+        iconRef.current?.animate(
+          [{ transform: 'scale(1.35)', color: '#059669' }, { transform: 'scale(1)' }],
+          { duration: 280, easing: 'ease-out' },
+        );
+      const now = performance.now();
+      hits.current = [...hits.current.filter(t => now - t < HIT_WINDOW), now];
+      if (hits.current.length < HITS_SHOWN) return;
+      setOpen(true);
+      setStatus(current =>
+        busyRef.current ||
+        current === CONNECTING ||
+        (heardTempoRef.current && current === heardTempoRef.current.status)
+          ? current
+          : HEARING_RHYTHM,
+      );
+    };
     recognition.onrhythmcandidate = () => {
       if (!active.current || sr.current !== recognition || metronomePlaying()) return;
       setOpen(true);
-      setStatus(current => (RHYTHM_PROGRESS.includes(current) ? INSTRUMENT : current));
+      setStatus(current => (RHYTHM_PROGRESS.includes(current) ? HEARING_RHYTHM : current));
     };
     // Feedback whenever the mic picks up sound, so playing is never met with silence.
     recognition.onrhythmstatus = rhythmStatus => {
@@ -290,7 +319,8 @@ export function ListenControl({
       if (rhythmStatus.state !== 'analyzing' || rhythmStatus.diagnosis?.result) return;
       // Enough onsets to analyze means it's working on a tempo, even if this check failed.
       const analyzed = (rhythmStatus.diagnosis?.onsets ?? 0) >= 8;
-      const next = analyzed ? INSTRUMENT : IDLE;
+      const hitLately = performance.now() - (hits.current.at(-1) ?? -Infinity) < 2500;
+      const next = analyzed || hitLately ? HEARING_RHYTHM : IDLE;
       setStatus(current => (RHYTHM_PROGRESS.includes(current) ? next : current));
     };
     recognition.onrhythm = rhythm => {
@@ -375,7 +405,7 @@ export function ListenControl({
     tunerStore.setVoiceListening(true);
     recognition.showingTuner = !!tunerStore.showing();
     setListening(true);
-    setStatus('Connecting microphone…');
+    setStatus(CONNECTING);
     try {
       recognition.start();
     } catch {
@@ -386,9 +416,9 @@ export function ListenControl({
   };
   const label = listening ? 'Stop listening' : 'Listen';
   const icon = listening ? (
-    <Square className="size-5" aria-hidden="true" />
+    <Square ref={iconRef} className="size-5" aria-hidden="true" />
   ) : (
-    <Mic className="size-5" aria-hidden="true" />
+    <Mic ref={iconRef} className="size-5" aria-hidden="true" />
   );
   const [intro, setIntro] = useState(false);
   const toggle = () => {
