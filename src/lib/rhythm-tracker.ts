@@ -18,11 +18,23 @@ export type HeardRhythm = {
   confidence: number;
   /** Fewer beats were hit (rests, missed hits): it must hold longer before it's reported. */
   weak?: boolean;
+  /** Plain clapping: one confident analysis is enough (see CLAP_MIN_ONSETS). */
+  plainClaps?: boolean;
+  /** 0…1: how surely the hits were claps (or snaps): sharp, with no held notes. */
+  claps?: number;
 };
 
 const WINDOW = 8; // seconds of onsets analyzed
-const MIN_ONSETS = 8;
-const MIN_SPAN = 4;
+const MIN_ONSETS = 6;
+const MIN_SPAN = 2.5;
+// Plain clapping (clearly claps, evenly spaced, no accents) isn't noise or chatter:
+// fewer hits are needed, and one confident analysis is enough. Accents or uneven gaps
+// (subdivisions, swing, a bar) take the usual path, which needs longer to read them.
+const CLAP_MIN_ONSETS = 5;
+const CLAP_MIN_SPAN = 1.5;
+const CLAP_CONFIDENCE = 0.9;
+const CLAP_EVEN = 0.2; // each gap within this share of the median gap
+const CLAP_ACCENTS = 0.5; // strength contrast above which claps are accented (plain: 0.07–0.33)
 const STILL_GOING = 1.5; // the last onset must be this recent
 const MIN_CONFIDENCE = 0.7;
 const MIN_CONFIDENCE_OVER_SPEECH = 0.8;
@@ -87,16 +99,19 @@ export function diagnoseOnsets(
   onsets: Onset[],
   now: number,
   speech: MusicEvidence | null = null,
+  claps = false,
 ): RhythmDiagnosis {
   const recent = onsets.filter(o => o.time > now - WINDOW && o.time <= now);
+  const plain = claps && plainClapping(recent);
   const none = (reason: string, extra = {}) => ({
     result: null,
     reason,
     onsets: recent.length,
     ...extra,
   });
-  if (recent.length < MIN_ONSETS) return none('too few onsets');
-  if (recent[recent.length - 1].time - recent[0].time < MIN_SPAN) return none('too short');
+  if (recent.length < (plain ? CLAP_MIN_ONSETS : MIN_ONSETS)) return none('too few onsets');
+  if (recent[recent.length - 1].time - recent[0].time < (plain ? CLAP_MIN_SPAN : MIN_SPAN))
+    return none('too short');
   if (now - recent[recent.length - 1].time > STILL_GOING) return none('stopped');
   const percussive = !!speech && speech.sharpOnsets > speech.heldNotes;
   const result = estimateRhythm(audioEvents(recent, percussive), {
@@ -137,11 +152,22 @@ export function diagnoseOnsets(
         };
   const weak = result.coverage < STRONG_COVERAGE;
   return {
-    result: { ...heard, ...(weak ? { weak } : {}) },
+    result: { ...heard, ...(weak ? { weak } : {}), ...(plain ? { plainClaps: plain } : {}) },
     reason: 'ok',
     onsets: recent.length,
     ...scores,
   };
+}
+
+/** Evenly spaced hits of about the same strength. */
+function plainClapping(onsets: Onset[]) {
+  if (onsets.length < 3) return false;
+  const gaps = onsets.slice(1).map((o, i) => o.time - onsets[i].time);
+  const median = [...gaps].sort((a, b) => a - b)[Math.floor(gaps.length / 2)];
+  if (gaps.some(gap => Math.abs(gap - median) > CLAP_EVEN * median)) return false;
+  const strengths = onsets.map(o => o.strength).sort((a, b) => a - b);
+  const at = (q: number) => strengths[Math.floor(q * (strengths.length - 1))];
+  return (at(0.9) - at(0.1)) / at(0.5) < CLAP_ACCENTS;
 }
 
 /**
@@ -169,7 +195,9 @@ export class RhythmStabilizer {
       this.streak.length && same(this.streak[0], analysis)
         ? [...this.streak, analysis]
         : [analysis];
-    if (this.streak.length < (this.streak.some(a => a.weak) ? WEAK_AGREE : AGREE)) return null;
+    const sure = analysis.plainClaps && !analysis.weak && analysis.confidence >= CLAP_CONFIDENCE;
+    const needed = sure ? 1 : this.streak.some(a => a.weak) ? WEAK_AGREE : AGREE;
+    if (this.streak.length < needed) return null;
     const settled = this.streak[this.streak.length - 1];
     if (this.reported && same(this.reported, settled)) return null;
     this.reported = settled;

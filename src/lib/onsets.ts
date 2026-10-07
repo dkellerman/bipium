@@ -127,6 +127,7 @@ export class OnsetDetector {
   private noteCents = NaN; // pitch of the current note, in cents
   private run = 0; // consecutive frames holding that pitch
   private flatness = 0;
+  private lastFlatness = [0, 0]; // the two frames before this one
   private aboveFloor = 0;
   private readonly frames: { time: number; held: boolean }[] = [];
 
@@ -161,7 +162,9 @@ export class OnsetDetector {
     const onsets = this.between(from, to);
     return {
       heldNotes: frames.length ? frames.filter(f => f.held).length / frames.length : 0,
-      sharpOnsets: onsets.length ? onsets.filter(o => o.sharpness >= 0.6).length / onsets.length : 0,
+      sharpOnsets: onsets.length
+        ? onsets.filter(o => o.sharpness >= 0.6).length / onsets.length
+        : 0,
     };
   }
 
@@ -192,10 +195,11 @@ export class OnsetDetector {
     const time = (this.samples - FRAME / 2) / this.sampleRate;
 
     // A peak is confirmed once the score falls; keep the best candidate until then.
-    // Sharpness is the hit's least noise-like moment: claps stay noise-like through the
-    // hit, while a vowel turns pitched within a frame or two.
+    // Sharpness is the hit's most noise-like moment, from just before it: a clap's burst
+    // is noise-like even when the room rings after it, while a vowel is pitched
+    // throughout. Some consonants are noise-like too, so music() uses a share of onsets.
     if (this.candidate) {
-      this.candidate.sharpness = Math.min(this.candidate.sharpness, this.flatness);
+      this.candidate.sharpness = Math.max(this.candidate.sharpness, this.flatness);
       this.candidate.level = Math.max(this.candidate.level, this.aboveFloor);
     }
     if (score >= THRESHOLD && score > this.lastScore) {
@@ -203,11 +207,11 @@ export class OnsetDetector {
         this.candidate = {
           time,
           strength: score,
-          sharpness: this.candidate?.sharpness ?? 1,
+          sharpness: Math.max(this.candidate?.sharpness ?? 0, ...this.lastFlatness),
           level: this.candidate?.level ?? this.aboveFloor,
           score,
         };
-      this.candidate.sharpness = Math.min(this.candidate.sharpness, this.flatness);
+      this.candidate.sharpness = Math.max(this.candidate.sharpness, this.flatness);
       this.candidate.level = Math.max(this.candidate.level, this.aboveFloor);
     } else if (this.candidate && score < this.candidate.score) {
       const { score: _, ...onset } = this.candidate;
@@ -238,7 +242,9 @@ export class OnsetDetector {
       sum += power;
     }
     const flatness = Math.exp(logSum / 184) / (sum / 184);
-    this.flatness = Math.min(1, Math.max(0, (flatness - 0.05) / 0.35));
+    this.lastFlatness = [this.lastFlatness[1], this.flatness];
+    // Measured on real claps (median 0.2–0.3) and speech (median under 0.05).
+    this.flatness = Math.min(1, Math.max(0, (flatness - 0.02) / 0.16));
 
     this.aboveFloor = Math.max(0, levelDb - this.noiseFloor);
     const audible = levelDb > this.noiseFloor + ABOVE_FLOOR_DB;
@@ -288,7 +294,9 @@ export class OnsetDetector {
     }
     for (let lag = minLag; lag < maxLag; lag++)
       if (d[lag] < PITCH_CLARITY && d[lag] <= d[lag + 1]) {
-        const a = d[lag - 1], b = d[lag], c = d[lag + 1];
+        const a = d[lag - 1],
+          b = d[lag],
+          c = d[lag + 1];
         const shift = (a - c) / (2 * (a - 2 * b + c) || 1);
         return rate / (lag + shift);
       }

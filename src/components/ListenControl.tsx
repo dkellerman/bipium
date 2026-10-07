@@ -54,8 +54,7 @@ const HEARING_RHYTHM = 'Hearing a rhythm… keep going';
 // Progress messages a newer rhythm check may replace (never a voice reply).
 const RHYTHM_PROGRESS = [IDLE, HEARING_RHYTHM];
 const CONNECTING = 'Connecting microphone…';
-const HITS_SHOWN = 3; // sharp hits within HIT_WINDOW before the rhythm message shows
-const HIT_WINDOW = 4000; // ms
+const CLAPS_START = 0.9; // how surely the hits were claps for a heard tempo to start playing
 
 // `?voicedebug` in the URL shows what rhythm detection sees; only while it's there.
 function voiceDebugEnabled() {
@@ -111,8 +110,8 @@ export function ListenControl({
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(busy);
   busyRef.current = busy;
-  // Recent sharp hits (claps, snaps), for feedback before a tempo is found.
-  const hits = useRef<number[]>([]);
+  // When evenly spaced hits (claps, snaps) were last heard, for feedback before a tempo.
+  const lastSteady = useRef(-Infinity);
   const iconRef = useRef<SVGSVGElement>(null);
   const [history, setHistory] = useState<VoiceResult[]>(() => {
     try {
@@ -281,18 +280,17 @@ export function ListenControl({
     const metronomePlaying = () => !!runtime()?.isStarted();
     recognition.ignoreRhythm = metronomePlaying;
     // Feedback while a rhythm is being confirmed, so playing never looks ignored.
-    // Every clap pulses the button; a few in a row say a rhythm is being heard, replacing
-    // an older reply (not one still being worked on, or a tempo already heard).
-    recognition.onhit = () => {
+    // Every clap pulses the button; a few evenly spaced say a rhythm is being heard,
+    // replacing an older reply (not one still being worked on, or a tempo already heard).
+    recognition.onhit = steady => {
       if (!active.current || sr.current !== recognition || metronomePlaying()) return;
       if (!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)
         iconRef.current?.animate(
           [{ transform: 'scale(1.35)', color: '#059669' }, { transform: 'scale(1)' }],
           { duration: 280, easing: 'ease-out' },
         );
-      const now = performance.now();
-      hits.current = [...hits.current.filter(t => now - t < HIT_WINDOW), now];
-      if (hits.current.length < HITS_SHOWN) return;
+      if (!steady) return;
+      lastSteady.current = performance.now();
       setOpen(true);
       setStatus(current =>
         busyRef.current ||
@@ -319,7 +317,7 @@ export function ListenControl({
       if (rhythmStatus.state !== 'analyzing' || rhythmStatus.diagnosis?.result) return;
       // Enough onsets to analyze means it's working on a tempo, even if this check failed.
       const analyzed = (rhythmStatus.diagnosis?.onsets ?? 0) >= 8;
-      const hitLately = performance.now() - (hits.current.at(-1) ?? -Infinity) < 2500;
+      const hitLately = performance.now() - lastSteady.current < 2500;
       const next = analyzed || hitLately ? HEARING_RHYTHM : IDLE;
       setStatus(current => (RHYTHM_PROGRESS.includes(current) ? next : current));
     };
@@ -336,7 +334,6 @@ export function ListenControl({
         });
       const validated = api.validateConfig(patch);
       if (!validated.ok) return;
-      // Shown on the player, never started automatically.
       flushSync(() => api.setConfig(validated.value));
       const message = `[rhythm] ${rhythm.bpm} BPM${
         rhythm.subdivisions > 1 ? ` · ${rhythm.subdivisions} per beat` : ''
@@ -352,10 +349,19 @@ export function ListenControl({
       ].slice(-10);
       setHistory(historyRef.current);
       setOpen(true);
-      // Never starts on its own; the player decides.
       const heard = `${rhythm.bpm} BPM${rhythm.subdivisions > 1 ? `, ${rhythm.subdivisions} per beat` : ''}${
         rhythm.swing ? `, ${rhythm.swing}% swing` : ''
       }`;
+      // Clearly claps: play along right away (then only a spoken stop acts). Anything
+      // else (an instrument, singing, unsure) waits for "start" or the Start button.
+      if ((rhythm.claps ?? 0) >= CLAPS_START) {
+        window.dispatchEvent(new Event('bipium:unlock-audio'));
+        playAlong.current = true;
+        api.start();
+        setHeardTempo(null);
+        setStatus(`Playing ${heard}.`);
+        return;
+      }
       const statusText = `Hearing ${heard}. Say “start” or press Start to play.`;
       setHeardTempo({ label: heard, status: statusText });
       setStatus(statusText);

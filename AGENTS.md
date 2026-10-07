@@ -106,11 +106,15 @@ is acted on only above 0.5 confidence; otherwise that setting stays as it is.
 - **Heard rhythm (2026-10-03).** Rhythm heard with no speech (claps, an instrument) may set
   tempo/subdivisions/swing when the estimate is confident and has held steady. User:
   "play if high enough confidence", revised to "don't play auto, show it but don't auto
-  start it"; a spoken confirmation step was rejected. It never starts playback; saying
-  "play" does. Rhythm isn't detected at all while the metronome plays ("don't detect
+  start it"; a spoken confirmation step was rejected. Then (2026-10-06) "how about very
+  high confidence claps or snaps", meaning "confident ... that they ARE claps, not that
+  they're perfect rhythm": when nearly all hits in the analyzed stretch are sharp (claps
+  or snaps; measured share) with no held notes, a reported tempo starts playing at once
+  and counts as playing along. Anything else (an instrument, singing, unsure) never
+  starts playback; saying "play" or pressing Start does. Rhythm isn't detected at all while the metronome plays ("don't detect
   instrument while it's playing"). When one is reported, the status says "Hearing …"
   and to say "start" or press Start. Before that, every sharp hit (clap, snap, drum)
-  pulses the voice button and a few in a row show "Hearing a rhythm… keep going" (user:
+  pulses the voice button and a few evenly spaced show "Hearing a rhythm… keep going" (user:
   "it would also be nice if it showed SOMETHING"; chose pulse + text), replacing an older
   reply but not one in progress or a tempo already shown.
   `?voicedebug` in the URL adds a diagnostics line, only while it's in the URL.

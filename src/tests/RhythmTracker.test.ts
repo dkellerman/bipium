@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { analyzeOnsets, musicLikelihood, RhythmStabilizer } from '../lib/rhythm-tracker';
+import {
+  analyzeOnsets,
+  diagnoseOnsets,
+  musicLikelihood,
+  RhythmStabilizer,
+} from '../lib/rhythm-tracker';
 import type { Onset } from '../lib/onsets';
 import recordedInstrument from './fixtures/heard-instrument-110.json';
 
@@ -33,6 +38,33 @@ describe('rhythm tracker', () => {
     expect(reports).toHaveLength(1);
     expect(reports[0].bpm).toBeGreaterThanOrEqual(94);
     expect(reports[0].bpm).toBeLessThanOrEqual(98);
+  });
+
+  it('reports plain, clearly clapped hits after five or six claps', () => {
+    const claps = steady(120, 1, 10).map(o => ({ ...o, strength: 6 }));
+    const stabilizer = new RhythmStabilizer();
+    // Analyzed on each clap, as the mic session does for even claps.
+    const at = claps.findIndex(
+      o => stabilizer.next(diagnoseOnsets(claps, o.time + 0.05, null, true).result) !== null,
+    );
+    expect(at + 1).toBeGreaterThanOrEqual(5);
+    expect(at + 1).toBeLessThanOrEqual(6);
+  });
+
+  it('takes the usual, longer path for accented clapping, to read its subdivisions', () => {
+    const claps = steady(90, 2, 20);
+    const stabilizer = new RhythmStabilizer();
+    let report = null;
+    let at = -1;
+    for (const [i, o] of claps.entries()) {
+      report = stabilizer.next(diagnoseOnsets(claps, o.time + 0.05, null, true).result);
+      if (report) {
+        at = i + 1;
+        break;
+      }
+    }
+    expect(at).toBeGreaterThan(5);
+    expect(report).toMatchObject({ bpm: 90, subdivisions: 2 });
   });
 
   it('reports an unaccented steady pulse as plain beats at a common tempo', () => {

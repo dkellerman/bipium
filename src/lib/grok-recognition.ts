@@ -23,7 +23,8 @@ const ANALYZE_EVERY = 2; // seconds of audio between rhythm analyses
 const QUIET_FOR = 8; // seconds without speech before rhythm is analyzed
 const STEADY_STREAK = 2; // consecutive analyses agreeing on a pulse before it counts as music
 const STEADY_RECENT = 4; // seconds a held rhythm keeps counting as music
-const SHARP = 0.6; // onset sharpness of a clap or hit (as in OnsetDetector.music)
+const CLAPS_SURE = 0.9; // `claps()` above which hits are clearly claps (see rhythm-tracker)
+const EVEN = 0.2; // how far each of the last few gaps may stray from their median to be steady
 
 export type TranscriptWord = { text: string; start: number; end: number };
 export type RecognitionEvent = {
@@ -51,8 +52,9 @@ export class GrokRecognition {
   onrhythmcandidate: (() => void) | null = null;
   /** Every rhythm check: what the mic picked up and why no rhythm was found yet. */
   onrhythmstatus: ((status: RhythmStatus) => void) | null = null;
-  /** A sharp sound (clap, snap, drum hit) just heard while rhythm is listened for. */
-  onhit: ((onset: Onset) => void) | null = null;
+  /** Each onset (clap, hit, syllable) while rhythm is listened for; `steady` when the
+   * last few were evenly spaced at a playable tempo. */
+  onhit: ((steady: boolean) => void) | null = null;
   /** Open guitar strings heard ringing (see tuner.ts). */
   ontuning: ((reading: TunerReading) => void) | null = null;
   /** While the tuner shows, every analysis updates it and rhythm isn't tracked. */
@@ -75,7 +77,7 @@ export class GrokRecognition {
   private readonly recording = new DevAudioRecorder(2 * RATE);
   private audioTime = 0;
   private lastSpeech = -Infinity;
-  private lastHit = -Infinity; // the last onset passed to `onhit`
+  private hitTimes: number[] = []; // the last few onsets passed to `onhit`
   // A steady rhythm heard in consecutive analyses: an instrument (or clapping) is playing.
   private steady = { at: -Infinity, streak: 0, confidence: 0, pulse: 0 };
   private nextAnalysis = ANALYZE_EVERY;
@@ -227,10 +229,14 @@ export class GrokRecognition {
     this.onsets.push(pcm);
     this.audioTime += pcm.length / RATE;
     // Sharp onsets as they're found, for feedback while rhythm is listened for.
-    for (const onset of this.onsets.between(this.lastHit + 1e-6, this.audioTime)) {
-      this.lastHit = onset.time;
-      if (onset.sharpness >= SHARP && !this.ignoreRhythm?.() && !this.showingTuner)
-        this.onhit?.(onset);
+    const lastHit = this.hitTimes.at(-1) ?? -Infinity;
+    for (const { time } of this.onsets.between(lastHit + 1e-6, this.audioTime)) {
+      this.hitTimes = [...this.hitTimes.slice(-3), time];
+      if (this.ignoreRhythm?.() || this.showingTuner) continue;
+      const steady = this.evenlySpaced();
+      this.onhit?.(steady);
+      // Clearly claps, evenly spaced: analyze now rather than at the next 2 s check.
+      if (steady && this.claps(this.audioTime) >= CLAPS_SURE) this.nextAnalysis = this.audioTime;
     }
     // Like rhythm, the tuner only listens while the metronome is stopped.
     this.tuner.enabled = !this.ignoreRhythm?.();
@@ -288,7 +294,7 @@ export class GrokRecognition {
         this.onrhythmstatus?.({ ...data.input.status, diagnosis: data.diagnosis });
         const report = this.rhythm.next(data.result);
         devLog('rhythm', { ...data.input, analysis: data.result, reported: report });
-        if (report) this.onrhythm?.(report);
+        if (report) this.onrhythm?.({ ...report, claps: data.input.claps });
         else if (data.result) this.onrhythmcandidate?.();
       };
     }
@@ -296,6 +302,8 @@ export class GrokRecognition {
       onsets: this.onsets.between(this.audioTime - QUIET_FOR, this.audioTime),
       now: this.audioTime,
       speech,
+      claps: this.claps(this.audioTime),
+      clapsSure: CLAPS_SURE,
       status: { state: 'analyzing', level, onsets: heard },
     });
   }
@@ -312,6 +320,24 @@ export class GrokRecognition {
       confidence: result.confidence,
       pulse,
     };
+  }
+  /** 0…1: how surely the hits in the analyzed stretch were claps: nearly all sharp
+   * (measured share; claps 0.7–0.95, speech under 0.15) and no held notes (an
+   * instrument or singing). */
+  private claps(now: number) {
+    const { heldNotes, sharpOnsets } = this.onsets.music(now - QUIET_FOR, now);
+    return heldNotes > 0.05 ? 0 : Math.min(1, Math.max(0, (sharpOnsets - 0.3) / 0.4));
+  }
+  /** The last four onsets came at even gaps, between 320 and 20 beats per minute. */
+  private evenlySpaced() {
+    if (this.hitTimes.length < 4) return false;
+    const gaps = this.hitTimes.slice(1).map((t, i) => t - this.hitTimes[i]);
+    const median = [...gaps].sort((a, b) => a - b)[1];
+    return (
+      median >= 60 / 320 &&
+      median <= 60 / 20 &&
+      gaps.every(gap => Math.abs(gap - median) <= EVEN * median)
+    );
   }
   /** 0…1: confidence that an instrument is playing, from a steady rhythm held recently. */
   private instrumentPlaying() {

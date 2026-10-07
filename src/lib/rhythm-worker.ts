@@ -2,6 +2,11 @@
 import { diagnoseOnsets } from './rhythm-tracker';
 
 self.onmessage = ({ data }) => {
-  const diagnosis = diagnoseOnsets(data.onsets, data.now, data.speech);
+  const diagnosis = diagnoseOnsets(
+    data.onsets,
+    data.now,
+    data.speech,
+    data.claps >= data.clapsSure,
+  );
   self.postMessage({ input: data, result: diagnosis.result, diagnosis });
 };
