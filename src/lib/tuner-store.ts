@@ -2,7 +2,7 @@
 // hears; `window.bpm.startTuner()` opens it with a mic of its own when voice mode isn't
 // listening. The popup renders from here, and the API reads its state from here.
 import type { ApiTunerState } from '@/core/api';
-import { micEchoCancellation, setCapturing } from './audio-session';
+import { setCapturing } from './audio-session';
 import { GuitarTuner, TUNINGS, type TunerReading } from './tuner';
 
 const IDLE_MS = 45000; // the tuner closes after this long with no string ringing
@@ -53,7 +53,7 @@ class TunerMic {
         // As voice mode's mic: noise suppression would erase the strings.
         audio: {
           channelCount: 1,
-          echoCancellation: micEchoCancellation(),
+          echoCancellation: false,
           noiseSuppression: false,
           autoGainControl: false,
         },
