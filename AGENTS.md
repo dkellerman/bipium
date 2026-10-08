@@ -109,8 +109,10 @@ is acted on only above 0.5 confidence; otherwise that setting stays as it is.
   start it"; a spoken confirmation step was rejected. Then (2026-10-06) "how about very
   high confidence claps or snaps", meaning "confident ... that they ARE claps, not that
   they're perfect rhythm": when nearly all hits in the analyzed stretch are sharp (claps
-  or snaps; measured share) with no held notes, a reported tempo starts playing at once
-  and counts as playing along. Anything else (an instrument, singing, unsure) never
+  or snaps; measured share) with no held notes, a reported tempo starts playing at once.
+  It does not count as playing along (2026-10-07, after voice commands were ignored once
+  claps started it: "I clapped ... and THEN i talked and it ignored me"); every voice
+  command still works. Anything else (an instrument, singing, unsure) never
   starts playback; saying "play" or pressing Start does. Rhythm isn't detected at all while the metronome plays ("don't detect
   instrument while it's playing"). When one is reported, the status says "Hearing …"
   and to say "start" or press Start. Before that, every sharp hit (clap, snap, drum)

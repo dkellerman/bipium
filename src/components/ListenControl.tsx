@@ -352,11 +352,11 @@ export function ListenControl({
       const heard = `${rhythm.bpm} BPM${rhythm.subdivisions > 1 ? `, ${rhythm.subdivisions} per beat` : ''}${
         rhythm.swing ? `, ${rhythm.swing}% swing` : ''
       }`;
-      // Clearly claps: play along right away (then only a spoken stop acts). Anything
-      // else (an instrument, singing, unsure) waits for "start" or the Start button.
+      // Clearly claps: start right away. Not play-along: the claps have stopped, so what's
+      // said next is a command, not lyrics. Anything else (an instrument, singing, unsure)
+      // waits for "start" or the Start button.
       if ((rhythm.claps ?? 0) >= CLAPS_START) {
         window.dispatchEvent(new Event('bipium:unlock-audio'));
-        playAlong.current = true;
         api.start();
         setHeardTempo(null);
         setStatus(`Playing ${heard}.`);
