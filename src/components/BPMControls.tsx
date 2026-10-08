@@ -119,7 +119,7 @@ export function BPMControls() {
               defaultValue={bpm}
               size={5}
               className={cn(
-                'h-10 w-[140px] border-b border-dotted border-slate-500 bg-transparent px-1',
+                'h-10 w-[140px] border-b border-dotted border-slate-500 dark:border-slate-400 bg-transparent px-1',
                 'text-center text-4xl leading-none outline-none pointer-fine:text-3xl',
               )}
               onBlur={event => {
@@ -139,7 +139,7 @@ export function BPMControls() {
             <button
               type="button"
               className={cn(
-                'whitespace-nowrap border-b border-dotted border-slate-500',
+                'whitespace-nowrap border-b border-dotted border-slate-500 dark:border-slate-400',
                 'text-4xl leading-none pointer-fine:text-3xl',
               )}
               onClick={() => {

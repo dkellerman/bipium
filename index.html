@@ -22,6 +22,21 @@
     <link rel="alternate" type="text/plain" href="/agents.txt" />
     <link rel="alternate" type="text/markdown" href="/api.md" />
     <title>Bipium</title>
+    <script>
+      // Dark mode before first paint, for classic pages only (see src/lib/color-mode.ts).
+      try {
+        var mode = localStorage.getItem('colorMode');
+        var path = location.pathname;
+        var machine =
+          path === '/machine' || (path === '/' && localStorage.getItem('uiTheme') === 'machine');
+        if (
+          !machine &&
+          (mode === 'dark' ||
+            (mode !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches))
+        )
+          document.documentElement.classList.add('dark');
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>

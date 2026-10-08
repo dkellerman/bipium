@@ -73,7 +73,7 @@ export function VoiceIntro({
           'relative flex max-h-[85dvh] w-full flex-col text-left sm:max-h-[85vh] sm:max-w-lg',
           machine
             ? 'rounded-xl border-[3px] border-stone-900 bg-[#f6f3ea] text-stone-900 shadow-[4px_4px_0_#1c1917]'
-            : 'rounded-2xl bg-white text-slate-900 shadow-xl',
+            : 'rounded-2xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xl',
         )}
       >
         <div className="px-5 pt-5 sm:px-6">
@@ -82,13 +82,20 @@ export function VoiceIntro({
             <span
               className={cn(
                 'rounded px-1.5 py-0.5 text-px-11 font-semibold uppercase tracking-wide',
-                machine ? 'border-2 border-stone-900 bg-[#ffd76a]' : 'bg-amber-100 text-amber-800',
+                machine
+                  ? 'border-2 border-stone-900 bg-[#ffd76a]'
+                  : 'bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300',
               )}
             >
               Experimental
             </span>
           </h2>
-          <p className={cn('mt-1 text-sm', machine ? 'text-stone-600' : 'text-slate-600')}>
+          <p
+            className={cn(
+              'mt-1 text-sm',
+              machine ? 'text-stone-600' : 'text-slate-600 dark:text-slate-400',
+            )}
+          >
             Control the metronome by talking, counting in, or playing along.
           </p>
         </div>
@@ -97,7 +104,7 @@ export function VoiceIntro({
           <dl
             className={cn(
               'divide-y text-sm leading-snug',
-              machine ? 'divide-stone-900/15' : 'divide-slate-100',
+              machine ? 'divide-stone-900/15' : 'divide-slate-100 dark:divide-slate-800',
             )}
           >
             {SECTIONS.map(section => (
@@ -105,7 +112,12 @@ export function VoiceIntro({
                 <dt className="pt-0.5 font-semibold">{section.title}</dt>
                 <dd className="flex flex-wrap gap-1.5">
                   {section.note && (
-                    <span className={cn('w-full', machine ? 'text-stone-600' : 'text-slate-600')}>
+                    <span
+                      className={cn(
+                        'w-full',
+                        machine ? 'text-stone-600' : 'text-slate-600 dark:text-slate-400',
+                      )}
+                    >
                       {section.note}
                     </span>
                   )}
@@ -116,7 +128,7 @@ export function VoiceIntro({
                         'rounded px-1.5 py-0.5',
                         machine
                           ? 'border border-stone-900/30 bg-white/60'
-                          : 'bg-slate-100 text-slate-700',
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300',
                       )}
                     >
                       {phrase}
@@ -131,7 +143,7 @@ export function VoiceIntro({
         <div
           className={cn(
             'flex flex-col gap-3 border-t px-5 pb-5 pt-3 sm:flex-row sm:items-center sm:justify-between sm:px-6',
-            machine ? 'border-stone-900/20' : 'border-slate-200',
+            machine ? 'border-stone-900/20' : 'border-slate-200 dark:border-slate-700',
           )}
         >
           <label className="flex cursor-pointer items-center gap-2 text-sm">
@@ -151,7 +163,7 @@ export function VoiceIntro({
                 'h-11 flex-1 rounded-md px-4 text-sm font-medium sm:h-10 sm:flex-none',
                 machine
                   ? 'border-[3px] border-stone-900 bg-[#f6f3ea] shadow-[2px_2px_0_#1c1917] active:translate-x-px active:translate-y-px active:shadow-[1px_1px_0_#1c1917]'
-                  : 'border border-slate-300 bg-white hover:bg-slate-50',
+                  : 'border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700',
               )}
             >
               Cancel
@@ -164,7 +176,7 @@ export function VoiceIntro({
                 'h-11 flex-1 rounded-md px-5 text-sm font-semibold sm:h-10 sm:flex-none',
                 machine
                   ? 'border-[3px] border-stone-900 bg-[#e5484d] text-white shadow-[2px_2px_0_#1c1917] active:translate-x-px active:translate-y-px active:shadow-[1px_1px_0_#1c1917]'
-                  : 'bg-slate-900 text-white hover:bg-slate-800',
+                  : 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-white',
               )}
             >
               Start

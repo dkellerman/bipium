@@ -31,7 +31,7 @@ export default function About() {
   return (
     <main
       className={cn(
-        'mx-auto flex min-h-dvh w-full max-w-[480px] flex-col gap-3 bg-white px-3 py-4 text-slate-900',
+        'mx-auto flex min-h-dvh w-full max-w-[480px] flex-col gap-3 bg-white dark:bg-slate-900 px-3 py-4 text-slate-900 dark:text-slate-100',
         'shadow-[0_2px_8px_rgba(0,0,0,0.08)]',
       )}
     >
@@ -54,7 +54,10 @@ export default function About() {
                 </h2>
               ),
               p: ({ children, ...props }) => (
-                <p className="mt-2 text-base leading-relaxed text-slate-700" {...props}>
+                <p
+                  className="mt-2 text-base leading-relaxed text-slate-700 dark:text-slate-300"
+                  {...props}
+                >
                   {children}
                 </p>
               ),
@@ -64,7 +67,7 @@ export default function About() {
                 </ul>
               ),
               li: ({ children, ...props }) => (
-                <li className="text-slate-700" {...props}>
+                <li className="text-slate-700 dark:text-slate-300" {...props}>
                   {children}
                 </li>
               ),
@@ -74,7 +77,7 @@ export default function About() {
                 </a>
               ),
               strong: ({ children, ...props }) => (
-                <strong className="font-semibold text-slate-900" {...props}>
+                <strong className="font-semibold text-slate-900 dark:text-slate-100" {...props}>
                   {children}
                 </strong>
               ),

@@ -34,7 +34,7 @@ function Gauge({
   machine: boolean;
 }) {
   const reading = cents === null ? null : Math.max(-RANGE, Math.min(RANGE, cents));
-  const unlit = machine ? 'rgba(28,25,23,0.18)' : '#e2e8f0';
+  const unlit = machine ? 'rgba(28,25,23,0.18)' : 'var(--tuner-unlit)';
   const ticks = [];
   for (let c = -RANGE; c <= RANGE; c += STEP) {
     const angle = ((c / RANGE) * SWEEP * Math.PI) / 180;
@@ -139,7 +139,7 @@ export function TunerPopup({
           shown.length > 3 && 'sm:max-w-2xl',
           machine
             ? 'rounded-xl border-[3px] border-stone-900 bg-[#f6f3ea] text-stone-900 shadow-[4px_4px_0_#1c1917]'
-            : 'rounded-2xl bg-white text-slate-900 shadow-xl',
+            : 'rounded-2xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xl',
         )}
       >
         <div className="flex items-center justify-between gap-2">
@@ -148,7 +148,9 @@ export function TunerPopup({
             <span
               className={cn(
                 'rounded px-1.5 py-0.5 text-px-11 font-semibold uppercase tracking-wide',
-                machine ? 'border-2 border-stone-900 bg-[#ffd76a]' : 'bg-slate-100 text-slate-700',
+                machine
+                  ? 'border-2 border-stone-900 bg-[#ffd76a]'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300',
               )}
             >
               {reading.tuning.name}
@@ -162,13 +164,18 @@ export function TunerPopup({
             onClick={onClose}
             className={cn(
               'grid size-9 place-items-center rounded-md',
-              machine ? 'hover:bg-stone-900/10' : 'hover:bg-slate-100',
+              machine ? 'hover:bg-stone-900/10' : 'hover:bg-slate-100 dark:hover:bg-slate-800',
             )}
           >
             <X className="size-5" aria-hidden="true" />
           </button>
         </div>
-        <p className={cn('text-sm', machine ? 'text-stone-600' : 'text-slate-600')}>
+        <p
+          className={cn(
+            'text-sm',
+            machine ? 'text-stone-600' : 'text-slate-600 dark:text-slate-400',
+          )}
+        >
           {wholeGuitar(reading.offset)}
         </p>
         <div className="mt-3 flex min-h-32 flex-wrap items-center justify-center gap-x-3 gap-y-2">
@@ -194,13 +201,21 @@ export function TunerPopup({
               </div>
             ))
           ) : (
-            <p className={cn('text-sm', machine ? 'text-stone-500' : 'text-slate-500')}>
+            <p
+              className={cn(
+                'text-sm',
+                machine ? 'text-stone-500' : 'text-slate-500 dark:text-slate-400',
+              )}
+            >
               Pluck an open string.
             </p>
           )}
         </div>
         <p
-          className={cn('mt-2 text-center text-xs', machine ? 'text-stone-500' : 'text-slate-500')}
+          className={cn(
+            'mt-2 text-center text-xs',
+            machine ? 'text-stone-500' : 'text-slate-500 dark:text-slate-400',
+          )}
         >
           Let any open strings ring to tune them. Strum all six to check them together.
         </p>

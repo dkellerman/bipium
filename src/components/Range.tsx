@@ -75,17 +75,17 @@ export const Range = ({
                 key={`tick-${tick}`}
                 disabled={disabled}
                 className={cn(
-                  'absolute top-0 h-10 px-0.5 text-px-18 leading-none text-slate-600',
-                  'hover:text-slate-800 disabled:cursor-not-allowed sm:text-px-17',
+                  'absolute top-0 h-10 px-0.5 text-px-18 leading-none text-slate-600 dark:text-slate-400',
+                  'hover:text-slate-800 dark:hover:text-slate-200 disabled:cursor-not-allowed sm:text-px-17',
                   tickClassName,
                 )}
                 style={{ left, transform: `translateX(${xOffset})` }}
                 onClick={() => callback?.(tick)}
               >
-                <span className="absolute left-1/2 -top-px h-[16px] w-px -translate-x-1/2 bg-slate-500" />
+                <span className="absolute left-1/2 -top-px h-[16px] w-px -translate-x-1/2 bg-slate-500 dark:bg-slate-400" />
                 <span
                   className={cn(
-                    'absolute left-1/2 inline-block whitespace-nowrap border-b border-dotted border-slate-400',
+                    'absolute left-1/2 inline-block whitespace-nowrap border-b border-dotted border-slate-400 dark:border-slate-500',
                     compactTicks ? 'top-[8px]' : 'top-[11px]',
                   )}
                   style={

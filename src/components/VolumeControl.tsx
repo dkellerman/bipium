@@ -84,7 +84,7 @@ export function VolumeControl({ compact = false, inline = false }: VolumeControl
           <div
             className={cn(
               'absolute left-1/2 top-1/2 z-50 w-[220px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-full',
-              'border border-slate-300 bg-white px-3 py-1 shadow-md',
+              'border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-1 shadow-md',
             )}
           >
             <div className="flex items-center gap-2">
@@ -121,7 +121,7 @@ export function VolumeControl({ compact = false, inline = false }: VolumeControl
           type="button"
           variant="outline"
           size="icon"
-          className={cn('size-11 rounded-full bg-white p-2 shadow-md')}
+          className={cn('size-11 rounded-full bg-white dark:bg-slate-800 p-2 shadow-md')}
           aria-label={showVolume ? 'Hide volume controls' : 'Show volume controls'}
           aria-pressed={showVolume}
           onMouseEnter={() => setShowVolume(true)}
@@ -145,7 +145,7 @@ export function VolumeControl({ compact = false, inline = false }: VolumeControl
           className={cn(
             'pointer-events-none absolute left-1/2 top-1/2 w-full',
             '-translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-full',
-            'border border-slate-300 bg-white px-3 shadow-sm transition-all duration-200',
+            'border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 shadow-sm transition-all duration-200',
             showVolume ? 'pointer-events-auto scale-x-100 opacity-100' : 'scale-x-0 opacity-0',
           )}
           style={{ transformOrigin: 'center center' }}
@@ -186,7 +186,7 @@ export function VolumeControl({ compact = false, inline = false }: VolumeControl
             size="icon"
             className={cn(
               'absolute left-1/2 top-1/2 size-11 -translate-x-1/2 -translate-y-1/2',
-              'rounded-full bg-white p-2 shadow-md',
+              'rounded-full bg-white dark:bg-slate-800 p-2 shadow-md',
             )}
             aria-label="Show volume controls"
             onMouseEnter={() => setShowVolume(true)}

@@ -233,14 +233,14 @@ function SwingControls() {
     <div className="pt-4! pb-0!">
       <div className="flex items-start gap-3">
         <div className="shrink-0">
-          <div className="flex items-center gap-2 text-lg leading-none text-slate-500 pointer-fine:text-base [&_*]:[text-box:trim-both_cap_alphabetic]">
+          <div className="flex items-center gap-2 text-lg leading-none text-slate-500 dark:text-slate-400 pointer-fine:text-base [&_*]:[text-box:trim-both_cap_alphabetic]">
             <span>Swing:</span>
             <div className="flex items-center gap-1.5">
               {editingSwing ? (
                 <span
                   className={cn(
-                    'inline-flex items-center gap-0.5 border-b border-dotted border-slate-500',
-                    'pb-px leading-none text-slate-600',
+                    'inline-flex items-center gap-0.5 border-b border-dotted border-slate-500 dark:border-slate-400',
+                    'pb-px leading-none text-slate-600 dark:text-slate-400',
                   )}
                 >
                   <input
@@ -275,8 +275,8 @@ function SwingControls() {
                 <button
                   type="button"
                   className={cn(
-                    'border-b border-dotted border-slate-500 pb-px leading-none',
-                    'text-slate-600',
+                    'border-b border-dotted border-slate-500 dark:border-slate-400 pb-px leading-none',
+                    'text-slate-600 dark:text-slate-400',
                   )}
                   disabled={!canSwing}
                   onClick={() => setEditingSwing(true)}
@@ -290,7 +290,7 @@ function SwingControls() {
                 variant="ghost"
                 size="icon"
                 className={cn(
-                  '-my-1 size-5 rounded-full p-0 text-slate-500 hover:text-slate-700',
+                  '-my-1 size-5 rounded-full p-0 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200',
                   !(canSwing && !editingSwing && swing > 0) && 'invisible',
                 )}
                 aria-label="Reset swing to 0"
@@ -304,7 +304,9 @@ function SwingControls() {
             </div>
           </div>
           {!canSwing && (
-            <div className="text-xs text-slate-500 pointer-fine:text-px-11">even sub divs only</div>
+            <div className="text-xs text-slate-500 dark:text-slate-400 pointer-fine:text-px-11">
+              even sub divs only
+            </div>
           )}
         </div>
         <div className="min-w-0 flex-1 pl-3 pr-6">

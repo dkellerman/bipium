@@ -662,7 +662,7 @@ function App() {
   const isRenderedDrumLoop = renderedVisualizerMode === 'drumLoop';
   const floatingVisualizerButtonClass = cn(
     'absolute z-30 size-8 rounded-full border shadow-md',
-    'border-emerald-500 bg-white text-black hover:bg-white hover:text-black',
+    'border-emerald-500 bg-white dark:bg-slate-800 text-black dark:text-white hover:bg-white dark:hover:bg-slate-800 hover:text-black dark:hover:text-white',
   );
 
   return (
@@ -670,7 +670,7 @@ function App() {
       <main
         className={cn(
           'mx-auto flex min-h-dvh w-full max-w-[480px] flex-col items-center',
-          'bg-white text-slate-900 shadow-[0_2px_8px_rgba(0,0,0,0.08)]',
+          'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.08)]',
         )}
       >
         <NavBar edge={<BeatGlow />}>
@@ -679,12 +679,13 @@ function App() {
             variant="ghost"
             size="icon"
             className="absolute right-0 top-1/2 size-9 -translate-y-1/2"
-            title="Open settings"
-            aria-label="Open settings"
-            onClick={() => setShowSideBar(true)}
+            title="Settings"
+            aria-label="Settings"
+            aria-expanded={showSideBar}
+            onClick={() => setShowSideBar(open => !open)}
           >
             <Settings className="size-[22px]" />
-            <span className="sr-only">Open settings</span>
+            <span className="sr-only">Settings</span>
           </Button>
         </NavBar>
 
@@ -813,7 +814,7 @@ function App() {
         </div>
         <div
           id="voice-text-classic"
-          className="voice-roomy h-14 w-full shrink-0 px-5 py-1.5 text-center text-slate-700"
+          className="voice-roomy h-14 w-full shrink-0 px-5 py-1.5 text-center text-slate-700 dark:text-slate-300"
         />
       </main>
     </AppProvider>

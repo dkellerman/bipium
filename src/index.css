@@ -2,6 +2,16 @@
 
 @source './**/*.{js,jsx,ts,tsx}';
 
+/* Dark mode for the classic theme: a `dark` class on <html> (see lib/color-mode). */
+@custom-variant dark (&:where(.dark, .dark *));
+:root {
+  --tuner-unlit: var(--color-slate-200);
+}
+.dark {
+  color-scheme: dark;
+  --tuner-unlit: var(--color-slate-700);
+}
+
 /* Every font size goes through --text-scale: phones get all text one small notch smaller,
    and nothing else (spacing, radii, widths) changes. */
 :root {

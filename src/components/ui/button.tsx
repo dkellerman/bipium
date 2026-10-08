@@ -7,7 +7,7 @@ const buttonVariants = cva(
   cn(
     'inline-flex items-center justify-center whitespace-nowrap rounded-md border text-sm font-medium',
     'border-transparent',
-    'ring-offset-white',
+    'ring-offset-white dark:ring-offset-slate-900',
     'transition-all duration-150 motion-safe:hover:scale-[1.04]',
     'motion-safe:active:scale-[0.98]',
     'focus-visible:outline-none focus-visible:ring-2',
@@ -19,11 +19,13 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: 'bg-slate-900 text-white hover:bg-slate-800',
+        default:
+          'bg-slate-900 text-white hover:bg-slate-800',
         destructive: 'bg-red-600 text-white hover:bg-red-500',
-        outline: 'border border-slate-300 bg-white text-slate-900 hover:bg-slate-50',
-        ghost: 'text-slate-700 hover:bg-slate-100',
-        link: 'text-slate-700 underline-offset-4 hover:underline',
+        outline:
+          'border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-700',
+        ghost: 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800',
+        link: 'text-slate-700 dark:text-slate-300 underline-offset-4 hover:underline',
       },
       size: {
         default: 'h-10 px-4 py-2',

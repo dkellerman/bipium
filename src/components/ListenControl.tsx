@@ -491,7 +491,7 @@ export function ListenControl({
           size={variant === 'classic' ? 'icon' : 'default'}
           className={
             variant === 'classic'
-              ? 'relative z-10 size-11 rounded-full bg-white p-2 shadow-md'
+              ? 'relative z-10 size-11 rounded-full bg-white dark:bg-slate-800 p-2 shadow-md'
               : undefined
           }
           title={label}

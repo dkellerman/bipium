@@ -29,7 +29,7 @@ export function PhoneFrame({ children }: { children: ReactNode }) {
 
   return (
     // Around the phone, the page background the theme has without the frame.
-    <div className="flex h-dvh items-center justify-center overflow-hidden bg-linear-to-b from-[#f8fbff] via-[#eef6ff] to-[#f8fbff] has-[[data-theme=machine]]:bg-[#d8d3c4] has-[[data-theme=machine]]:bg-none">
+    <div className="flex h-dvh items-center justify-center overflow-hidden bg-linear-to-b from-[#f8fbff] via-[#eef6ff] to-[#f8fbff] dark:from-[#03060b] dark:via-[#060b14] dark:to-[#03060b] has-[[data-theme=machine]]:bg-[#d8d3c4] has-[[data-theme=machine]]:bg-none">
       <div className="relative" style={{ width: PHONE_WIDTH, height, marginLeft: nudge }}>
         <div
           id="phone-screen"
@@ -41,7 +41,7 @@ export function PhoneFrame({ children }: { children: ReactNode }) {
         {/* The bezel sits outside the screen, so the UI itself is unchanged. */}
         <div
           aria-hidden
-          className="pointer-events-none absolute border-neutral-900 shadow-[0_24px_60px_rgba(15,23,42,0.3)]"
+          className="pointer-events-none absolute border-neutral-900 shadow-[0_24px_60px_rgba(15,23,42,0.3)] dark:border-slate-600 dark:shadow-[0_24px_60px_rgba(0,0,0,0.6)]"
           // The bezel follows the screen's 28px corners.
           style={{ inset: -PHONE_BEZEL, borderWidth: PHONE_BEZEL, borderRadius: 28 + PHONE_BEZEL }}
         />

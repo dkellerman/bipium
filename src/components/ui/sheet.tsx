@@ -27,6 +27,11 @@ interface SheetCloseProps {
 interface SheetContentProps extends WithChildrenProps {
   side?: SheetSide;
   className?: string;
+  overlayClassName?: string;
+  style?: React.CSSProperties;
+  /** A header to open beneath (CSS selector): the sheet drops down from its bottom edge,
+   * within its width, and leaves it uncovered so its own button can close the sheet. */
+  anchor?: string;
 }
 
 interface SheetHeaderProps extends React.HTMLAttributes<HTMLDivElement> {}
@@ -61,10 +66,47 @@ const SheetClose = ({ children }: SheetCloseProps) => {
   });
 };
 
-const SheetContent = ({ side = 'right', className, children }: SheetContentProps) => {
+const SheetContent = ({
+  side = 'right',
+  className,
+  overlayClassName,
+  anchor,
+  style,
+  children,
+}: SheetContentProps) => {
   const { open, onOpenChange } = React.useContext(SheetContext);
   const [rendered, setRendered] = React.useState(open);
   const [visible, setVisible] = React.useState(false);
+  const [anchorBox, setAnchorBox] = React.useState<React.CSSProperties | null>(null);
+
+  React.useLayoutEffect(() => {
+    if (!anchor || !rendered) return;
+    const measure = () => {
+      const rect = document.querySelector(anchor)?.getBoundingClientRect();
+      if (!rect) return setAnchorBox(null);
+      // Down to the bottom of the screen: the window, or the desktop phone frame's screen,
+      // whose rounded corners it keeps.
+      const screen = document.getElementById('phone-screen');
+      const bottom = screen?.getBoundingClientRect().bottom ?? window.innerHeight;
+      const radius = screen ? getComputedStyle(screen).borderBottomLeftRadius : undefined;
+      const top = Math.max(0, rect.bottom);
+      setAnchorBox({
+        top,
+        left: rect.left,
+        width: rect.width,
+        height: Math.min(bottom, window.innerHeight) - top,
+        borderBottomLeftRadius: radius,
+        borderBottomRightRadius: radius,
+      });
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    window.addEventListener('scroll', measure, true);
+    return () => {
+      window.removeEventListener('resize', measure);
+      window.removeEventListener('scroll', measure, true);
+    };
+  }, [anchor, rendered]);
 
   React.useEffect(() => {
     let timer: TimeoutId | undefined;
@@ -103,31 +145,22 @@ const SheetContent = ({ side = 'right', className, children }: SheetContentProps
     return null;
   }
 
-  // Rendered on the page itself, so on desktop it slides in from the window's edge
-  // rather than inside the phone frame.
-  return createPortal(
-    <>
-      <button
-        type="button"
-        aria-label="Close settings"
-        className={cn(
-          'fixed inset-0 z-50 cursor-default bg-black/60 transition-opacity duration-200',
-          visible ? 'opacity-100' : 'opacity-0',
-        )}
-        onClick={() => onOpenChange(false)}
-      />
-      <aside
-        className={cn(
-          'fixed z-50 h-full w-[320px] border-slate-200 bg-gradient-to-b from-sky-50 to-slate-50',
-          'p-6 pt-12 shadow-xl transition-transform duration-200',
-          side === 'right'
-            ? `right-0 top-0 border-l ${visible ? 'translate-x-0' : 'translate-x-full'}`
-            : `left-0 top-0 border-r ${visible ? 'translate-x-0' : '-translate-x-full'}`,
-          className,
-        )}
-        onClick={event => event.stopPropagation()}
-      >
-        {children}
+  const panel = (
+    <aside
+      className={cn(
+        'z-50 h-full w-[320px] border-slate-200 bg-gradient-to-b from-sky-50 to-slate-50',
+        'p-6 pt-12 shadow-xl transition-transform duration-200',
+        anchorBox ? 'absolute' : 'fixed',
+        side === 'right'
+          ? `right-0 top-0 border-l ${visible ? 'translate-x-0' : 'translate-x-full'}`
+          : `left-0 top-0 border-r ${visible ? 'translate-x-0' : '-translate-x-full'}`,
+        className,
+      )}
+      style={style}
+      onClick={event => event.stopPropagation()}
+    >
+      {children}
+      {!anchor && (
         <button
           type="button"
           className={cn(
@@ -139,7 +172,43 @@ const SheetContent = ({ side = 'right', className, children }: SheetContentProps
           <X className="h-5 w-5" />
           <span className="sr-only">Close</span>
         </button>
-      </aside>
+      )}
+    </aside>
+  );
+
+  const overlay = (
+    <button
+      type="button"
+      aria-label="Close settings"
+      className={cn(
+        'inset-0 z-50 cursor-default bg-black/60 transition-opacity duration-200',
+        anchorBox ? 'absolute' : 'fixed',
+        visible ? 'opacity-100' : 'opacity-0',
+        overlayClassName,
+      )}
+      onClick={() => onOpenChange(false)}
+    />
+  );
+
+  // Rendered on the page itself, so on desktop it slides in from the window's edge
+  // rather than inside the phone frame. Anchored, it slides out from under the header
+  // instead, clipped to the area below it.
+  if (anchor) {
+    return (
+      anchorBox &&
+      createPortal(
+        <div className="fixed z-50 overflow-hidden" style={anchorBox}>
+          {overlay}
+          {panel}
+        </div>,
+        document.body,
+      )
+    );
+  }
+  return createPortal(
+    <>
+      {overlay}
+      {panel}
     </>,
     document.body,
   );

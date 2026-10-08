@@ -404,15 +404,15 @@ export default function ApiPage() {
 
   const statusClass =
     status.tone === 'error'
-      ? 'text-rose-700'
+      ? 'text-rose-700 dark:text-rose-400'
       : status.tone === 'ok'
-        ? 'text-emerald-700'
-        : 'text-slate-600';
+        ? 'text-emerald-700 dark:text-emerald-400'
+        : 'text-slate-600 dark:text-slate-400';
 
   return (
     <main
       className={cn(
-        'mx-auto flex min-h-dvh w-full max-w-[860px] flex-col gap-3 bg-white px-3 py-4 text-slate-900',
+        'mx-auto flex min-h-dvh w-full max-w-[860px] flex-col gap-3 bg-white dark:bg-slate-900 px-3 py-4 text-slate-900 dark:text-slate-100',
         'shadow-[0_2px_8px_rgba(0,0,0,0.08)]',
       )}
     >
@@ -429,7 +429,7 @@ export default function ApiPage() {
         <CardHeader>
           <CardTitle>Bipium Browser API</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3 text-sm text-slate-700">
+        <CardContent className="space-y-3 text-sm text-slate-700 dark:text-slate-300">
           <p>
             Canonical runtime entrypoint: <code>window.bpm</code>
           </p>
@@ -457,16 +457,19 @@ export default function ApiPage() {
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-left text-sm">
               <thead>
-                <tr className="border-b border-slate-200 text-slate-600">
+                <tr className="border-b border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400">
                   <th className="py-2 pr-3 font-medium">Method</th>
                   <th className="py-2 font-medium">Purpose</th>
                 </tr>
               </thead>
               <tbody>
                 {METHOD_DOCS.map(entry => (
-                  <tr key={entry.method} className="border-b border-slate-100">
+                  <tr
+                    key={entry.method}
+                    className="border-b border-slate-100 dark:border-slate-800"
+                  >
                     <td className="py-2 pr-3 font-mono text-px-12">{entry.method}</td>
-                    <td className="py-2 text-slate-700">{entry.summary}</td>
+                    <td className="py-2 text-slate-700 dark:text-slate-300">{entry.summary}</td>
                   </tr>
                 ))}
               </tbody>
@@ -483,7 +486,7 @@ export default function ApiPage() {
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-left text-sm">
               <thead>
-                <tr className="border-b border-slate-200 text-slate-600">
+                <tr className="border-b border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400">
                   <th className="py-2 pr-3 font-medium">Key</th>
                   <th className="py-2 pr-3 font-medium">Type</th>
                   <th className="py-2 pr-3 font-medium">Range</th>
@@ -492,7 +495,7 @@ export default function ApiPage() {
               </thead>
               <tbody>
                 {URL_PARAM_DOCS.map(entry => (
-                  <tr key={entry.key} className="border-b border-slate-100">
+                  <tr key={entry.key} className="border-b border-slate-100 dark:border-slate-800">
                     <td className="py-2 pr-3 font-mono">{entry.key}</td>
                     <td className="py-2 pr-3">{entry.type}</td>
                     <td className="py-2 pr-3">{entry.range}</td>
@@ -510,11 +513,11 @@ export default function ApiPage() {
           <CardTitle>Instructions for AI</CardTitle>
         </CardHeader>
         <CardContent>
-          <details className="rounded border border-slate-200 bg-slate-50 p-3">
-            <summary className="cursor-pointer text-sm font-medium text-slate-900">
+          <details className="rounded border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 p-3">
+            <summary className="cursor-pointer text-sm font-medium text-slate-900 dark:text-slate-100">
               Configuration Process (with gotchas)
             </summary>
-            <ol className="mt-3 list-decimal space-y-1 pl-5 text-sm text-slate-700">
+            <ol className="mt-3 list-decimal space-y-1 pl-5 text-sm text-slate-700 dark:text-slate-300">
               <li>Create one canonical config object first.</li>
               <li>
                 Validate first: call <code>window.bpm.validateConfig(input)</code>.
@@ -549,7 +552,7 @@ export default function ApiPage() {
                 Loop playback always uses the drumkit voices, regardless of the selected sound pack.
               </li>
             </ol>
-            <p className="mt-3 text-sm text-slate-700">
+            <p className="mt-3 text-sm text-slate-700 dark:text-slate-300">
               Gotcha: unknown keys are rejected by the strict schema, so payload objects must only
               include documented fields.
             </p>
@@ -561,24 +564,24 @@ export default function ApiPage() {
         <CardHeader>
           <CardTitle>Zod Schemas</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3 text-sm text-slate-700">
+        <CardContent className="space-y-3 text-sm text-slate-700 dark:text-slate-300">
           <p>
             Runtime exposes <code>window.bpm.schemas</code>, <code>window.bpm.schemaJson</code>, and{' '}
             <code>window.bpm.getSchemaJson()</code>.
           </p>
-          <details className="rounded border border-slate-200 bg-slate-50 p-3">
-            <summary className="cursor-pointer font-medium text-slate-900">
+          <details className="rounded border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 p-3">
+            <summary className="cursor-pointer font-medium text-slate-900 dark:text-slate-100">
               JSON Schema Snapshot
             </summary>
-            <p className="mt-2 text-xs text-slate-600">
+            <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">
               Mirrors <code>window.bpm.schemaJson</code>.
             </p>
-            <p className="mt-2 font-mono text-xs text-slate-900">config</p>
-            <pre className="mt-1 max-h-44 overflow-auto rounded border border-slate-200 bg-white p-2 text-px-11 text-slate-700">
+            <p className="mt-2 font-mono text-xs text-slate-900 dark:text-slate-100">config</p>
+            <pre className="mt-1 max-h-44 overflow-auto rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-2 text-px-11 text-slate-700 dark:text-slate-300">
               {schemaJson ? JSON.stringify(schemaJson.config, null, 2) : 'Runtime not ready yet.'}
             </pre>
-            <p className="mt-2 font-mono text-xs text-slate-900">configPatch</p>
-            <pre className="mt-1 max-h-44 overflow-auto rounded border border-slate-200 bg-white p-2 text-px-11 text-slate-700">
+            <p className="mt-2 font-mono text-xs text-slate-900 dark:text-slate-100">configPatch</p>
+            <pre className="mt-1 max-h-44 overflow-auto rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-2 text-px-11 text-slate-700 dark:text-slate-300">
               {schemaJson
                 ? JSON.stringify(schemaJson.configPatch, null, 2)
                 : 'Runtime not ready yet.'}
@@ -592,7 +595,7 @@ export default function ApiPage() {
           <CardTitle>Live JSON Viewer</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <p className="text-sm text-slate-700">
+          <p className="text-sm text-slate-700 dark:text-slate-300">
             Edit JSON, validate, generate URL params, and run live. No LLM prompt box is included.
           </p>
 
@@ -633,29 +636,29 @@ export default function ApiPage() {
             </Button>
           </div>
 
-          <div id="voice-text-api" className="text-slate-600" />
+          <div id="voice-text-api" className="text-slate-600 dark:text-slate-400" />
           <textarea
-            className="h-[320px] w-full rounded-md border border-slate-300 p-3 font-mono text-xs outline-none"
+            className="h-[320px] w-full rounded-md border border-slate-300 dark:border-slate-600 p-3 font-mono text-xs outline-none"
             value={payload}
             onChange={event => setPayload(event.target.value)}
             spellCheck={false}
           />
 
-          <div className="rounded-md border border-slate-200 bg-slate-50 p-2 text-xs">
-            <p className="font-medium text-slate-700">Query preview</p>
-            <p className="mt-1 font-mono text-slate-700">
+          <div className="rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 p-2 text-xs">
+            <p className="font-medium text-slate-700 dark:text-slate-300">Query preview</p>
+            <p className="mt-1 font-mono text-slate-700 dark:text-slate-300">
               {preview.ok ? preview.query || '(empty query)' : `invalid: ${preview.error}`}
             </p>
           </div>
 
-          <div className="rounded-md border border-slate-200 bg-slate-50 p-2 text-xs">
-            <p className="font-medium text-slate-700">Live config</p>
-            <pre className="mt-1 overflow-x-auto text-slate-700">
+          <div className="rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 p-2 text-xs">
+            <p className="font-medium text-slate-700 dark:text-slate-300">Live config</p>
+            <pre className="mt-1 overflow-x-auto text-slate-700 dark:text-slate-300">
               {JSON.stringify(liveConfig, null, 2)}
             </pre>
           </div>
 
-          <p className="text-xs text-slate-600">
+          <p className="text-xs text-slate-600 dark:text-slate-400">
             Playback state: <strong>{liveStarted ? 'started' : 'stopped'}</strong>
           </p>
 

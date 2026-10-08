@@ -105,7 +105,7 @@ const Slider = React.forwardRef<HTMLDivElement, SliderProps>(
         <div
           ref={trackRef}
           className={cn(
-            'h-[7px] w-full rounded-[3px] border border-slate-400 bg-slate-200',
+            'h-[7px] w-full rounded-[3px] border border-slate-400 dark:border-slate-500 bg-slate-200 dark:bg-slate-700',
             'shadow-[inset_0_1px_2px_rgba(0,0,0,0.5)]',
             disabled && 'opacity-60',
           )}
@@ -115,7 +115,7 @@ const Slider = React.forwardRef<HTMLDivElement, SliderProps>(
           disabled={disabled}
           className={cn(
             'absolute top-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full',
-            'border-2 border-slate-400 bg-white shadow-sm',
+            'border-2 border-slate-400 dark:border-slate-500 bg-white dark:bg-slate-200 shadow-sm',
           )}
           style={{ left: `${pct}%` }}
           onMouseDown={event => {
