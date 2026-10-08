@@ -1,8 +1,7 @@
-/* Light or dark for the classic theme. The choice (system, light or dark) persists in
- * localStorage; "system" follows the OS setting live. Dark is a `dark` class on <html>,
- * set only while a classic page is showing (see ColorModeScope), so the machine theme
- * keeps its own look. index.html sets the class before first paint, so dark pages don't
- * flash white. */
+/* Light or dark. The choice (system, light or dark) persists in localStorage; "system"
+ * follows the OS setting live. Dark is a `dark` class on <html>, set while a page is
+ * showing (see ColorModeScope). index.html sets the class before first paint, so dark
+ * pages don't flash white. */
 import { useEffect, useSyncExternalStore } from 'react';
 
 export type ColorMode = 'system' | 'light' | 'dark';

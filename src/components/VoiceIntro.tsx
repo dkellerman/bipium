@@ -2,7 +2,6 @@
  * again" persists in localStorage, after which the Listen button starts right away. */
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { cn } from '@/lib/utils';
 import { hideVoiceIntro } from '@/lib/voice-intro';
 
 // Examples per category; a short note only where the examples don't explain it.
@@ -31,18 +30,9 @@ const SECTIONS: { title: string; note?: string; say: string[] }[] = [
   { title: 'Control', say: ['start', 'stop', 'reset', 'stop listening'] },
 ];
 
-export function VoiceIntro({
-  variant,
-  onStart,
-  onCancel,
-}: {
-  variant: 'classic' | 'machine' | 'api';
-  onStart: () => void;
-  onCancel: () => void;
-}) {
+export function VoiceIntro({ onStart, onCancel }: { onStart: () => void; onCancel: () => void }) {
   const [dontShow, setDontShow] = useState(false);
   const startRef = useRef<HTMLButtonElement>(null);
-  const machine = variant === 'machine';
   const close = (start: boolean) => {
     if (dontShow) hideVoiceIntro();
     (start ? onStart : onCancel)();
@@ -69,67 +59,35 @@ export function VoiceIntro({
         role="dialog"
         aria-modal="true"
         aria-labelledby="voice-intro-title"
-        className={cn(
-          'relative flex max-h-[85dvh] w-full flex-col text-left sm:max-h-[85vh] sm:max-w-lg',
-          machine
-            ? 'rounded-xl border-[3px] border-stone-900 bg-[#f6f3ea] text-stone-900 shadow-[4px_4px_0_#1c1917]'
-            : 'rounded-2xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xl',
-        )}
+        className="relative flex max-h-[85dvh] w-full flex-col text-left sm:max-h-[85vh] sm:max-w-lg rounded-2xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xl"
       >
         <div className="px-5 pt-5 sm:px-6">
           <h2 id="voice-intro-title" className="flex items-center gap-2 text-lg font-semibold">
             Voice mode
-            <span
-              className={cn(
-                'rounded px-1.5 py-0.5 text-px-11 font-semibold uppercase tracking-wide',
-                machine
-                  ? 'border-2 border-stone-900 bg-[#ffd76a]'
-                  : 'bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300',
-              )}
-            >
+            <span className="rounded px-1.5 py-0.5 text-px-11 font-semibold uppercase tracking-wide bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300">
               Experimental
             </span>
           </h2>
-          <p
-            className={cn(
-              'mt-1 text-sm',
-              machine ? 'text-stone-600' : 'text-slate-600 dark:text-slate-400',
-            )}
-          >
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
             Control the metronome by talking, counting in, or playing along.
           </p>
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-3 sm:px-6">
-          <dl
-            className={cn(
-              'divide-y text-sm leading-snug',
-              machine ? 'divide-stone-900/15' : 'divide-slate-100 dark:divide-slate-800',
-            )}
-          >
+          <dl className="divide-y text-sm leading-snug divide-slate-100 dark:divide-slate-800">
             {SECTIONS.map(section => (
               <div key={section.title} className="grid grid-cols-[6.5rem_1fr] gap-3 py-2.5">
                 <dt className="pt-0.5 font-semibold">{section.title}</dt>
                 <dd className="flex flex-wrap gap-1.5">
                   {section.note && (
-                    <span
-                      className={cn(
-                        'w-full',
-                        machine ? 'text-stone-600' : 'text-slate-600 dark:text-slate-400',
-                      )}
-                    >
+                    <span className="w-full text-slate-600 dark:text-slate-400">
                       {section.note}
                     </span>
                   )}
                   {section.say.map(phrase => (
                     <span
                       key={phrase}
-                      className={cn(
-                        'rounded px-1.5 py-0.5',
-                        machine
-                          ? 'border border-stone-900/30 bg-white/60'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300',
-                      )}
+                      className="rounded px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
                     >
                       {phrase}
                     </span>
@@ -140,18 +98,13 @@ export function VoiceIntro({
           </dl>
         </div>
 
-        <div
-          className={cn(
-            'flex flex-col gap-3 border-t px-5 pb-5 pt-3 sm:flex-row sm:items-center sm:justify-between sm:px-6',
-            machine ? 'border-stone-900/20' : 'border-slate-200 dark:border-slate-700',
-          )}
-        >
+        <div className="flex flex-col gap-3 border-t px-5 pb-5 pt-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 border-slate-200 dark:border-slate-700">
           <label className="flex cursor-pointer items-center gap-2 text-sm">
             <input
               type="checkbox"
               checked={dontShow}
               onChange={event => setDontShow(event.target.checked)}
-              className={cn('size-4', machine ? 'accent-stone-900' : 'accent-sky-600')}
+              className="size-4 accent-sky-600"
             />
             Don’t show this again
           </label>
@@ -159,12 +112,7 @@ export function VoiceIntro({
             <button
               type="button"
               onClick={() => close(false)}
-              className={cn(
-                'h-11 flex-1 rounded-md px-4 text-sm font-medium sm:h-10 sm:flex-none',
-                machine
-                  ? 'border-[3px] border-stone-900 bg-[#f6f3ea] shadow-[2px_2px_0_#1c1917] active:translate-x-px active:translate-y-px active:shadow-[1px_1px_0_#1c1917]'
-                  : 'border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700',
-              )}
+              className="h-11 flex-1 rounded-md px-4 text-sm font-medium sm:h-10 sm:flex-none border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700"
             >
               Cancel
             </button>
@@ -172,12 +120,7 @@ export function VoiceIntro({
               ref={startRef}
               type="button"
               onClick={() => close(true)}
-              className={cn(
-                'h-11 flex-1 rounded-md px-5 text-sm font-semibold sm:h-10 sm:flex-none',
-                machine
-                  ? 'border-[3px] border-stone-900 bg-[#e5484d] text-white shadow-[2px_2px_0_#1c1917] active:translate-x-px active:translate-y-px active:shadow-[1px_1px_0_#1c1917]'
-                  : 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-white',
-              )}
+              className="h-11 flex-1 rounded-md px-5 text-sm font-semibold sm:h-10 sm:flex-none bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-white"
             >
               Start
             </button>

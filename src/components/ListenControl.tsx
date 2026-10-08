@@ -79,11 +79,7 @@ function describeRhythmStatus({ state, level, onsets, diagnosis }: RhythmStatus)
   return parts.join(' · ');
 }
 
-export function ListenControl({
-  variant = 'classic',
-}: {
-  variant?: 'classic' | 'machine' | 'api';
-}) {
+export function ListenControl({ variant = 'classic' }: { variant?: 'classic' | 'api' }) {
   const [target, setTarget] = useState<HTMLElement | null>(null);
   const [resetTarget, setResetTarget] = useState<HTMLElement | null>(null);
   const [open, setOpen] = useState(false);
@@ -447,65 +443,41 @@ export function ListenControl({
       setOpen(true);
     }
   };
-  const resetButton =
-    variant === 'machine' ? (
-      <button
-        type="button"
-        aria-label="Reset"
-        title="Reset"
-        onClick={reset}
-        className="grid size-16 place-items-center rounded-md border-[3px] border-stone-900 bg-[#f6f3ea] shadow-[2px_2px_0_#1c1917] active:translate-x-px active:translate-y-px active:shadow-[1px_1px_0_#1c1917]"
-      >
-        <RotateCcw className="size-5" aria-hidden="true" />
-      </button>
-    ) : (
-      <Button
-        type="button"
-        variant={variant === 'classic' ? 'ghost' : 'outline'}
-        size={variant === 'classic' ? 'icon' : 'default'}
-        className={variant === 'classic' ? 'size-9' : undefined}
-        title="Reset"
-        aria-label="Reset"
-        onClick={reset}
-      >
-        <RotateCcw className="size-5" aria-hidden="true" />
-        {variant === 'api' && 'Reset'}
-      </Button>
-    );
+  const resetButton = (
+    <Button
+      type="button"
+      variant={variant === 'classic' ? 'ghost' : 'outline'}
+      size={variant === 'classic' ? 'icon' : 'default'}
+      className={variant === 'classic' ? 'size-9' : undefined}
+      title="Reset"
+      aria-label="Reset"
+      onClick={reset}
+    >
+      <RotateCcw className="size-5" aria-hidden="true" />
+      {variant === 'api' && 'Reset'}
+    </Button>
+  );
   return (
     <>
-      {variant === 'machine' ? (
-        <button
-          type="button"
-          aria-label={label}
-          title={label}
-          onClick={toggle}
-          className="grid size-16 place-items-center rounded-md border-[3px] border-stone-900 bg-[#f6f3ea] shadow-[2px_2px_0_#1c1917] active:translate-x-px active:translate-y-px active:shadow-[1px_1px_0_#1c1917]"
-        >
-          {icon}
-        </button>
-      ) : (
-        <Button
-          type="button"
-          variant="outline"
-          size={variant === 'classic' ? 'icon' : 'default'}
-          className={
-            variant === 'classic'
-              ? 'relative z-10 size-11 rounded-full bg-white dark:bg-slate-800 p-2 shadow-md'
-              : undefined
-          }
-          title={label}
-          aria-label={label}
-          onClick={toggle}
-        >
-          {icon}
-          {variant === 'api' && label}
-        </Button>
-      )}
+      <Button
+        type="button"
+        variant="outline"
+        size={variant === 'classic' ? 'icon' : 'default'}
+        className={
+          variant === 'classic'
+            ? 'relative z-10 size-11 rounded-full bg-white dark:bg-slate-800 p-2 shadow-md'
+            : undefined
+        }
+        title={label}
+        aria-label={label}
+        onClick={toggle}
+      >
+        {icon}
+        {variant === 'api' && label}
+      </Button>
       {resetTarget ? createPortal(resetButton, resetTarget) : variant === 'api' && resetButton}
       {intro && (
         <VoiceIntro
-          variant={variant}
           onStart={() => {
             setIntro(false);
             start();
@@ -513,7 +485,7 @@ export function ListenControl({
           onCancel={() => setIntro(false)}
         />
       )}
-      {tuner && <TunerPopup reading={tuner} variant={variant} onClose={tunerStore.close} />}
+      {tuner && <TunerPopup reading={tuner} onClose={tunerStore.close} />}
       {open &&
         target &&
         createPortal(

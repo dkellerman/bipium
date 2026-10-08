@@ -1,7 +1,7 @@
 /* On desktop, the player is styled as a phone: the app keeps its 480px column and the
  * page background, and a bezel is drawn over the column's edges. The transform makes
- * the screen the containing block for the app's fixed-position pieces (the machine
- * layout, dialogs, drawers), so they stay inside it. */
+ * the screen the containing block for the app's fixed-position pieces (dialogs,
+ * drawers), so they stay inside it. */
 import { useEffect, useState, type ReactNode } from 'react';
 import { PHONE_BEZEL, PHONE_WIDTH, phoneHeight } from '@/lib/phone-frame';
 
@@ -28,8 +28,8 @@ export function PhoneFrame({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    // Around the phone, the page background the theme has without the frame.
-    <div className="flex h-dvh items-center justify-center overflow-hidden bg-linear-to-b from-[#f8fbff] via-[#eef6ff] to-[#f8fbff] dark:from-[#03060b] dark:via-[#060b14] dark:to-[#03060b] has-[[data-theme=machine]]:bg-[#d8d3c4] has-[[data-theme=machine]]:bg-none">
+    // Around the phone, the page background the app has without the frame.
+    <div className="flex h-dvh items-center justify-center overflow-hidden bg-linear-to-b from-[#f8fbff] via-[#eef6ff] to-[#f8fbff] dark:from-[#03060b] dark:via-[#060b14] dark:to-[#03060b]">
       <div className="relative" style={{ width: PHONE_WIDTH, height, marginLeft: nudge }}>
         <div
           id="phone-screen"

@@ -10,7 +10,6 @@ import { crispLine } from '@/lib/crisp-line';
 
 interface DefaultVisualizerProps {
   id?: string;
-  skipEdgeGridLines?: boolean;
   metronome: Metronome;
   width?: number;
   height?: number;
@@ -51,7 +50,6 @@ extend({ Graphics, Text: PixiText });
 
 export function DefaultVisualizer({
   metronome: m,
-  skipEdgeGridLines = false,
   width = 350,
   height = 100,
   showGrid = true,
@@ -244,8 +242,6 @@ export function DefaultVisualizer({
       if (!barTime) return;
       gridTimes.forEach((t: number, i: number) => {
         const x = (t / barTime) * width;
-        // Skip lines hugging the canvas edges — they read as a stray border.
-        if (skipEdgeGridLines && (x < 1 || x > width - 1)) return;
         const isSubDiv = i % subDivs > 0;
         const px = crispLine(x, width);
         g.setStrokeStyle({ width: 1, color: isSubDiv ? subDivColor : divColor });
@@ -256,7 +252,7 @@ export function DefaultVisualizer({
     },
     // drawVersion: rerun once the Application is ready (see onInit).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [showGrid, width, height, barTime, subDivs, gridTimes, skipEdgeGridLines, drawVersion],
+    [showGrid, width, height, barTime, subDivs, gridTimes, drawVersion],
   );
 
   const drawNow = useCallback(

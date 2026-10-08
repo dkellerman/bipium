@@ -2,7 +2,7 @@ import { transcription } from './transcription.mjs';
 import { voice } from './voice.mjs';
 // Server-only entrypoint. Direct Jev calls use env.TYPESAFE_API_KEY;
 // never return runtime secrets or inject them into the client bundle.
-const appRoutes = new Set(['/', '/machine', '/apidocs', '/about']);
+const appRoutes = new Set(['/', '/apidocs', '/about']);
 
 export default {
   async fetch(request, env) {
@@ -28,6 +28,10 @@ export default {
         headers: { Allow: 'GET, HEAD' },
       });
     }
+
+    // The machine theme was retired; old links land on the app.
+    if ((url.pathname.replace(/\/$/, '') || '/') === '/machine')
+      return Response.redirect(new URL('/', url), 302);
 
     if (appRoutes.has(url.pathname.replace(/\/$/, '') || '/')) {
       url.pathname = '/';

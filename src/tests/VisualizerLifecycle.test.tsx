@@ -126,7 +126,7 @@ async function frame() {
   });
 }
 
-describe.each([false, true])('shared Pixi lifecycle, machine edges=%s', skipEdgeGridLines => {
+describe('shared Pixi lifecycle', () => {
   it('keeps the renderer and moving Pixi now-line through grid, pattern, mode and size updates', async () => {
     const pattern = {
       kick: [true, false, false, false],
@@ -141,7 +141,6 @@ describe.each([false, true])('shared Pixi lifecycle, machine edges=%s', skipEdge
             metronome={metronome}
             width={width}
             height={height}
-            skipEdgeGridLines={skipEdgeGridLines}
             drumLoopPattern={drums ? pattern : undefined}
             onToggleDrumStep={toggle}
             horizontalLines={drums ? [height / 3, (height * 2) / 3] : []}

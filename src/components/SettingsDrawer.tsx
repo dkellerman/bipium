@@ -4,8 +4,8 @@ import { PHONE_BEZEL, PHONE_WIDTH, phoneFramed } from '@/lib/phone-frame';
 import { cn } from '@/lib/utils';
 import { SOUND_PACKS } from '@/hooks';
 import { useApp } from '@/AppContext';
+import { Monitor, Moon, Sun } from 'lucide-react';
 import { setColorMode, useColorMode, type ColorMode } from '@/lib/color-mode';
-import { storeTheme, type UITheme } from '@/lib/theme';
 import { sendEvent } from '@/tracking';
 import { VolumeControl } from './VolumeControl';
 
@@ -93,43 +93,36 @@ export function SettingsDrawer() {
         </div>
 
         <div className={section}>
-          <label className={sectionLabel} htmlFor="menu-theme">
-            Theme
-          </label>
-          <select
-            id="menu-theme"
-            className={menuSelect}
-            value="classic"
-            onChange={event => {
-              const theme = event.target.value as UITheme;
-              storeTheme(theme);
-              sendEvent('set_theme', 'App', theme);
-              if (theme !== 'classic') window.location.assign('/');
-            }}
-          >
-            <option value="classic">Classic</option>
-            <option value="machine">Machine</option>
-          </select>
-        </div>
-
-        <div className={section}>
-          <label className={sectionLabel} htmlFor="menu-appearance">
+          <p className={sectionLabel} id="menu-appearance">
             Appearance
-          </label>
-          <select
-            id="menu-appearance"
-            className={menuSelect}
-            value={colorMode}
-            onChange={event => {
-              const mode = event.target.value as ColorMode;
-              setColorMode(mode);
-              sendEvent('set_color_mode', 'App', mode);
-            }}
+          </p>
+          <div
+            role="radiogroup"
+            aria-labelledby="menu-appearance"
+            className="grid grid-cols-3 gap-1 rounded-lg bg-slate-200/70 p-1 dark:bg-slate-800"
           >
-            <option value="system">System</option>
-            <option value="light">Light</option>
-            <option value="dark">Dark</option>
-          </select>
+            {COLOR_MODES.map(({ mode, label, Icon }) => (
+              <button
+                key={mode}
+                type="button"
+                role="radio"
+                aria-checked={colorMode === mode}
+                onClick={() => {
+                  setColorMode(mode);
+                  sendEvent('set_color_mode', 'App', mode);
+                }}
+                className={cn(
+                  'flex h-8 items-center justify-center gap-1.5 rounded-md text-sm transition-colors',
+                  colorMode === mode
+                    ? 'bg-white font-medium text-slate-900 shadow-sm dark:bg-slate-600 dark:text-white'
+                    : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white',
+                )}
+              >
+                <Icon className="size-4" aria-hidden="true" />
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className={cn(section, 'flex flex-col items-start gap-2 text-px-15')}>
@@ -177,6 +170,12 @@ export function SettingsDrawer() {
 
 const DESKTOP_MARGIN = 24; // between the phone and the menu, on desktop
 const menuLink = 'cursor-pointer text-slate-900 dark:text-slate-100 no-underline hover:underline';
+const COLOR_MODES: { mode: ColorMode; label: string; Icon: typeof Sun }[] = [
+  { mode: 'system', label: 'System', Icon: Monitor },
+  { mode: 'light', label: 'Light', Icon: Sun },
+  { mode: 'dark', label: 'Dark', Icon: Moon },
+];
+
 const section = 'mt-6 border-t border-slate-200 dark:border-slate-700 pt-4';
 const sectionLabel =
   'mb-2 block text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400';

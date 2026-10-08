@@ -12,10 +12,18 @@ function environment() {
 }
 
 test('all app routes serve the public shell without authentication', async () => {
-  for (const route of ['/', '/machine', '/machine/', '/apidocs', '/about']) {
+  for (const route of ['/', '/apidocs', '/about']) {
     const response = await worker.fetch(new Request(`https://example.test${route}`), environment());
     assert.equal(response.status, 200);
     assert.equal(await response.text(), '/');
+  }
+});
+
+test('the retired machine theme redirects to the app', async () => {
+  for (const route of ['/machine', '/machine/']) {
+    const response = await worker.fetch(new Request(`https://example.test${route}`), environment());
+    assert.equal(response.status, 302);
+    assert.equal(response.headers.get('location'), 'https://example.test/');
   }
 });
 

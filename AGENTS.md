@@ -184,8 +184,8 @@ is acted on only above 0.5 confidence; otherwise that setting stays as it is.
 
 ## The shared Pixi visualizer (do not regress)
 
-- Classic and machine both use `src/components/DefaultVisualizer.tsx`. Don't fork its
-  rendering, animation or lifecycle per theme; theme differences are presentation props.
+- The app uses `src/components/DefaultVisualizer.tsx`. Don't fork its rendering,
+  animation or lifecycle; differences between uses are presentation props.
 - Keep the Pixi green now-line, timing and rendering as they are. Don't move the line out
   of Pixi or redesign the visualizer without explicit approval.
 - Keep the Pixi Application/canvas alive across beat, subdivision, swing, pattern, mode
@@ -193,13 +193,14 @@ is acted on only above 0.5 confidence; otherwise that setting stays as it is.
   and apply the latest size after async initialization.
 - Keep the explicit grid and now-line redraws after size/grid updates (physical-device
   fixes `b841edc`, `c393021`).
-- Run `VisualizerLifecycle.test.tsx` after visualizer or lifecycle changes and check both
-  themes. Desktop responsive mode and Chrome emulation don't reproduce the iPhone issue;
+- Run `VisualizerLifecycle.test.tsx` after visualizer or lifecycle changes, and check
+  light and dark mode. Desktop responsive mode and Chrome emulation don't reproduce the iPhone issue;
   never claim physical-device success without testing on a device.
 
 ## Delivery
 
 - No pull requests. Push authorized, completed work directly to master and deploy.
 - Preserve unrelated local changes; use the existing worktree.
-- Check both classic and machine themes for UI changes.
+- Check light and dark mode for UI changes. The machine theme was retired (2026-10-07,
+  archived in `archive/machine-theme/`, not built or used); don't bring it back unasked.
 - On this machine plain `cat` may colorize; use `sed -n` or `/bin/cat` to read files.

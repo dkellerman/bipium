@@ -16,7 +16,7 @@ export function phoneFramed() {
   if (typeof window === 'undefined') return (framed = false);
   framed =
     !new URLSearchParams(window.location.search).has('noframe') &&
-    ['/', '/machine'].includes(window.location.pathname) &&
+    window.location.pathname === '/' &&
     navigator.maxTouchPoints === 0 &&
     window.matchMedia(
       '(min-width: 900px) and (min-height: 700px) and (pointer: fine) and (hover: hover)',
