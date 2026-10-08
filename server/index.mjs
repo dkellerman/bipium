@@ -31,7 +31,8 @@ export default {
 
     // The machine theme was retired; old links land on the app.
     if ((url.pathname.replace(/\/$/, '') || '/') === '/machine')
-      return Response.redirect(new URL('/', url), 302);
+      // Relative: behind the custom domain the request URL is the Sites origin's.
+      return new Response(null, { status: 302, headers: { Location: '/' } });
 
     if (appRoutes.has(url.pathname.replace(/\/$/, '') || '/')) {
       url.pathname = '/';
